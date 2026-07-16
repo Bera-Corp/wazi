@@ -1,0 +1,22 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# generated evidence
+artifacts/
+coverage/
+.tmp/
+
+# editors and OS
+.vscode/
+.idea/
+.DS_Store
+
+# language output
+node_modules/
+dist/
+bin/
