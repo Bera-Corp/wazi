@@ -323,3 +323,14 @@ Launch five to ten applications across local and VPS paths, collect opt-in telem
 - **Commercial potential for a universal “install any repository” promise:** 42/100.
 
 The defensible product is not the open-source application itself. It is verified packaging, compatibility intelligence, secure deployment, lifecycle operations, evidence, support, and trust.
+
+## Updated unified product and hackathon planning (October 2026)
+
+The original Wazi deterministic Linux Docker Compose architecture remains the pre-MVP deployment baseline. The broader Wazi product vision and the focused Meta hackathon scope are documented separately:
+
+- [Wazi Unified Master Plan](docs/WAZI_MASTER_PLAN.md) — full research-based product strategy and long-term architecture.
+- [Meta Hackathon 2026 Execution Plan](docs/HACKATHON_2026_EXECUTION_PLAN.md) — build priority, acceptance gates, schedule, missing requirements, demo script and issue list.
+- [Wazi Installer and Store Bridge](docs/WAZI_INSTALLER_AND_STORE_BRIDGE.md) — researched future native desktop installation and external-store distribution paths.
+- [Preview & Insider Program](docs/PREVIEW_AND_INSIDER_PROGRAM.md) — future optional preview release channels, granular telemetry consent and developer bug feedback.
+
+These capabilities are **proposed**; their appearance in documentation does not imply that software is implemented or externally certified. Review [LICENSE-DECISION.md](LICENSE-DECISION.md) before public distribution.
