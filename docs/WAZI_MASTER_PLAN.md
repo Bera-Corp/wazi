@@ -1371,6 +1371,16 @@ That demonstration simultaneously exercises repository engineering, Meta's front
 
 ---
 
+## Addendum (21 October 2026): customer-owned compute as a reusable application platform
+
+A further, separately researched product proposal is [**Wazi Cloud Fabric & TenantKit**](WAZI_CLOUD_FABRIC_AND_TENANTKIT.md). Rather than treating Wazi Cloud merely as one VM for one application, this formalizes a **customer compute workspace** in which a dedicated logical VM can host several curated independent application instances, each with distinct secrets, storage, resource quotas, identity and publisher support boundaries. The customer may bring their own server/cloud account or subscribe to a Wazi-managed private VM. A versioned **TenantKit** manifest/API gives independent developers an opt-in customer-isolated deployment model instead of building their own pooled application-level tenant backend. A future **Wazi Connect** layer addresses private app access and selective file sync using existing transport infrastructure, not unrealistic promises of native speeds across a WAN.
+
+**Correction/guardrails:** This reduces duplicated infrastructure where compatible workloads share capacity; it does not eliminate Wazi control-plane multi-tenancy, application licensing or ongoing SaaS operational costs. Docker app co-location inside a customer's VM is not equivalent to one VM per app for adversarial isolation. Provider compute, storage, backups, network, publisher licensing, Wazi operations and metered AI must be separately accounted for. No explicit platform/vendor relationships are implied, and no customer-owned cloud instance has been provisioned by this documentation. It remains a **post-hackathon** development phase unless the end-to-end secure-release demo is complete. The specialized document has architecture, acceptance criteria, economic hypotheses, security risks, phased roadmap and evidence links.
+
+
+
+---
+
 ## Primary-source and implementation reference index (verified/reviewed 2026-10-21)
 
 > These URLs make the research independently reviewable on GitHub. They are a curated provenance index, not an assertion that every claim in the narrative has been independently verified at the moment of publication. Re-check dates, program rules, prices, store admission policies and tool availability immediately before relying on them.
