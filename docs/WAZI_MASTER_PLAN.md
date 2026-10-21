@@ -1371,6 +1371,10 @@ That demonstration simultaneously exercises repository engineering, Meta's front
 
 ---
 
+## Addendum: BYOC connectors and enforceable runtime limits
+
+See [**BYOC Connector, Authorization and Resource Isolation Architecture**](BYOC_CONNECTORS_RESOURCE_ISOLATION.md). A key refinement is that Wazi should default to connecting to a customer's **existing** cloud account, Linux VPS or Kubernetes namespace rather than selling its own VM. A provider-neutral manifest and secure resource discovery/capacity verifier are the Wazi-owned components. The provider exposes scoped authority; Wazi asks for minimal revocable permission via short-lived cloud identities or paired mTLS host agent, verifies account/host/namespace resources, then runs a signed typed install plan. Resource limits and app-level persistence are enforced by proven Docker/Kubernetes/container/VM primitives, with unsafe or unsupported environments rejected. The separate technical spec records precise control-plane/data-plane boundaries, conformance checks and a post-hackathon rollout; it does not imply working cloud integrations.
+
 ## Addendum (21 October 2026): customer-owned compute as a reusable application platform
 
 A further, separately researched product proposal is [**Wazi Cloud Fabric & TenantKit**](WAZI_CLOUD_FABRIC_AND_TENANTKIT.md). Rather than treating Wazi Cloud merely as one VM for one application, this formalizes a **customer compute workspace** in which a dedicated logical VM can host several curated independent application instances, each with distinct secrets, storage, resource quotas, identity and publisher support boundaries. The customer may bring their own server/cloud account or subscribe to a Wazi-managed private VM. A versioned **TenantKit** manifest/API gives independent developers an opt-in customer-isolated deployment model instead of building their own pooled application-level tenant backend. A future **Wazi Connect** layer addresses private app access and selective file sync using existing transport infrastructure, not unrealistic promises of native speeds across a WAN.
