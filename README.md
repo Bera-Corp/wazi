@@ -330,7 +330,8 @@ The original Wazi deterministic Linux Docker Compose architecture remains the pr
 
 - [Wazi Unified Master Plan](docs/WAZI_MASTER_PLAN.md) — full research-based product strategy and long-term architecture.
 - [Meta Hackathon 2026 Execution Plan](docs/HACKATHON_2026_EXECUTION_PLAN.md) — build priority, acceptance gates, schedule, missing requirements, demo script and issue list.
-- [Wazi Cloud Fabric and TenantKit](docs/WAZI_CLOUD_FABRIC_AND_TENANTKIT.md) — researched customer-owned/BYOC compute workspaces, developer-isolated app SDK, resource sharing, economics and optional future Wazi Connect.
+- [Wazi Cloud Fabric and TenantKit](docs/WAZI_CLOUD_FABRIC_AND_TENANTKIT.md)
+- [Wazi BYOC Connectors & Resource Isolation](docs/BYOC_CONNECTORS_RESOURCE_ISOLATION.md) — provider-neutral links to customer-owned compute, scoped IAM/agent pairing, capacity verification, Compose/Kubernetes isolation and persistent storage. — researched customer-owned/BYOC compute workspaces, developer-isolated app SDK, resource sharing, economics and optional future Wazi Connect.
 - [Wazi Installer and Store Bridge](docs/WAZI_INSTALLER_AND_STORE_BRIDGE.md) — researched future native desktop installation and external-store distribution paths.
 - [Preview & Insider Program](docs/PREVIEW_AND_INSIDER_PROGRAM.md) — future optional preview release channels, granular telemetry consent and developer bug feedback.
 
