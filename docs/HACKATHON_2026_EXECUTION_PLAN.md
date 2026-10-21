@@ -227,6 +227,11 @@ This matrix explicitly checks earlier promises often lost when focusing on a sho
 
 **PR governance:** This document and imported research reports are decisions/proposals. Finalize ADRs before implementing privileged operations or changing public licensing. For the user's currently private repository, do not make public/open-source claims until license selection and repo exposure are deliberate.
 
+## 10A. Subsequent Wazi Cloud proposal (21 October 2026)
+
+See [Wazi Cloud Fabric & TenantKit](WAZI_CLOUD_FABRIC_AND_TENANTKIT.md). The expanded Cloud idea is **one customer workspace reusing one logical VM's resources across multiple supported apps**, plus customer-controlled BYOC/provider ownership choices and an optional developer isolated-customer application contract. Its future Wazi Connect stream could use authenticated web access, private overlay networking, selective sync and remote desktop technology; speed claims require direct vs relayed RTT/throughput benchmarks. **This does not add a new hackathon critical-path requirement.** If all primary success gates pass, show a read-only prototype of one VM's resource headroom or a second vetted low-resource app; otherwise leave Cloud Fabric on the post-hackathon roadmap. No unsupported cloud cost savings, multi-tenant elimination or 'almost native' performance claims.
+
+
 ## 11. Source ledger
 
 - Original Wazi technical baseline: [README](../README.md), [Architecture](ARCHITECTURE.md), [Context](CONTEXT_ENGINEERING_PLAN.md), [Roadmap](MVP_ROADMAP.md), [Threat Model](THREAT_MODEL.md), [License Decision](../LICENSE-DECISION.md).
