@@ -334,3 +334,23 @@ The original Wazi deterministic Linux Docker Compose architecture remains the pr
 - [Preview & Insider Program](docs/PREVIEW_AND_INSIDER_PROGRAM.md) — future optional preview release channels, granular telemetry consent and developer bug feedback.
 
 These capabilities are **proposed**; their appearance in documentation does not imply that software is implemented or externally certified. Review [LICENSE-DECISION.md](LICENSE-DECISION.md) before public distribution.
+
+## Worlds and S-Prints (experimental)
+
+The planned Worlds area packages environments, skills, action/model adapters,
+planners and evaluators for compatible simulation or world-model runtimes.
+[The feature and buildout plan](docs/WAZI_SPRINTS_PLAN.md) maps the research
+into acceptance gates alongside Apps, Compute and Agents.
+
+Implemented locally: experimental schemas and an offline resolver with a
+synthetic environment + navigation + planner example. It checks interfaces,
+dependency pins, resources and permissions. Model execution, installation,
+marketplace UI and measured model gains remain planned.
+
+```powershell
+.\scripts\validate.ps1
+.\.venv\Scripts\python.exe scripts/sprints.py context/worlds/simulation-composition.json
+```
+
+See [the Phase 0 follow-up review](docs/PHASE_0_REVIEW_2026-10-29.md) for
+confirmed improvements, additional fixes and remaining completion blockers.

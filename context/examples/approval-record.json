@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "approvalId": "appr_demo01",
+  "planId": "plan_demo01",
+  "planDigest": "sha256:ba161af0b8d8fb71f2542956a6fd2acf7abd368ac3cb74498a85f8b711d96cb4",
+  "envelopeId": "env_demo01",
+  "tenantScope": "tenant_demo",
+  "hostId": "host_demo01",
+  "applicationId": "org.example.uptime-demo",
+  "action": "public-exposure",
+  "decision": "approved",
+  "approver": {
+    "approverId": "user_demo",
+    "role": "user"
+  },
+  "approvedAt": "2026-10-21T09:03:00Z",
+  "expiresAt": "2026-10-21T09:30:00Z",
+  "envelopeDigest": "sha256:d652131efbe34237cc664ec81741d5de7dc30f54eb3906ae8338f0e6f31f76a4"
+}

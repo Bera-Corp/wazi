@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/compose-artifact.schema.json",
+  "title": "Wazi Compose Artifact",
+  "description": "Deterministic rendering contract: an immutable Compose file rendered from one manifest by a pinned renderer. The executor consumes the artifact by digest, never a re-rendered or hand-edited file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "artifactId", "applicationId", "releaseVersion",
+    "manifestDigest", "renderer", "composeDigest", "projectName",
+    "services", "createdAt", "provenance"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "artifactId": { "type": "string", "pattern": "^art_[A-Za-z0-9_-]+$" },
+    "applicationId": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+    "releaseVersion": { "type": "string", "minLength": 1 },
+    "manifestDigest": {
+      "$ref": "common.schema.json#/$defs/sha256Digest",
+      "description": "Canonical-JSON SHA-256 of the source app-manifest record."
+    },
+    "renderer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "wazi-compose-renderer" },
+        "version": { "type": "string", "minLength": 1 }
+      },
+      "description": "Pinned renderer identity. Same manifest + same renderer version must produce the same composeDigest."
+    },
+    "composeDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
+    "composeUri": { "type": "string" },
+    "localPath": { "type": "string", "description": "Repo-relative path of the rendered bytes for offline validation. composeDigest must equal the SHA-256 of those exact bytes." },
+    "projectName": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+    "services": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "provenance": { "$ref": "common.schema.json#/$defs/provenance" }
+  }
+}

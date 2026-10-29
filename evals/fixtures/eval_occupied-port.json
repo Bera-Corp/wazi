@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "2.0.0",
+  "fixtureId": "eval_occupied-port",
+  "description": "Required host port already occupied.",
+  "evaluationTime": "2026-10-21T09:05:00Z",
+  "manifest": {
+    "schemaVersion": "1.0.0",
+    "appId": "org.example.uptime-demo",
+    "name": "Uptime Demo",
+    "version": "1.0.0",
+    "license": "MIT",
+    "provenance": {
+      "sourceId": "src_demo_repo",
+      "sourceType": "official-repository",
+      "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "extractionMethod": "deterministic-parser",
+      "applicationScope": "org.example.uptime-demo",
+      "versionScope": "1.0.0",
+      "observedAt": "2026-10-21T08:00:00Z",
+      "expiresAt": "2027-10-21T08:00:00Z",
+      "confidence": 0.95,
+      "authorityLevel": "wazi-reviewed",
+      "sensitivity": "public"
+    },
+    "reviewState": "signed",
+    "signature": {
+      "algorithm": "sigstore-cosign",
+      "value": "demo-signature-value-not-a-real-key",
+      "signedBy": "wazi-demo-signer",
+      "signedAt": "2026-10-21T08:05:00Z",
+      "payloadDigest": "sha256:209bf88b0aad8e0ae9a0263a578a882fae793f23c2d6362fcbd03665ba0e6d3f"
+    },
+    "release": {
+      "images": [
+        {
+          "service": "app",
+          "image": "ghcr.io/example/uptime-demo",
+          "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ],
+      "ports": [
+        {
+          "service": "app",
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "exposure": "public"
+        }
+      ],
+      "volumes": [
+        {
+          "name": "app-data",
+          "mountPath": "/data",
+          "backup": true
+        }
+      ],
+      "environment": [
+        {
+          "name": "APP_SECRET",
+          "secretRef": "secret://deployment/app-secret"
+        }
+      ],
+      "healthCheck": {
+        "type": "http",
+        "target": "http://localhost:3000/health",
+        "intervalSeconds": 15,
+        "timeoutSeconds": 5,
+        "retries": 4
+      },
+      "backup": {
+        "supported": true,
+        "procedureRef": "proc_backup_uptime_demo",
+        "restoreVerified": true
+      },
+      "rollback": {
+        "supported": true,
+        "procedureRef": "proc_rollback_uptime_demo",
+        "notes": "Restore app-data volume from pre-upgrade checkpoint, then compose down/up on prior digest."
+      }
+    },
+    "requirements": {
+      "architectures": [
+        "x86_64"
+      ],
+      "osFamilies": [
+        "linux"
+      ],
+      "minCpuCores": 1,
+      "minRamMb": 512,
+      "minStorageMb": 1024,
+      "minDockerVersion": "24.0.0",
+      "minComposeVersion": "2.20.0",
+      "privileged": false
+    }
+  },
+  "host": {
+    "schemaVersion": "1.0.0",
+    "hostId": "host_demo01",
+    "tenantScope": "tenant_demo",
+    "observedAt": "2026-10-21T09:00:00Z",
+    "expiresAt": "2026-10-21T09:30:00Z",
+    "os": {
+      "family": "linux",
+      "distribution": "ubuntu",
+      "version": "24.04"
+    },
+    "architecture": "x86_64",
+    "resources": {
+      "cpuCores": 4,
+      "ramMb": 8192,
+      "storageFreeMb": 51200
+    },
+    "docker": {
+      "engineVersion": "27.3.1",
+      "composeVersion": "2.29.7"
+    },
+    "occupiedPorts": [
+      22,
+      3000
+    ],
+    "filesystem": {
+      "type": "ext4",
+      "dockerRootWritable": true
+    },
+    "network": {
+      "mode": "byo-vps",
+      "publicExposureCapable": true
+    },
+    "provenance": {
+      "sourceType": "host-agent-probe",
+      "extractionMethod": "host-probe"
+    },
+    "redaction": {
+      "applied": true,
+      "secretValuesPresent": false
+    }
+  },
+  "expected": {
+    "decision": "reject",
+    "reasonCode": "occupied-port"
+  }
+}

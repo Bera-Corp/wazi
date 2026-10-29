@@ -1,0 +1,86 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "compositionId",
+    "runtime",
+    "packages"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "compositionId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtimeId",
+        "version",
+        "kind",
+        "simulationOnly",
+        "baseModelDigest",
+        "provides",
+        "baseResources",
+        "availableResources",
+        "allowedPermissions"
+      ],
+      "properties": {
+        "runtimeId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+        },
+        "kind": {
+          "enum": [
+            "simulator",
+            "world-model"
+          ]
+        },
+        "simulationOnly": {
+          "const": true
+        },
+        "baseModelDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "provides": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "sprint-manifest.schema.json#/$defs/interface"
+          }
+        },
+        "baseResources": {
+          "$ref": "sprint-manifest.schema.json#/$defs/resources"
+        },
+        "availableResources": {
+          "$ref": "sprint-manifest.schema.json#/$defs/resources"
+        },
+        "allowedPermissions": {
+          "$ref": "sprint-manifest.schema.json#/$defs/permissions"
+        }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "sprint-manifest.schema.json"
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/experimental/v0.1/world-composition.schema.json",
+  "title": "Experimental World Composition",
+  "description": "One explicit selection of package versions and runtime metadata; no network registry lookup or execution."
+}

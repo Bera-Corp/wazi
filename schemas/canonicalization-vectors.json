@@ -1,0 +1,51 @@
+{
+    "description":  "Cross-language canonical JSON test vectors (ADR-001). canonical is the exact UTF-8 string; sha256 is over its UTF-8 bytes, formatted as sha256:\u003chex\u003e. Any implementation (Python, Go, TypeScript) must reproduce both for every vector before signing or verifying Wazi records.",
+    "vectors":  [
+                    {
+                        "name":  "flat object, keys sorted",
+                        "input":  {
+                                      "b":  1,
+                                      "a":  "x"
+                                  },
+                        "canonical":  "{\"a\":\"x\",\"b\":1}",
+                        "sha256":  "sha256:cdab067e9f3beb32d1252cfd63e492592fecbf591b0d08cadb24bb17f3864246"
+                    },
+                    {
+                        "name":  "nested object and array order preserved",
+                        "input":  {
+                                      "z":  [
+                                                {
+                                                    "b":  2,
+                                                    "a":  1
+                                                },
+                                                3
+                                            ],
+                                      "a":  {
+                                                "y":  true,
+                                                "x":  null
+                                            }
+                                  },
+                        "canonical":  "{\"a\":{\"x\":null,\"y\":true},\"z\":[{\"a\":1,\"b\":2},3]}",
+                        "sha256":  "sha256:e55ac4cf3bbafb1052334dde8fae22af5fb43a718d94ec54da91387dccb91edd"
+                    },
+                    {
+                        "name":  "non-ASCII emitted as raw UTF-8",
+                        "input":  {
+                                      "name":  "Wazi â€” wazi",
+                                      "emoji":  "âœ“"
+                                  },
+                        "canonical":  "{\"emoji\":\"âœ“\",\"name\":\"Wazi â€” wazi\"}",
+                        "sha256":  "sha256:ede2effb65c03465c951661c4d976131e461e480804f62393f3e8c80c5768f46"
+                    },
+                    {
+                        "name":  "numbers without trailing zeros",
+                        "input":  {
+                                      "int":  42,
+                                      "float":  1.5,
+                                      "zero":  0
+                                  },
+                        "canonical":  "{\"float\":1.5,\"int\":42,\"zero\":0}",
+                        "sha256":  "sha256:90abd48915d21f0d2975dfc3c361a2fa297528fc0cdcf21f9254c9dce5304f62"
+                    }
+                ]
+}

@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0.0",
+  "envelopeId": "env_demo01",
+  "tenantScope": "tenant_demo",
+  "operation": "install",
+  "deploymentMode": "deterministic",
+  "applicationId": "org.example.uptime-demo",
+  "releaseVersion": "1.0.0",
+  "manifestDigest": "sha256:9011de079bbb6da635eb74b699dabb31ed87cc111e8992f46b4ba15e2744d49d",
+  "manifestReviewState": "signed",
+  "hostProfileRef": {
+    "recordId": "host_demo01",
+    "digest": "sha256:a86e74528a4290aad012d6fbb105f253a3a40409af1093c689a58c3b6c374996",
+    "version": "1.0.0"
+  },
+  "policyBundleRef": {
+    "recordId": "pol_default",
+    "digest": "sha256:63fb360fd98ef716b1332d40dec9339d53657181620ae678adecac59eb127162",
+    "version": "1.0.0"
+  },
+  "procedureRef": {
+    "recordId": "proc_install_uptime_demo",
+    "digest": "sha256:23a5c359747e3f497dfb24cf5d254d54ebc46f3d54d12b5e3f709efa7e97709c",
+    "version": "1.0.0"
+  },
+  "composeArtifactRef": {
+    "recordId": "art_uptime_demo_1",
+    "digest": "sha256:31745512abdc5399bf456743dd4d0a8d0958938c73a0ccf1cabb02304c5e0668",
+    "version": "1.0.0"
+  },
+  "selectedSuccessCaseRefs": [],
+  "selectedFailureCaseRefs": [],
+  "secretReferences": [
+    {
+      "secretRef": "secret://deployment/app-secret",
+      "injectionPoint": "compose environment APP_SECRET",
+      "format": "opaque string, minimum 32 characters",
+      "rotationRequired": false
+    }
+  ],
+  "allowedCapabilities": [
+    "manifest.verify",
+    "compose.pull",
+    "secret.inject",
+    "compose.up",
+    "proxy.configure",
+    "health.check",
+    "compose.down",
+    "proxy.remove",
+    "volume.backup"
+  ],
+  "forbiddenOperations": [
+    "shell.exec",
+    "volume.delete-without-checkpoint"
+  ],
+  "requiredApprovals": [
+    "public-exposure"
+  ],
+  "verificationChecks": [
+    {
+      "id": "check_health",
+      "type": "health",
+      "target": "http://localhost:3000/health"
+    }
+  ],
+  "rollbackStrategy": {
+    "supported": true,
+    "procedureRef": {
+      "recordId": "proc_rollback_uptime_demo",
+      "digest": "sha256:337ec77c0bbe93df3b39c5725ba5759a9197b2876154ca55fe81c1dbdbf6af51",
+      "version": "1.0.0"
+    },
+    "checkpointRequired": false,
+    "checkpoint": {
+      "backupId": "bak_demo_checkpoint",
+      "volume": "app-data"
+    }
+  },
+  "citedSources": [
+    {
+      "recordId": "src_demo_repo",
+      "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "recordId": "host_demo01",
+      "contentHash": "sha256:a86e74528a4290aad012d6fbb105f253a3a40409af1093c689a58c3b6c374996"
+    }
+  ],
+  "createdAt": "2026-10-21T09:01:00Z",
+  "expiresAt": "2026-10-21T09:30:00Z"
+}

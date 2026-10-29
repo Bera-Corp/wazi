@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0.0",
+  "artifactId": "art_uptime_demo_1",
+  "applicationId": "org.example.uptime-demo",
+  "releaseVersion": "1.0.0",
+  "manifestDigest": "sha256:9011de079bbb6da635eb74b699dabb31ed87cc111e8992f46b4ba15e2744d49d",
+  "renderer": {
+    "name": "wazi-compose-renderer",
+    "version": "0.2.0"
+  },
+  "composeDigest": "sha256:a975127ad6c890c8559d12438d12130bcfc0eb0acb8a78faf7a54fc86f287814",
+  "composeUri": "s3://wazi-artifacts-demo/art_uptime_demo_1/compose.yaml",
+  "projectName": "wazi-uptime-demo",
+  "services": [
+    "app"
+  ],
+  "createdAt": "2026-10-21T08:10:00Z",
+  "provenance": {
+    "sourceId": "src_demo_repo",
+    "sourceType": "wazi-manifest",
+    "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "extractionMethod": "deterministic-parser",
+    "applicationScope": "org.example.uptime-demo",
+    "versionScope": "1.0.0",
+    "observedAt": "2026-10-21T08:10:00Z",
+    "confidence": 1.0,
+    "authorityLevel": "wazi-reviewed",
+    "sensitivity": "public"
+  },
+  "localPath": "context/examples/compose-artifact.yaml"
+}

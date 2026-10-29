@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "evidenceId": "ev_demo_health01",
+  "deploymentCaseId": "case_demo01",
+  "type": "health-check",
+  "result": "pass",
+  "artifact": {
+    "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "uri": "s3://wazi-evidence-demo/case_demo01/health.json",
+    "mediaType": "application/json"
+  },
+  "tool": {
+    "name": "wazi-health-probe",
+    "version": "0.1.0"
+  },
+  "commitOrReleaseDigest": "sha256:9011de079bbb6da635eb74b699dabb31ed87cc111e8992f46b4ba15e2744d49d",
+  "createdAt": "2026-10-21T09:10:00Z",
+  "redaction": {
+    "applied": true,
+    "secretValuesPresent": false
+  }
+}

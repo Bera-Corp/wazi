@@ -1,0 +1,101 @@
+{
+  "schemaVersion": "1.0.0",
+  "procedureId": "proc_install_uptime_demo",
+  "version": "1.0.0",
+  "operation": "install",
+  "applicationId": "org.example.uptime-demo",
+  "capabilitySequence": [
+    "manifest.verify",
+    "compose.pull",
+    "volume.backup",
+    "secret.inject",
+    "compose.up",
+    "proxy.configure",
+    "health.check"
+  ],
+  "requiresCheckpoint": true,
+  "rollbackProcedureId": "proc_rollback_uptime_demo",
+  "provenance": {
+    "sourceId": "src_demo_repo",
+    "sourceType": "wazi-manifest",
+    "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "extractionMethod": "manual",
+    "applicationScope": "org.example.uptime-demo",
+    "versionScope": "1.0.0",
+    "observedAt": "2026-10-21T08:00:00Z",
+    "confidence": 0.95,
+    "authorityLevel": "wazi-reviewed",
+    "sensitivity": "public"
+  },
+  "reviewState": "signed",
+  "signature": {
+    "algorithm": "sigstore-cosign",
+    "value": "demo-signature-value-not-a-real-key",
+    "signedBy": "wazi-demo-signer",
+    "signedAt": "2026-10-21T08:05:00Z",
+    "payloadDigest": "sha256:fefe641d497085ff8219c22645f20dadd18cdec149f9fcc0b50c2ac2c5ebe4f8"
+  },
+  "parameterContracts": [
+    {
+      "capability": "manifest.verify",
+      "requiredParameters": [
+        "manifestDigest",
+        "requireReviewState"
+      ],
+      "fixedParameters": {
+        "requireReviewState": "signed"
+      }
+    },
+    {
+      "capability": "compose.pull",
+      "requiredParameters": [
+        "service",
+        "imageDigest"
+      ]
+    },
+    {
+      "capability": "volume.backup",
+      "requiredParameters": [
+        "volume",
+        "backupId"
+      ],
+      "fixedParameters": {
+        "backupId": "bak_demo_checkpoint",
+        "volume": "app-data"
+      }
+    },
+    {
+      "capability": "secret.inject",
+      "requiredParameters": [
+        "secretRef",
+        "targetEnv",
+        "service"
+      ]
+    },
+    {
+      "capability": "compose.up",
+      "requiredParameters": [
+        "service",
+        "projectName",
+        "composeArtifactDigest"
+      ]
+    },
+    {
+      "capability": "proxy.configure",
+      "requiredParameters": [
+        "hostname",
+        "upstreamPort",
+        "exposure"
+      ]
+    },
+    {
+      "capability": "health.check",
+      "requiredParameters": [
+        "target"
+      ],
+      "fixedParameters": {
+        "expectedStatus": 200
+      }
+    }
+  ]
+}

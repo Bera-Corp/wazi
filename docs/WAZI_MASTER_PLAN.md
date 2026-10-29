@@ -4,6 +4,12 @@
 
 
 **Research and product architecture report for Bera-Corp/Wazi**
+
+**29 October 2026 extension:** [Worlds and S-Prints](WAZI_SPRINTS_PLAN.md)
+adds composable world-model capabilities to the feature catalogue.
+Experimental contracts and offline resolution are implemented locally;
+model execution and marketplace support remain phased buildout. This
+extends the original research without changing its historical claims.
 **Hackathon context:** Meta Global AI Developer Hackathon, Indie Developer Track
 **Research date:** 21 October 2026
 **Language:** en-GB

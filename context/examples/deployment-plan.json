@@ -1,0 +1,186 @@
+{
+  "schemaVersion": "1.0.0",
+  "planId": "plan_demo01",
+  "envelopeId": "env_demo01",
+  "composeArtifactRef": {
+    "recordId": "art_uptime_demo_1",
+    "digest": "sha256:31745512abdc5399bf456743dd4d0a8d0958938c73a0ccf1cabb02304c5e0668",
+    "version": "1.0.0"
+  },
+  "operation": "install",
+  "origin": "deterministic-resolver",
+  "unresolvedQuestions": [],
+  "steps": [
+    {
+      "stepId": "step_verify_manifest",
+      "capability": "manifest.verify",
+      "parameters": {
+        "manifestDigest": "sha256:9011de079bbb6da635eb74b699dabb31ed87cc111e8992f46b4ba15e2744d49d",
+        "requireReviewState": "signed"
+      },
+      "citations": [
+        "src_demo_repo"
+      ],
+      "requiresApproval": false,
+      "failureConditions": [
+        "signature invalid",
+        "manifest revoked"
+      ],
+      "verification": {
+        "type": "exit-state",
+        "target": "manifest signature valid"
+      }
+    },
+    {
+      "stepId": "step_pull",
+      "capability": "compose.pull",
+      "parameters": {
+        "service": "app",
+        "imageDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "citations": [
+        "src_demo_repo",
+        "host_demo01"
+      ],
+      "requiresApproval": false,
+      "verification": {
+        "type": "exit-state",
+        "target": "image present at pinned digest"
+      }
+    },
+    {
+      "stepId": "step_checkpoint",
+      "capability": "volume.backup",
+      "parameters": {
+        "volume": "app-data",
+        "backupId": "bak_demo_checkpoint"
+      },
+      "citations": [
+        "host_demo01",
+        "proc_install_uptime_demo"
+      ],
+      "requiresApproval": false,
+      "failureConditions": [
+        "volume missing",
+        "backup write failed"
+      ],
+      "verification": {
+        "type": "exit-state",
+        "target": "pre-mutation checkpoint recorded"
+      }
+    },
+    {
+      "stepId": "step_inject_secret",
+      "capability": "secret.inject",
+      "parameters": {
+        "secretRef": "secret://deployment/app-secret",
+        "targetEnv": "APP_SECRET",
+        "service": "app"
+      },
+      "citations": [
+        "env_demo01"
+      ],
+      "requiresApproval": false,
+      "verification": {
+        "type": "exit-state",
+        "target": "secret injected without value in logs"
+      },
+      "rollbackStepId": "step_down"
+    },
+    {
+      "stepId": "step_up",
+      "capability": "compose.up",
+      "parameters": {
+        "service": "app",
+        "projectName": "wazi-uptime-demo",
+        "composeArtifactDigest": "sha256:a975127ad6c890c8559d12438d12130bcfc0eb0acb8a78faf7a54fc86f287814"
+      },
+      "citations": [
+        "src_demo_repo",
+        "host_demo01"
+      ],
+      "requiresApproval": false,
+      "verification": {
+        "type": "health",
+        "target": "http://localhost:3000/health"
+      },
+      "rollbackStepId": "step_down"
+    },
+    {
+      "stepId": "step_proxy",
+      "capability": "proxy.configure",
+      "parameters": {
+        "hostname": "uptime.example.com",
+        "upstreamPort": 3000,
+        "tls": "letsencrypt",
+        "exposure": "public"
+      },
+      "citations": [
+        "pol_default",
+        "host_demo01"
+      ],
+      "requiresApproval": true,
+      "verification": {
+        "type": "health",
+        "target": "https://uptime.example.com/health"
+      },
+      "rollbackStepId": "step_proxy_remove"
+    },
+    {
+      "stepId": "step_health",
+      "capability": "health.check",
+      "parameters": {
+        "target": "http://localhost:3000/health",
+        "expectedStatus": 200,
+        "timeoutSeconds": 10
+      },
+      "citations": [
+        "src_demo_repo"
+      ],
+      "requiresApproval": false,
+      "verification": {
+        "type": "health",
+        "target": "http://localhost:3000/health"
+      }
+    }
+  ],
+  "rollbackSteps": [
+    {
+      "stepId": "step_proxy_remove",
+      "capability": "proxy.remove",
+      "parameters": {
+        "hostname": "uptime.example.com"
+      },
+      "citations": [
+        "proc_rollback_uptime_demo"
+      ],
+      "requiresApproval": false,
+      "verification": {
+        "type": "exit-state",
+        "target": "proxy route removed"
+      }
+    },
+    {
+      "stepId": "step_down",
+      "capability": "compose.down",
+      "parameters": {
+        "service": "app",
+        "projectName": "wazi-uptime-demo",
+        "removeVolumes": false
+      },
+      "citations": [
+        "proc_rollback_uptime_demo"
+      ],
+      "requiresApproval": false,
+      "verification": {
+        "type": "exit-state",
+        "target": "service stopped, volumes preserved"
+      }
+    }
+  ],
+  "requiredApprovals": [
+    "public-exposure"
+  ],
+  "createdAt": "2026-10-21T09:02:00Z",
+  "expiresAt": "2026-10-21T09:30:00Z"
+}

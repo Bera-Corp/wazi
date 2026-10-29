@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/host-profile.schema.json",
+  "title": "Wazi Host Profile",
+  "description": "Redacted typed observation of one target host. Records what was observed (any OS); compatibility filters, not this schema, reject non-Linux hosts for the MVP. Expires quickly and is digest-bound into envelopes, so a changed host invalidates prior envelopes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "hostId", "tenantScope", "observedAt", "expiresAt",
+    "os", "architecture", "resources", "docker", "redaction"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "hostId": { "type": "string", "pattern": "^host_[A-Za-z0-9_-]+$" },
+    "tenantScope": { "type": "string", "minLength": 1 },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "os": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "version"],
+      "properties": {
+        "family": { "type": "string", "minLength": 1 },
+        "distribution": { "type": "string" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "architecture": { "type": "string", "minLength": 1, "description": "Observed architecture (x86_64, arm64, ...). Compatibility filters enforce support." },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cpuCores", "ramMb", "storageFreeMb"],
+      "properties": {
+        "cpuCores": { "type": "number", "exclusiveMinimum": 0 },
+        "ramMb": { "type": "integer", "minimum": 0 },
+        "storageFreeMb": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "docker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["engineVersion", "composeVersion"],
+      "properties": {
+        "engineVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "composeVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+      }
+    },
+    "occupiedPorts": {
+      "type": "array", "uniqueItems": true,
+      "items": { "type": "integer", "minimum": 1, "maximum": 65535 },
+      "default": []
+    },
+    "filesystem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "dockerRootWritable"],
+      "properties": {
+        "type": { "type": "string" },
+        "dockerRootWritable": { "type": "boolean" }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["local", "byo-vps", "nas"] },
+        "publicExposureCapable": { "type": "boolean" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "extractionMethod"],
+      "properties": {
+        "sourceType": { "const": "host-agent-probe" },
+        "extractionMethod": { "const": "host-probe" }
+      }
+    },
+    "redaction": { "$ref": "common.schema.json#/$defs/redaction" }
+  }
+}

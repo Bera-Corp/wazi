@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/eval-fixture.schema.json",
+  "title": "Wazi Evaluation Fixture",
+  "description": "Compatibility fixture carrying REAL contract records. The validator schema-checks manifest/host/policy with their actual schemas, then runs hard filters at evaluationTime (injected clock, never wall clock). Missing mandatory facts are schema failures mapped to missing-mandatory-fact.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "fixtureId", "description", "evaluationTime", "manifest", "host", "expected"],
+  "properties": {
+    "schemaVersion": { "const": "2.0.0" },
+    "fixtureId": { "type": "string", "pattern": "^eval_[a-z0-9-]+$" },
+    "description": { "type": "string", "minLength": 1 },
+    "evaluationTime": { "type": "string", "format": "date-time" },
+    "manifest": { "type": "object", "description": "Validated against app-manifest.schema.json by the validator." },
+    "host": { "type": "object", "description": "Validated against host-profile.schema.json by the validator." },
+    "policy": { "type": "object", "description": "Validated against policy-bundle.schema.json when present; defaults to the example policy." },
+    "registryState": { "enum": ["active", "revoked"], "default": "active", "description": "Revocation lives in the registry, not in the signed manifest." },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reasonCode"],
+      "properties": {
+        "decision": { "enum": ["accept", "reject"] },
+        "reasonCode": {
+          "enum": [
+            "compatible", "missing-mandatory-fact", "unsupported-os",
+            "wrong-architecture", "insufficient-cpu", "insufficient-ram",
+            "insufficient-storage", "occupied-port", "stale-host-profile",
+            "host-profile-expired", "revoked-manifest", "unsigned-manifest",
+            "unsupported-docker-version", "unsupported-compose-version",
+            "filesystem-not-writable", "privileged-not-supported", "licence-not-allowed"
+          ]
+        }
+      }
+    }
+  }
+}

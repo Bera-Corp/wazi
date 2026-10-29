@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/policy-bundle.schema.json",
+  "title": "Wazi Policy Bundle",
+  "description": "Versioned rules gating capabilities, approvals, exposure, and promotion. Loaded before retrieval; cannot be overridden by upstream text or planner output.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "policyId", "version", "tenantScope",
+    "allowedCapabilities", "approvalRules", "promotion"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "policyId": { "type": "string", "pattern": "^pol_[A-Za-z0-9_-]+$" },
+    "version": { "type": "string", "minLength": 1 },
+    "tenantScope": { "type": "string", "minLength": 1 },
+    "allowedCapabilities": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/capability" }
+    },
+    "deniedCapabilities": {
+      "type": "array", "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/capability" }, "default": []
+    },
+    "privilege": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowPrivilegedContainers": { "type": "boolean", "default": false },
+        "allowGenericShell": { "const": false }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowPublicExposure": { "type": "boolean", "default": false },
+        "requireApprovalForPublicExposure": { "type": "boolean", "default": true }
+      }
+    },
+    "approvalRules": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["action", "approval"],
+        "properties": {
+          "action": { "$ref": "common.schema.json#/$defs/approvalAction" },
+          "approval": { "enum": ["none", "user", "maintainer", "two-maintainers"] }
+        }
+      }
+    },
+    "signing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trustedSigners", "algorithms"],
+      "properties": {
+        "trustedSigners": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "algorithms": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["sigstore-cosign", "minisign", "openpgp"] } }
+      },
+      "description": "Signer trust for signed records in this tenant. Records signed by anyone else, or with another algorithm, are rejected semantically."
+    },
+    "licensing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requireExplicitLicense": { "type": "boolean", "default": true },
+        "allowedLicenses": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requireHumanReview", "requireRestoreTest", "requireRollbackTest"],
+      "properties": {
+        "requireHumanReview": { "type": "boolean" },
+        "requireSandboxTest": { "type": "boolean", "default": true },
+        "requireRestoreTest": { "type": "boolean" },
+        "requireRollbackTest": { "type": "boolean" },
+        "autoPromoteSingleSuccess": { "const": false }
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxHostProfileAgeMinutes"],
+      "properties": {
+        "maxHostProfileAgeMinutes": { "type": "integer", "minimum": 1 },
+        "rejectRevokedManifests": { "type": "boolean", "default": true },
+        "rejectExpiredContext": { "type": "boolean", "default": true }
+      }
+    }
+  }
+}

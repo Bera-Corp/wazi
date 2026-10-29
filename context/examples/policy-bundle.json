@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0.0",
+  "policyId": "pol_default",
+  "version": "1.0.0",
+  "tenantScope": "tenant_demo",
+  "allowedCapabilities": [
+    "host.probe",
+    "manifest.verify",
+    "compose.pull",
+    "compose.up",
+    "compose.down",
+    "compose.ps",
+    "compose.logs-redacted",
+    "volume.backup",
+    "volume.restore",
+    "health.check",
+    "secret.inject",
+    "proxy.configure",
+    "proxy.remove"
+  ],
+  "deniedCapabilities": [],
+  "privilege": {
+    "allowPrivilegedContainers": false,
+    "allowGenericShell": false
+  },
+  "network": {
+    "allowPublicExposure": true,
+    "requireApprovalForPublicExposure": true
+  },
+  "approvalRules": [
+    {
+      "action": "public-exposure",
+      "approval": "user"
+    },
+    {
+      "action": "destructive-storage",
+      "approval": "user"
+    },
+    {
+      "action": "migration",
+      "approval": "user"
+    },
+    {
+      "action": "upgrade",
+      "approval": "user"
+    },
+    {
+      "action": "rollback",
+      "approval": "user"
+    },
+    {
+      "action": "uninstall",
+      "approval": "user"
+    },
+    {
+      "action": "privilege-escalation",
+      "approval": "maintainer"
+    },
+    {
+      "action": "manifest-promotion",
+      "approval": "maintainer"
+    }
+  ],
+  "licensing": {
+    "requireExplicitLicense": true,
+    "allowedLicenses": []
+  },
+  "promotion": {
+    "requireHumanReview": true,
+    "requireSandboxTest": true,
+    "requireRestoreTest": true,
+    "requireRollbackTest": true,
+    "autoPromoteSingleSuccess": false
+  },
+  "freshness": {
+    "maxHostProfileAgeMinutes": 30,
+    "rejectRevokedManifests": true,
+    "rejectExpiredContext": true
+  },
+  "signing": {
+    "trustedSigners": [
+      "wazi-demo-signer"
+    ],
+    "algorithms": [
+      "sigstore-cosign"
+    ]
+  }
+}

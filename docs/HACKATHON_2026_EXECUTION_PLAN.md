@@ -4,6 +4,12 @@
 
 ## 1. Decision
 
+**29 October scope addition:** [Worlds and S-Prints](WAZI_SPRINTS_PLAN.md)
+is a long-term feature track. Its experimental offline contracts/resolver
+are locally implemented; model execution, GPU deployment and physical
+actuation are outside this hackathon acceptance path. The repository ->
+security -> remediation -> approved deployment story remains the build priority.
+
 For the hackathon, demonstrate **one reproducible, safe, Meta-model-powered journey**: source repository → governed audit and Wazi package manifest → real vulnerability finding → reviewed AI repair proposal → isolated tests and rescan → signed/pinned deployment plan → one supported Linux Docker Compose target → a public-facing app listing and feedback pathway → optional MCP status inspection.
 
 **Do not promise** arbitrary GitHub repository installation, universal native desktop support, multiple infrastructure providers, fully autonomous remediation, live marketplace revenue, a production crash SDK, or external app-store partnerships in this competition build. These belong in the master-plan phases.

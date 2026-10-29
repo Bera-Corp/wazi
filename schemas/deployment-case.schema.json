@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/deployment-case.schema.json",
+  "title": "Wazi Deployment Case",
+  "description": "Normalized episodic record of one deployment outcome. manifestDigest is the canonical digest of the manifest record, checked cross-record by the validator. Raw customer logs are never promoted into shared memory.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "caseId", "tenantScope", "applicationId", "releaseVersion",
+    "hostId", "operation", "outcome", "startedAt", "finishedAt",
+    "evidenceRefs", "redaction"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "caseId": { "type": "string", "pattern": "^case_[A-Za-z0-9_-]+$" },
+    "tenantScope": { "type": "string", "minLength": 1 },
+    "applicationId": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+    "releaseVersion": { "type": "string", "minLength": 1 },
+    "manifestDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
+    "hostId": { "type": "string", "pattern": "^host_[A-Za-z0-9_-]+$" },
+    "envelopeId": { "type": "string", "pattern": "^env_[A-Za-z0-9_-]+$" },
+    "planId": { "type": "string", "pattern": "^plan_[A-Za-z0-9_-]+$" },
+    "operation": { "enum": ["install", "upgrade", "backup", "restore", "rollback", "uninstall"] },
+    "outcome": { "enum": ["success", "failure", "aborted"] },
+    "failureSignatureId": { "type": "string" },
+    "startedAt": { "type": "string", "format": "date-time" },
+    "finishedAt": { "type": "string", "format": "date-time" },
+    "durationSeconds": { "type": "integer", "minimum": 0 },
+    "interventionCount": { "type": "integer", "minimum": 0, "default": 0 },
+    "evidenceRefs": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^ev_[A-Za-z0-9_-]+$" },
+      "default": []
+    },
+    "promotionState": { "$ref": "common.schema.json#/$defs/reviewState" },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied", "secretValuesPresent", "rawLogsIncluded"],
+      "properties": {
+        "applied": { "const": true },
+        "secretValuesPresent": { "const": false },
+        "rawLogsIncluded": { "const": false }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "outcome": { "const": "success" } } },
+      "then": { "properties": { "evidenceRefs": { "minItems": 1 } } }
+    }
+  ]
+}

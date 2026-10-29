@@ -1,0 +1,48 @@
+{
+  "fixtureId": "adv_host-invalid-timestamp",
+  "description": "Invalid date-time must fail format checking.",
+  "schema": "host-profile.schema.json",
+  "record": {
+    "schemaVersion": "1.0.0",
+    "hostId": "host_demo01",
+    "tenantScope": "tenant_demo",
+    "observedAt": "not-a-timestamp",
+    "expiresAt": "2026-10-21T09:30:00Z",
+    "os": {
+      "family": "linux",
+      "distribution": "ubuntu",
+      "version": "24.04"
+    },
+    "architecture": "x86_64",
+    "resources": {
+      "cpuCores": 4,
+      "ramMb": 8192,
+      "storageFreeMb": 51200
+    },
+    "docker": {
+      "engineVersion": "27.3.1",
+      "composeVersion": "2.29.7"
+    },
+    "occupiedPorts": [
+      22,
+      80,
+      443
+    ],
+    "filesystem": {
+      "type": "ext4",
+      "dockerRootWritable": true
+    },
+    "network": {
+      "mode": "byo-vps",
+      "publicExposureCapable": true
+    },
+    "provenance": {
+      "sourceType": "host-agent-probe",
+      "extractionMethod": "host-probe"
+    },
+    "redaction": {
+      "applied": true,
+      "secretValuesPresent": false
+    }
+  }
+}

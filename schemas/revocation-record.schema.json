@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/revocation-record.schema.json",
+  "title": "Wazi Revocation List",
+  "description": "Freshness-bound revocation data. Semantic validation fails closed when policy requires revocation checks and this list is missing, stale, or not yet valid. See docs/ADR-001-canonical-json-and-signing.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "listId", "generatedAt", "expiresAt", "entries"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "listId": { "type": "string", "pattern": "^revlist_[A-Za-z0-9_-]+$" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["applicationId", "revokedAt", "reason"],
+        "properties": {
+          "applicationId": { "type": "string" },
+          "releaseVersion": { "type": "string", "description": "When present, only that release is revoked." },
+          "manifestDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
+          "revokedAt": { "type": "string", "format": "date-time" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

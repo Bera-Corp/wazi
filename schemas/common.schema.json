@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/common.schema.json",
+  "title": "Wazi Common Definitions",
+  "description": "Single source for shared types. Every other contract $refs these definitions; do not redefine them locally.",
+  "$defs": {
+    "sha256Digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "secretRef": {
+      "type": "string",
+      "pattern": "^secret://[a-z0-9][a-z0-9/_-]*$",
+      "description": "Secret reference field only. Free-text fields elsewhere still require secret detection and runtime redaction."
+    },
+    "capability": {
+      "enum": [
+        "host.probe", "compose.pull", "compose.up", "compose.down", "compose.ps",
+        "compose.logs-redacted", "volume.backup", "volume.restore",
+        "health.check", "proxy.configure", "proxy.remove", "secret.inject", "manifest.verify"
+      ],
+      "description": "Closed allowlist. There is deliberately no shell capability."
+    },
+    "approvalAction": {
+      "enum": [
+        "install", "public-exposure", "destructive-storage", "migration",
+        "upgrade", "rollback", "uninstall", "privilege-escalation",
+        "manifest-promotion"
+      ]
+    },
+    "reviewState": {
+      "enum": ["observed", "candidate", "tested", "reviewed", "signed", "canary", "stable"]
+    },
+    "recordRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordId", "digest"],
+      "properties": {
+        "recordId": { "type": "string", "minLength": 1 },
+        "digest": { "$ref": "#/$defs/sha256Digest" },
+        "version": { "type": "string" }
+      },
+      "description": "Digest is the canonical-JSON SHA-256 of the referenced record. Changing the referenced record invalidates the reference."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId", "sourceType", "contentHash", "extractionMethod",
+        "observedAt", "confidence", "authorityLevel", "sensitivity"
+      ],
+      "properties": {
+        "sourceId": { "type": "string", "minLength": 1 },
+        "sourceType": {
+          "enum": [
+            "official-repository", "release-notes", "installation-docs",
+            "dockerfile", "compose-file", "container-registry", "licence-file",
+            "vulnerability-scan", "wazi-manifest", "host-agent-probe",
+            "deployment-evidence", "maintainer-note", "user-constraint"
+          ]
+        },
+        "contentHash": { "$ref": "#/$defs/sha256Digest" },
+        "extractionMethod": { "enum": ["manual", "deterministic-parser", "ai-extraction", "host-probe", "scan-tool"] },
+        "applicationScope": { "type": "string" },
+        "versionScope": { "type": "string" },
+        "observedAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "authorityLevel": { "enum": ["upstream-official", "wazi-reviewed", "observed", "inferred"] },
+        "sensitivity": { "enum": ["public", "internal", "confidential", "secret-reference"] }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["applied", "secretValuesPresent"],
+      "properties": {
+        "applied": { "const": true },
+        "secretValuesPresent": { "const": false }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value", "signedBy", "payloadDigest"],
+      "properties": {
+        "payloadDigest": {
+          "$ref": "#/$defs/sha256Digest",
+          "description": "Canonical-JSON digest of the signed record with its top-level signature field removed. See docs/ADR-001-canonical-json-and-signing.md. The signature value is computed over this digest in Phase 1; in Phase 0 the binding is checked, the cryptography is not."
+        },
+        "algorithm": { "enum": ["sigstore-cosign", "minisign", "openpgp"] },
+        "value": { "type": "string", "minLength": 16 },
+        "signedBy": { "type": "string", "minLength": 1 },
+        "signedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

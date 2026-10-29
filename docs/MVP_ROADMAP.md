@@ -63,3 +63,27 @@
 - reliability and intervention dashboards.
 
 **Alpha gates:** >=90% first-attempt success, >=95% rollback success, 100% restore verification for supported packages, zero secret exposure, and >=80% deterministic deployments.
+
+## Worlds extension: S-Print packages
+
+[Worlds and S-Prints](WAZI_SPRINTS_PLAN.md) adds environments, reusable skills,
+action/model adapters, planners, evaluators, datasets, guardrails and
+training recipes. The application roadmap remains the core delivery path.
+
+- **Phase 0 extension, local:** experimental 0.1.0 contracts, interface and
+  dependency negotiation, resource/permission checks and a synthetic
+  three-package composition. No package execution or measured model gains.
+- **After Phase 1:** WS-001 executable simulator proof with activation,
+  deactivation and reproducible before/after evidence.
+- **After Phase 2 and WS-001:** WS-002 one model integration with pinned
+  weights, exact interfaces, hardware checks and regression evidence.
+- **After Phase 4 and WS-002:** WS-003 signed, isolated, revocable activation
+  with quotas and verified rollback.
+- **After core private alpha:** WS-004 optional Worlds preview, capability
+  cards, evidence-backed compatibility and read-only MCP inspection.
+- **Research only:** WS-005 training and broader bridges. Physical control
+  needs separate design, approval and validation.
+
+The extension uses dependency gates, not unverified calendar commitments.
+See [the follow-up review](PHASE_0_REVIEW_2026-10-29.md) for remaining Phase 0
+completion blockers.

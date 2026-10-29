@@ -1,0 +1,375 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "packageId",
+    "version",
+    "name",
+    "depth",
+    "classes",
+    "simulationOnly",
+    "baseModelDigest",
+    "requires",
+    "provides",
+    "dependencies",
+    "resources",
+    "permissions",
+    "assets",
+    "evaluation",
+    "provenance",
+    "knownLimitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "0.1.0"
+    },
+    "status": {
+      "const": "experimental"
+    },
+    "packageId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "depth": {
+      "enum": [
+        "instruction",
+        "adapter",
+        "skill",
+        "environment",
+        "training"
+      ]
+    },
+    "classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "perception",
+          "world-conditioning",
+          "action-adapter",
+          "skill",
+          "planner",
+          "policy-adapter",
+          "world-adapter",
+          "environment",
+          "reward",
+          "evaluator",
+          "dataset",
+          "guardrail",
+          "renderer",
+          "training"
+        ]
+      }
+    },
+    "simulationOnly": {
+      "const": true
+    },
+    "baseModelDigest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "requires": {
+      "type": "array",
+      "minItems": 0,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "contractDigest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+          },
+          "contractDigest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "provides": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "contractDigest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+          },
+          "contractDigest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "minItems": 0,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "packageId",
+          "version",
+          "digest"
+        ],
+        "properties": {
+          "packageId": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ramMb",
+        "gpuVramMb"
+      ],
+      "properties": {
+        "ramMb": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gpuVramMb": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "minItems": 0,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "simulation",
+          "observe-simulation",
+          "model-weights",
+          "gpu",
+          "filesystem-read"
+        ]
+      }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "digest",
+          "kind"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "kind": {
+            "enum": [
+              "code",
+              "weights",
+              "scene",
+              "dataset",
+              "evaluator",
+              "training-recipe",
+              "policy"
+            ]
+          }
+        }
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suiteDigest",
+        "metrics"
+      ],
+      "properties": {
+        "suiteDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "metrics": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "comparison",
+              "threshold"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "comparison": {
+                "enum": [
+                  "gte",
+                  "lte"
+                ]
+              },
+              "threshold": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publisherId",
+        "sourceUri",
+        "sourceDigest",
+        "license"
+      ],
+      "properties": {
+        "publisherId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceUri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "sourceDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "knownLimitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/experimental/v0.1/sprint-manifest.schema.json",
+  "title": "Experimental Wazi S-Print Manifest",
+  "description": "Offline simulation package metadata. A valid record does not attest authenticity, evaluate models, load assets or authorise execution.",
+  "$defs": {
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ramMb",
+        "gpuVramMb"
+      ],
+      "properties": {
+        "ramMb": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gpuVramMb": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "contractDigest"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+        },
+        "contractDigest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "minItems": 0,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "simulation",
+          "observe-simulation",
+          "model-weights",
+          "gpu",
+          "filesystem-read"
+        ]
+      }
+    }
+  }
+}

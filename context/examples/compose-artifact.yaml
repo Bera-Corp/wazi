@@ -1,0 +1,12 @@
+# Rendered by wazi-compose-renderer 0.2.0 - do not edit by hand.
+services:
+  app:
+    image: ghcr.io/example/uptime-demo@sha256:2222222222222222222222222222222222222222222222222222222222222222
+    ports:
+    - 3000:3000
+    environment:
+    - APP_SECRET
+    volumes:
+    - app-data:/data
+volumes:
+  app-data: {}

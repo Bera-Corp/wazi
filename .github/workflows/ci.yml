@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      # Actions are pinned to immutable commit SHAs. Tags are noted for humans.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.11"
+      - name: Install pinned validator dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Validate contracts, examples, fixtures and adversarial cases
+        run: |
+          python scripts/validate.py
+          python scripts/test_adversarial.py
+          python scripts/test_sprints.py
+          python scripts/test_secret_scan.py
+          python scripts/test_render_compose.py
+      - name: JSON syntax gate
+        run: make validate
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.11"
+      # Dedicated in-repo scanner (scripts/secret_scan.py). External
+      # scanners such as gitleaks may be added only pinned by SHA/checksum;
+      # keep GitHub push protection enabled regardless.
+      - name: Dedicated secret scan
+        run: |
+          python scripts/secret_scan.py
+          python scripts/test_secret_scan.py
+          python scripts/test_render_compose.py

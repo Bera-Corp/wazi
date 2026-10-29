@@ -1,0 +1,215 @@
+{
+  "schemaVersion": "0.1.0",
+  "compositionId": "org.wazi.demo.warehouse",
+  "runtime": {
+    "runtimeId": "org.wazi.demo.simulator",
+    "version": "0.1.0",
+    "kind": "simulator",
+    "simulationOnly": true,
+    "baseModelDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "provides": [
+      {
+        "id": "wazi.demo.state",
+        "version": "1.0.0",
+        "contractDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    ],
+    "baseResources": {
+      "ramMb": 128,
+      "gpuVramMb": 0
+    },
+    "availableResources": {
+      "ramMb": 512,
+      "gpuVramMb": 0
+    },
+    "allowedPermissions": [
+      "simulation"
+    ]
+  },
+  "packages": [
+    {
+      "schemaVersion": "0.1.0",
+      "status": "experimental",
+      "packageId": "org.wazi.demo.planner",
+      "version": "0.1.0",
+      "name": "Planner",
+      "depth": "instruction",
+      "classes": [
+        "planner"
+      ],
+      "simulationOnly": true,
+      "baseModelDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requires": [
+        {
+          "id": "wazi.demo.navigation",
+          "version": "1.0.0",
+          "contractDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+        }
+      ],
+      "provides": [
+        {
+          "id": "wazi.demo.planner",
+          "version": "1.0.0",
+          "contractDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+        }
+      ],
+      "dependencies": [],
+      "resources": {
+        "ramMb": 64,
+        "gpuVramMb": 0
+      },
+      "permissions": [
+        "simulation"
+      ],
+      "assets": [
+        {
+          "path": "assets/planner.json",
+          "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "kind": "policy"
+        }
+      ],
+      "evaluation": {
+        "suiteDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "metrics": [
+          {
+            "name": "task-completion",
+            "comparison": "gte",
+            "threshold": 0.85
+          }
+        ]
+      },
+      "provenance": {
+        "publisherId": "wazi-demo",
+        "sourceUri": "https://example.invalid/wazi-demo",
+        "sourceDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "license": "MIT"
+      },
+      "knownLimitations": [
+        "Synthetic metadata fixture; assets and evaluation results are not supplied."
+      ]
+    },
+    {
+      "schemaVersion": "0.1.0",
+      "status": "experimental",
+      "packageId": "org.wazi.demo.navigation",
+      "version": "0.1.0",
+      "name": "Navigation",
+      "depth": "skill",
+      "classes": [
+        "skill"
+      ],
+      "simulationOnly": true,
+      "baseModelDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requires": [
+        {
+          "id": "wazi.demo.actions",
+          "version": "1.0.0",
+          "contractDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ],
+      "provides": [
+        {
+          "id": "wazi.demo.navigation",
+          "version": "1.0.0",
+          "contractDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+        }
+      ],
+      "dependencies": [],
+      "resources": {
+        "ramMb": 64,
+        "gpuVramMb": 0
+      },
+      "permissions": [
+        "simulation"
+      ],
+      "assets": [
+        {
+          "path": "assets/navigation.json",
+          "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "kind": "policy"
+        }
+      ],
+      "evaluation": {
+        "suiteDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "metrics": [
+          {
+            "name": "task-completion",
+            "comparison": "gte",
+            "threshold": 0.85
+          }
+        ]
+      },
+      "provenance": {
+        "publisherId": "wazi-demo",
+        "sourceUri": "https://example.invalid/wazi-demo",
+        "sourceDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "license": "MIT"
+      },
+      "knownLimitations": [
+        "Synthetic metadata fixture; assets and evaluation results are not supplied."
+      ]
+    },
+    {
+      "schemaVersion": "0.1.0",
+      "status": "experimental",
+      "packageId": "org.wazi.demo.warehouse",
+      "version": "0.1.0",
+      "name": "Warehouse",
+      "depth": "environment",
+      "classes": [
+        "environment",
+        "action-adapter"
+      ],
+      "simulationOnly": true,
+      "baseModelDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "requires": [
+        {
+          "id": "wazi.demo.state",
+          "version": "1.0.0",
+          "contractDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        }
+      ],
+      "provides": [
+        {
+          "id": "wazi.demo.actions",
+          "version": "1.0.0",
+          "contractDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ],
+      "dependencies": [],
+      "resources": {
+        "ramMb": 64,
+        "gpuVramMb": 0
+      },
+      "permissions": [
+        "simulation"
+      ],
+      "assets": [
+        {
+          "path": "assets/warehouse.json",
+          "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "kind": "policy"
+        }
+      ],
+      "evaluation": {
+        "suiteDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "metrics": [
+          {
+            "name": "task-completion",
+            "comparison": "gte",
+            "threshold": 0.85
+          }
+        ]
+      },
+      "provenance": {
+        "publisherId": "wazi-demo",
+        "sourceUri": "https://example.invalid/wazi-demo",
+        "sourceDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "license": "MIT"
+      },
+      "knownLimitations": [
+        "Synthetic metadata fixture; assets and evaluation results are not supplied."
+      ]
+    }
+  ]
+}

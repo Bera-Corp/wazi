@@ -16,6 +16,11 @@ coverage/
 .idea/
 .DS_Store
 
+# python environment (project-local, created by scripts/validate.*)
+.venv/
+__pycache__/
+*.py[cod]
+
 # language output
 node_modules/
 dist/

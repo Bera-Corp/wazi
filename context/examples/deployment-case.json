@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0.0",
+  "caseId": "case_demo01",
+  "tenantScope": "tenant_demo",
+  "applicationId": "org.example.uptime-demo",
+  "releaseVersion": "1.0.0",
+  "manifestDigest": "sha256:9011de079bbb6da635eb74b699dabb31ed87cc111e8992f46b4ba15e2744d49d",
+  "hostId": "host_demo01",
+  "envelopeId": "env_demo01",
+  "planId": "plan_demo01",
+  "operation": "install",
+  "outcome": "success",
+  "startedAt": "2026-10-21T09:03:00Z",
+  "finishedAt": "2026-10-21T09:10:00Z",
+  "durationSeconds": 420,
+  "interventionCount": 0,
+  "evidenceRefs": [
+    "ev_demo_health01"
+  ],
+  "promotionState": "observed",
+  "redaction": {
+    "applied": true,
+    "secretValuesPresent": false,
+    "rawLogsIncluded": false
+  }
+}

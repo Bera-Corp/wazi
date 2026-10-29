@@ -21,3 +21,17 @@ The model cannot access secret values or a generic shell. The control plane cann
 - Object storage: manifests, SBOMs, scans, evidence, redacted artifacts.
 - Optional pgvector: retrieval index only, never canonical truth.
 - Secret broker: credentials and generated values outside context storage.
+
+## Experimental Worlds extension
+
+The [S-Print feature plan](WAZI_SPRINTS_PLAN.md) extends registry and BYOC
+concepts with runtime profiles, capability negotiation and component graphs.
+The offline resolver matches interface IDs, versions and contract hashes,
+pins explicit dependencies, rejects cycles and reserves composition RAM/VRAM.
+
+World interfaces describe observation, state, dynamics, planning and actions.
+They are separate from host-agent capabilities and confer no execution
+permission. Prototype requests are simulation-only. Future loaders must
+verify signatures, asset bytes, licences, policy, isolation and evaluation
+evidence before activation. Base weights remain immutable; overlays and
+activation locks are versioned. No real model adapter is implemented yet.

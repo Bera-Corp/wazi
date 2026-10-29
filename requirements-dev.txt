@@ -1,0 +1,10 @@
+# Pinned development dependencies for contract validation.
+# Install: pip install -r requirements-dev.txt  (or use scripts/validate.ps1 / scripts/validate.sh)
+jsonschema==4.23.0
+rfc3339-validator==0.1.4
+referencing==0.35.1
+rpds-py==0.20.0
+attrs==24.2.0
+jsonschema-specifications==2024.10.1
+
+PyYAML==6.0.2

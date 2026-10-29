@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/evidence-record.schema.json",
+  "title": "Wazi Evidence Record",
+  "description": "Tamper-evident pointer to one verification artifact. Stores hashes and outcomes, not raw secret-bearing logs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "evidenceId", "deploymentCaseId", "type", "result",
+    "artifact", "tool", "createdAt", "redaction"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "evidenceId": { "type": "string", "pattern": "^ev_[A-Za-z0-9_-]+$" },
+    "deploymentCaseId": { "type": "string", "pattern": "^case_[A-Za-z0-9_-]+$" },
+    "type": {
+      "enum": ["sbom", "vulnerability-scan", "health-check", "backup", "restore-test", "rollback-test", "deployment-test", "signature-verification"]
+    },
+    "result": { "enum": ["pass", "fail", "inconclusive"] },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest"],
+      "properties": {
+        "digest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
+        "uri": { "type": "string" },
+        "mediaType": { "type": "string" }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "commitOrReleaseDigest": { "type": "string" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "redaction": { "$ref": "common.schema.json#/$defs/redaction" }
+  }
+}

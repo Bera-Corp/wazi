@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "1.0.0",
+  "procedureId": "proc_rollback_uptime_demo",
+  "version": "1.0.0",
+  "operation": "rollback",
+  "applicationId": "org.example.uptime-demo",
+  "capabilitySequence": [
+    "proxy.remove",
+    "compose.down"
+  ],
+  "requiresCheckpoint": false,
+  "provenance": {
+    "sourceId": "src_demo_repo",
+    "sourceType": "wazi-manifest",
+    "contentHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "extractionMethod": "manual",
+    "applicationScope": "org.example.uptime-demo",
+    "versionScope": "1.0.0",
+    "observedAt": "2026-10-21T08:00:00Z",
+    "confidence": 0.95,
+    "authorityLevel": "wazi-reviewed",
+    "sensitivity": "public"
+  },
+  "reviewState": "signed",
+  "signature": {
+    "algorithm": "sigstore-cosign",
+    "value": "demo-signature-value-not-a-real-key",
+    "signedBy": "wazi-demo-signer",
+    "signedAt": "2026-10-21T08:05:00Z",
+    "payloadDigest": "sha256:ff0980f8713131acb7e33f03c573b79a694dc08a776b51b5a0ff4e45537d7ef6"
+  },
+  "parameterContracts": [
+    {
+      "capability": "proxy.remove",
+      "requiredParameters": [
+        "hostname"
+      ],
+      "fixedParameters": {
+        "hostname": "uptime.example.com"
+      }
+    },
+    {
+      "capability": "compose.down",
+      "requiredParameters": [
+        "service",
+        "projectName"
+      ],
+      "fixedParameters": {
+        "removeVolumes": false
+      }
+    }
+  ]
+}
