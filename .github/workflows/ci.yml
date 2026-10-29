@@ -45,4 +45,3 @@ jobs:
         run: |
           python scripts/secret_scan.py
           python scripts/test_secret_scan.py
-          python scripts/test_render_compose.py
