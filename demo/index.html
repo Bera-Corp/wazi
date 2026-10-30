@@ -122,7 +122,7 @@
       '<dt>Manifest digest</dt><dd><span class="digest">' + short(D.records.manifest.digest) + '</span> &middot; review state ' + esc(D.records.manifest.reviewState) + '</dd>' +
       '<dt>Host</dt><dd><code>' + esc(D.records.host.hostId) + '</code> &middot; ' + esc((D.records.host.os || {}).family) + ' ' + esc(D.records.host.architecture) + ' &middot; ' + D.records.host.resources.cpuCores + ' CPU &middot; ' + D.records.host.resources.ramMb + ' MB &middot; ports ' + esc((D.records.host.occupiedPorts || []).join(", ")) + '</dd>' +
       '<dt>Request</dt><dd><code>' + esc(D.request.operation) + '</code> for tenant <code>' + esc(D.request.tenantScope) + '</code> at ' + esc(D.evaluationTime) + '</dd>' +
-      '<dt>Revocation</dt><dd>mode <code>' + esc(r.revocationMode || "n/a") + '</code> (metadata-validated = payloadDigest/signer/algorithm checked only, not cryptographic Cosign verification; fixture modes are labelled, never silent)</dd>' +
+      '<dt>Revocation</dt><dd>mode <code>' + esc(r.revocationMode || "unvalidated") + '</code> (unvalidated until live metadata checks pass; metadata-validated = payloadDigest/signer/algorithm checked only, not cryptographic Cosign verification; fixture modes are labelled, never silent)</dd>' +
       '<dt>Cases cited</dt><dd>' + r.successCases.length + ' success, ' + r.failureCases.length + ' failure — tenant-scoped to <code>' + esc(D.request.tenantScope) + '</code></dd>' +
       (r.decision !== "accept" ? '<dt>Stopped at</dt><dd><span class="verdict no">' + esc(r.blockedStage) + '</span> reason <code>' + esc(r.reasons.join(", ")) + '</code></dd>' : '') +
       '</dl>';

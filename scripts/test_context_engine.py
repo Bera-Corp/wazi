@@ -246,7 +246,7 @@ def main():
                                        plan=graph["plan"], live=True)
     check("live path blocks without a revocation snapshot",
           live_missing.decision == "blocked" and live_missing.blocked_stage == "revocation"
-          and live_missing.revocation_mode == "unchecked")
+          and live_missing.revocation_mode == "unvalidated")
     live_ok = ce.retrieve_context(request, manifest, host, policy, procedures, store,
                                   template_envelope=template, artifact=graph["artifact"],
                                   plan=graph["plan"], revocation_record=graph["revocations"],
@@ -260,20 +260,20 @@ def main():
     check("live path blocks without a persisted revocation cursor",
           live_no_cursor.decision == "blocked" and live_no_cursor.blocked_stage == "revocation"
           and live_no_cursor.reasons == ["revocation-sequence-cursor-required"]
-          and live_no_cursor.revocation_mode == "unchecked")
+          and live_no_cursor.revocation_mode == "unvalidated")
     live_rollback = ce.retrieve_context(request, manifest, host, policy, procedures, store,
                                         revocation_record=graph["revocations"], live=True,
                                         accepted_revocation_sequence=99)
     check("live path blocks a rolled-back revocation sequence",
           live_rollback.decision == "blocked" and live_rollback.blocked_stage == "revocation"
-          and live_rollback.revocation_mode == "unchecked")
+          and live_rollback.revocation_mode == "unvalidated")
     live_no_snapshot = ce.retrieve_context(request, manifest, host, policy, procedures, store,
                                            template_envelope=template, artifact=graph["artifact"],
                                            plan=graph["plan"], live=True,
                                            accepted_revocation_sequence=1, revocation_record=None)
     check("blocked live snapshot check is not labelled metadata-validated",
           live_no_snapshot.decision == "blocked"
-          and live_no_snapshot.revocation_mode == "unchecked")
+          and live_no_snapshot.revocation_mode == "unvalidated")
 
     poisoned = ce.CaseStore()
     poisoned.add_many(cases)
@@ -373,12 +373,120 @@ def main():
           schema_result.decision == "blocked" and schema_result.blocked_stage == "envelope"
           and schema_result.reasons == ["plan-schema-invalid"])
 
+    # Shared-validator cases: citations, approval declarations,
+    # rollback links, digests, and plan optionality.
+    bad_citation = copy.deepcopy(graph["plan"])
+    bad_citation["steps"][0]["citations"] = ["no_such_record"]
+    check("plan with unresolved citation blocks", plan_blocked(bad_citation))
+    check("shared validator reports the unresolved citation",
+          any("does not resolve" in e for e in validate.plan_binding_errors(
+              bad_citation, bound.envelope, manifest, host, policy,
+              graph["artifact"], procedures, approvals=None)))
+    check("shared validator accepts the valid plan",
+          validate.plan_binding_errors(
+              graph["plan"], bound.envelope, manifest, host, policy,
+              graph["artifact"], procedures, approvals=None) == []
+          and ce.plan_binding_errors(
+              graph["plan"], bound.envelope, procedures[0], procedures, policy,
+              manifest=manifest, artifact=graph["artifact"], host=host) == [])
+    public_denied = copy.deepcopy(policy)
+    public_denied["network"]["allowPublicExposure"] = False
+    public_result = ce.retrieve_context(request, manifest, host, public_denied, procedures, store,
+                                        template_envelope=template, artifact=graph["artifact"],
+                                        plan=graph["plan"], revocation_record=graph["revocations"])
+    check("public exposure denied by policy blocks despite approval declaration",
+          public_result.decision == "blocked" and public_result.blocked_stage == "envelope")
+    bad_rollback_link = copy.deepcopy(graph["plan"])
+    bad_rollback_link["steps"][4]["rollbackStepId"] = "step_missing"
+    check("plan with dangling rollback link blocks", plan_blocked(bad_rollback_link))
+    dup_steps = copy.deepcopy(graph["plan"])
+    dup_steps["steps"][1]["stepId"] = dup_steps["steps"][0]["stepId"]
+    check("plan with duplicate step ids blocks", plan_blocked(dup_steps))
+    bad_manifest_digest = copy.deepcopy(graph["plan"])
+    bad_manifest_digest["steps"][0]["parameters"]["manifestDigest"] = "sha256:" + "3" * 64
+    check("plan with mismatched manifest.verify digest blocks", plan_blocked(bad_manifest_digest))
+    bad_project = copy.deepcopy(graph["plan"])
+    bad_project["rollbackSteps"][1]["parameters"]["projectName"] = "another-project"
+    check("plan with mismatched rollback project blocks", plan_blocked(bad_project))
+
+    # Rollback binding, plan freshness, approval declarations.
+    def retrieve_with(plan_arg=None, template_arg=None, procs_arg=None):
+        return ce.retrieve_context(
+            request, manifest, host, policy, procs_arg or procedures, store,
+            template_envelope=template_arg or template, artifact=graph["artifact"],
+            plan=plan_arg if plan_arg is not None else graph["plan"],
+            revocation_record=graph["revocations"])
+
+    bad_rb_digest = copy.deepcopy(template)
+    bad_rb_digest["rollbackStrategy"]["procedureRef"]["digest"] = "sha256:" + "0" * 64
+    _r = retrieve_with(template_arg=bad_rb_digest)
+    check("plan with changed rollback procedure digest blocks",
+          _r.decision == "blocked" and _r.blocked_stage == "envelope")
+    clone_rb = resign({**copy.deepcopy(rollback), "procedureId": "proc_rollback_clone"})
+    clone_template = copy.deepcopy(template)
+    clone_template["rollbackStrategy"]["procedureRef"] = {
+        "recordId": "proc_rollback_clone",
+        "digest": validate.canonical_digest(clone_rb), "version": "1.0.0"}
+    _r = retrieve_with(template_arg=clone_template, procs_arg=[install, rollback, clone_rb])
+    check("rollback procedure ID mismatching forward rollbackProcedureId blocks",
+          _r.decision == "blocked" and _r.blocked_stage == "envelope")
+    unsigned_rb = copy.deepcopy(rollback)
+    unsigned_rb["reviewState"] = "candidate"
+    unsigned_rb.pop("signature", None)
+    _r = retrieve_with(procs_arg=[install, unsigned_rb])
+    check("unsigned rollback procedure blocks",
+          _r.decision == "blocked" and _r.blocked_stage == "envelope")
+    unsupported_template = copy.deepcopy(template)
+    unsupported_template["rollbackStrategy"]["supported"] = False
+    _r = retrieve_with(template_arg=unsupported_template)
+    check("rollback-supported flag mismatch with plan steps blocks",
+          _r.decision == "blocked" and _r.blocked_stage == "envelope")
+    future_plan = copy.deepcopy(graph["plan"])
+    future_plan["createdAt"] = "2026-10-21T09:06:00Z"
+    future_plan["expiresAt"] = "2026-10-21T09:36:00Z"
+    check("future plan blocks at injected evaluation time", plan_blocked(future_plan))
+    expired_plan = copy.deepcopy(graph["plan"])
+    expired_plan["expiresAt"] = "2026-10-21T09:04:00Z"
+    check("expired plan blocks at injected evaluation time", plan_blocked(expired_plan))
+    approval_mismatch = copy.deepcopy(graph["plan"])
+    approval_mismatch["requiredApprovals"] = []
+    check("plan approval declarations mismatching envelope block", plan_blocked(approval_mismatch))
+    no_plan = ce.retrieve_context(request, manifest, host, policy, procedures, store,
+                                  template_envelope=template, artifact=graph["artifact"],
+                                  revocation_record=graph["revocations"])
+    check("plan remains optional for retrieval acceptance",
+          no_plan.decision == "accept" and no_plan.envelope is not None)
+
+    # Revocation modes: default, fixture, and failed-metadata states.
+    check("early-blocked result defaults to unvalidated revocation mode",
+          blocked.decision == "blocked" and blocked.revocation_mode == "unvalidated")
+    check("fixture modes remain explicit",
+          bound.revocation_mode == "fixture-record" and revoked.revocation_mode == "fixture-no-record")
+    tampered_rev = copy.deepcopy(graph["revocations"])
+    tampered_rev["sequence"] = 2
+    failed_meta = ce.retrieve_context(request, manifest, host, policy, procedures, store,
+                                      template_envelope=template, artifact=graph["artifact"],
+                                      plan=graph["plan"], revocation_record=tampered_rev,
+                                      live=True, accepted_revocation_sequence=1)
+    check("failed live metadata check stays unvalidated",
+          failed_meta.decision == "blocked" and failed_meta.blocked_stage == "revocation"
+          and failed_meta.revocation_mode == "unvalidated")
+    stale_live_rev = copy.deepcopy(graph["revocations"])
+    stale_live_rev["expiresAt"] = "2026-10-21T08:00:00Z"
+    stale_live_rev = resign(stale_live_rev)
+    stale_live = ce.retrieve_context(request, manifest, host, policy, procedures, store,
+                                     template_envelope=template, artifact=graph["artifact"],
+                                     plan=graph["plan"], revocation_record=stale_live_rev,
+                                     live=True, accepted_revocation_sequence=1)
+    check("stale live snapshot stays unvalidated",
+          stale_live.decision == "blocked" and stale_live.revocation_mode == "unvalidated")
+
     metrics = ce.evaluate_retrieval()
     check("hard-engine metrics are named for what they measure",
           metrics["hardEngineDecisionAccuracy"] == 1 and metrics["hardEngineFalseCompatibleRate"] == 0)
     e2e = ce.evaluate_end_to_end()
     check("end-to-end adversarial retrieval has zero false accepts",
-          e2e["falseAcceptRate"] == 0 and e2e["endToEndAccuracy"] == 1 and e2e["scenarios"] >= 8)
+          e2e["falseAcceptRate"] == 0 and e2e["endToEndAccuracy"] == 1 and e2e["scenarios"] == 17)
 
     packet = ce.build_demo_packet()
     check("demo packet has one accept and two engine-produced denials",

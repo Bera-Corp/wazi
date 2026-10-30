@@ -146,7 +146,7 @@ window.WAZI_DEMO = {
  ],
  "metrics": {
   "fixtures": 17,
-  "correct": 13,
+  "correct": 17,
   "hardEngineDecisionAccuracy": 1.0,
   "hardEngineFalseCompatibleRate": 0.0,
   "staleRejectionRecall": 1.0,
@@ -356,7 +356,7 @@ window.WAZI_DEMO = {
     "correct": true
    }
   ],
-  "scenarios": 13,
+  "scenarios": 17,
   "endToEndAccuracy": 1.0,
   "falseAcceptRate": 0.0,
   "perScenario": [
@@ -486,6 +486,46 @@ window.WAZI_DEMO = {
      "binding-mismatch"
     ],
     "blockedStage": "bind",
+    "correct": true
+   },
+   {
+    "scenario": "plan-artifact-mismatch",
+    "expected": "not-accept",
+    "decision": "blocked",
+    "reasons": [
+     "envelope-plan-mismatch"
+    ],
+    "blockedStage": "envelope",
+    "correct": true
+   },
+   {
+    "scenario": "plan-citation-unresolved",
+    "expected": "not-accept",
+    "decision": "blocked",
+    "reasons": [
+     "envelope-plan-mismatch"
+    ],
+    "blockedStage": "envelope",
+    "correct": true
+   },
+   {
+    "scenario": "plan-unresolved-questions",
+    "expected": "not-accept",
+    "decision": "blocked",
+    "reasons": [
+     "envelope-plan-mismatch"
+    ],
+    "blockedStage": "envelope",
+    "correct": true
+   },
+   {
+    "scenario": "live-failed-metadata",
+    "expected": "not-accept",
+    "decision": "blocked",
+    "reasons": [
+     "revocation-signature-digest"
+    ],
+    "blockedStage": "revocation",
     "correct": true
    }
   ]

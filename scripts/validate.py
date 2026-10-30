@@ -350,6 +350,326 @@ def decide(manifest, host, policy, registry_state, eval_time):
     return "accept", "compatible"
 
 
+def plan_binding_errors(plan, envelope, manifest, host, policy, artifact,
+                        procedures, approvals=None, eval_time=None):
+    """Shared plan-binding validator (Phase 2 offline prototype).
+
+    Used by semantic_errors (canonical graph gate, approvals given)
+    and by scripts/context_engine.py (retrieval, plan optional,
+    approvals=None). Checks record references and digests, capability
+    sequences and permissions, parameter bindings to the manifest
+    and artifact, unresolved questions, rollback links and
+    compensation, citations, and approval declarations. When
+    approvals is a list, live digest-bound approval records are
+    required; when it is None, only declarations are checked and no
+    execution approval is implied. Plan schema validation stays at
+    the callers (load_examples / context_engine.plan_schema_errors).
+    Returns human-readable errors; empty means the plan binds.
+    """
+    errors = []
+    if plan is None:
+        return errors
+    envelope = envelope or {}
+    policy = policy or {}
+    manifest_digest = canonical_digest(manifest) if manifest else envelope.get("manifestDigest")
+    if isinstance(procedures, dict):
+        procs = dict(procedures)
+    else:
+        procs = {p["procedureId"]: p for p in (procedures or [])}
+    digests = {}
+    if host:
+        digests[host["hostId"]] = canonical_digest(host)
+    if policy.get("policyId"):
+        digests[policy["policyId"]] = canonical_digest(policy)
+    if artifact:
+        digests[artifact["artifactId"]] = canonical_digest(artifact)
+    for _proc in procs.values():
+        digests[_proc["procedureId"]] = canonical_digest(_proc)
+    tenant = envelope.get("tenantScope")
+
+    if artifact:
+        if plan.get("composeArtifactRef", {}).get("recordId") != artifact["artifactId"]:
+            errors.append("plan composeArtifactRef does not reference the envelope compose artifact")
+        elif plan["composeArtifactRef"].get("digest") != digests[artifact["artifactId"]]:
+            errors.append("plan composeArtifactRef digest mismatch")
+    else:
+        _env_ref = envelope.get("composeArtifactRef") or {}
+        if (plan.get("composeArtifactRef") or {}).get("recordId") != _env_ref.get("recordId"):
+            errors.append("plan composeArtifactRef does not reference the envelope compose artifact")
+        elif _env_ref.get("digest") and (plan.get("composeArtifactRef") or {}).get("digest") != _env_ref.get("digest"):
+            errors.append("plan composeArtifactRef digest mismatch")
+    if plan.get("envelopeId") != envelope.get("envelopeId"):
+        errors.append("plan envelopeId does not match envelope")
+    if plan.get("operation") != envelope.get("operation"):
+        errors.append("plan operation does not match envelope operation")
+    if plan.get("unresolvedQuestions"):
+        errors.append("plan has unresolvedQuestions; execution is blocked")
+
+    # Plan freshness at the injected evaluation time (outside the
+    # approval branch): ordering, future origin, and expiry.
+    _eval_dt = eval_time
+    if isinstance(_eval_dt, str):
+        _eval_dt = parse_time(_eval_dt, "evaluation time", [])
+    plan_start = parse_time(plan.get("createdAt"), "plan", errors) if plan.get("createdAt") else None
+    plan_expires = parse_time(plan.get("expiresAt"), "plan", errors) if plan.get("expiresAt") else None
+    if plan_start and plan_expires and plan_expires <= plan_start:
+        errors.append("plan: expiresAt must be after its start timestamp")
+    if _eval_dt and plan_start and plan_start > _eval_dt:
+        errors.append("plan cannot originate in the future")
+    if _eval_dt and plan_expires and _eval_dt >= plan_expires:
+        errors.append("plan is expired at evaluation time")
+
+    proc = procs.get(envelope.get("procedureRef", {}).get("recordId"))
+    if proc:
+        if proc.get("operation") != envelope.get("operation"):
+            errors.append("procedure operation does not match envelope operation")
+        if proc.get("applicationId") != envelope.get("applicationId"):
+            errors.append("procedure applicationId does not match envelope applicationId")
+        if proc.get("reviewState") not in ("signed", "canary", "stable"):
+            errors.append("procedure must have a signed review state")
+        if [s.get("capability") for s in plan.get("steps", [])] != proc.get("capabilitySequence"):
+            errors.append("forward capability sequence does not match procedure order")
+
+    allowed_env = set(envelope.get("allowedCapabilities", []))
+    allowed_policy = set(policy.get("allowedCapabilities", []))
+    denied_policy = set(policy.get("deniedCapabilities", []))
+    forbidden = set(envelope.get("forbiddenOperations", []))
+    if allowed_env - (allowed_policy - denied_policy):
+        errors.append("envelope capabilities exceed policy allowlist or include policy denials")
+    steps = plan.get("steps", [])
+    rollback_steps = plan.get("rollbackSteps", [])
+    step_ids = {s["stepId"] for s in steps}
+    rollback_ids = {s["stepId"] for s in rollback_steps}
+    if len(step_ids) != len(steps) or len(rollback_ids) != len(rollback_steps):
+        errors.append("step ids must be unique within each sequence")
+    rollback_strategy = envelope.get("rollbackStrategy") or {}
+    rollback_ref = rollback_strategy.get("procedureRef")
+    rollback_supported = rollback_strategy.get("supported")
+    rollback_proc = procs.get((rollback_ref or {}).get("recordId"))
+    if rollback_ref:
+        _rid = rollback_ref.get("recordId")
+        if _rid not in procs:
+            errors.append(f"rollback procedure '{_rid}' has no typed procedure record")
+        elif rollback_ref.get("digest") != digests.get(_rid):
+            errors.append(f"rollback procedureRef digest mismatch for '{_rid}'")
+        if proc and proc.get("rollbackProcedureId") and _rid != proc.get("rollbackProcedureId"):
+            errors.append("rollback procedure does not match forward procedure rollbackProcedureId")
+    if proc and proc.get("rollbackProcedureId") and not rollback_ref:
+        errors.append("forward procedure declares rollbackProcedureId but envelope has no rollback procedureRef")
+    if rollback_supported and not rollback_ref:
+        errors.append("rollback is supported but envelope has no rollback procedureRef")
+    if rollback_supported and not rollback_steps:
+        errors.append("rollback is supported but plan has no rollbackSteps")
+    if rollback_supported is False and rollback_steps:
+        errors.append("plan has rollbackSteps but envelope rollback is not supported")
+    if not rollback_proc and proc and proc.get("rollbackProcedureId"):
+        rollback_proc = procs.get(proc.get("rollbackProcedureId"))
+    if rollback_proc:
+        if rollback_proc.get("reviewState") not in ("signed", "canary", "stable"):
+            errors.append("rollback procedure must have a signed review state")
+        _rb_sig = rollback_proc.get("signature")
+        if rollback_proc.get("reviewState") in ("signed", "canary", "stable") and not _rb_sig:
+            errors.append(f"rollback procedure {rollback_proc['procedureId']} is in a signed state but has no signature")
+        if _rb_sig:
+            _rb_unsigned = {k: v for k, v in rollback_proc.items() if k != "signature"}
+            if _rb_sig.get("payloadDigest") != canonical_digest(_rb_unsigned):
+                errors.append(f"rollback procedure {rollback_proc['procedureId']}: signature payloadDigest does not match the signed record content")
+            _signing = policy.get("signing") or {}
+            if _signing:
+                if _rb_sig.get("signedBy") not in _signing.get("trustedSigners", []):
+                    errors.append(f"rollback procedure {rollback_proc['procedureId']}: signer '{_rb_sig.get('signedBy')}' is not in policy trustedSigners")
+                if _rb_sig.get("algorithm") not in _signing.get("algorithms", []):
+                    errors.append(f"rollback procedure {rollback_proc['procedureId']}: signature algorithm is not allowed by policy")
+    if rollback_proc and rollback_steps:
+        if [s.get("capability") for s in rollback_steps] != rollback_proc.get("capabilitySequence"):
+            errors.append("rollback capability sequence does not match procedure order")
+        if rollback_proc.get("operation") != "rollback" or (manifest and rollback_proc.get("applicationId") != manifest.get("appId")):
+            errors.append("rollback procedure operation/application does not match graph")
+    if step_ids & rollback_ids:
+        errors.append("step ids collide between steps and rollbackSteps")
+    for step in steps + rollback_steps:
+        cap = step.get("capability")
+        if cap not in allowed_env:
+            errors.append(f"step {step.get('stepId')}: capability '{cap}' not allowed by envelope")
+        if cap not in allowed_policy or cap in denied_policy:
+            errors.append(f"step {step.get('stepId')}: capability '{cap}' not allowed by policy")
+        if cap in forbidden:
+            errors.append(f"step {step.get('stepId')}: capability '{cap}' is forbidden by envelope")
+        if proc and cap not in proc.get("capabilitySequence", []) and step in steps:
+            errors.append(f"step {step.get('stepId')}: capability '{cap}' not in procedure sequence")
+    for step in steps:
+        target = step.get("rollbackStepId")
+        if target:
+            if target in step_ids:
+                errors.append(f"step {step['stepId']}: rollbackStepId '{target}' points into steps, not rollbackSteps")
+            elif target not in rollback_ids:
+                errors.append(f"step {step['stepId']}: rollbackStepId '{target}' does not exist in rollbackSteps")
+    for step in rollback_steps:
+        if step.get("rollbackStepId"):
+            errors.append(f"rollback step {step['stepId']} must not itself declare a rollbackStepId")
+
+    image_digests = {}
+    if manifest:
+        image_digests = {img["service"]: img["digest"] for img in manifest.get("release", {}).get("images", [])}
+    for step in steps + rollback_steps:
+        params = step.get("parameters", {})
+        if artifact and "service" in params and params["service"] not in artifact.get("services", []):
+            errors.append(f"step {step['stepId']}: service is not declared in compose artifact")
+        if artifact and "projectName" in params and params["projectName"] != artifact.get("projectName"):
+            errors.append(f"step {step['stepId']}: projectName does not match artifact")
+        if step.get("capability") == "manifest.verify" and params.get("manifestDigest") != manifest_digest:
+            errors.append(f"step {step['stepId']}: manifest.verify digest does not match manifest")
+        if manifest and step.get("capability") == "compose.pull" and params.get("imageDigest") != image_digests.get(params.get("service")):
+            errors.append(f"step {step['stepId']}: compose.pull imageDigest does not match manifest image digest")
+        if step.get("capability") == "compose.up":
+            if artifact and params.get("composeArtifactDigest") != artifact.get("composeDigest"):
+                errors.append(f"step {step['stepId']}: compose.up composeArtifactDigest does not match artifact")
+            if artifact and params.get("projectName") != artifact.get("projectName"):
+                errors.append(f"step {step['stepId']}: compose.up projectName does not match artifact")
+        if step.get("capability") == "secret.inject":
+            known = {ref["secretRef"] for ref in envelope.get("secretReferences", [])}
+            if params.get("secretRef") not in known:
+                errors.append(f"step {step['stepId']}: secret.inject references a secretRef not declared in the envelope")
+            if manifest:
+                declared = {(e.get("name"), e.get("secretRef")) for e in manifest.get("release", {}).get("environment", [])}
+                if (params.get("targetEnv"), params.get("secretRef")) not in declared:
+                    errors.append(f"step {step['stepId']}: secret target does not match manifest environment")
+                _services = [img["service"] for img in manifest.get("release", {}).get("images", [])]
+                _sole = _services[0] if len(_services) == 1 else None
+                _owned = {(e.get("service") or _sole, e.get("name"), e.get("secretRef")) for e in manifest.get("release", {}).get("environment", [])}
+                if (params.get("service"), params.get("targetEnv"), params.get("secretRef")) not in _owned:
+                    errors.append(f"step {step['stepId']}: secret.inject (service, environment, secretRef) does not match a manifest environment entry owned by that service")
+
+    known_ids = set(digests) | {envelope.get("envelopeId"), plan.get("planId"), manifest.get("appId") if manifest else None}
+    if manifest and manifest.get("provenance"):
+        known_ids.add(manifest["provenance"].get("sourceId"))
+    known_ids.discard(None)
+    for step in steps + rollback_steps:
+        for citation in step.get("citations", []):
+            if citation not in known_ids:
+                errors.append(f"step {step.get('stepId')}: citation '{citation}' does not resolve to a known record")
+
+    if set(envelope.get("requiredApprovals", [])) != set(plan.get("requiredApprovals", [])):
+        errors.append("deployment plan requiredApprovals do not match the envelope")
+    required_actions = set(envelope.get("requiredApprovals", [])) | set(plan.get("requiredApprovals", []))
+    if manifest and any(p.get("exposure") == "public" for p in manifest.get("release", {}).get("ports", [])):
+        required_actions.add("public-exposure")
+    public_sources = bool(manifest and any(p.get("exposure") == "public" for p in manifest.get("release", {}).get("ports", []))) or any(
+        s.get("capability") == "proxy.configure" and s.get("parameters", {}).get("exposure") == "public" for s in steps)
+    if public_sources and (policy.get("network") or {}).get("allowPublicExposure") is not True:
+        errors.append("public exposure is denied by policy; approval cannot override denial")
+    for step in steps + rollback_steps:
+        params = step.get("parameters", {})
+        if step.get("capability") == "proxy.configure" and params.get("exposure") == "public":
+            required_actions.add("public-exposure")
+        if step.get("capability") == "compose.down" and params.get("removeVolumes"):
+            required_actions.add("destructive-storage")
+        if step.get("capability") == "volume.restore":
+            required_actions.add("destructive-storage")
+    if plan.get("operation") in ("upgrade", "rollback", "uninstall"):
+        required_actions.add(plan["operation"])
+    actions = [r["action"] for r in policy.get("approvalRules", [])]
+    if len(set(actions)) != len(actions):
+        errors.append("policy has duplicate approval rules for an action")
+    if approvals is not None:
+        rules = {rule["action"]: rule["approval"] for rule in policy.get("approvalRules", [])}
+        plan_digest = canonical_digest(plan)
+        for action in sorted(required_actions):
+            needed = rules.get(action, "user")
+            if needed == "none":
+                continue
+            matches = [
+                a for a in approvals
+                if a.get("action") == action and a.get("decision") == "approved"
+                and a.get("planId") == plan["planId"] and a.get("planDigest") == plan_digest
+                and a.get("envelopeId") == envelope["envelopeId"]
+                and a.get("envelopeDigest") == canonical_digest(envelope)
+                and a.get("tenantScope") == tenant and host and a.get("hostId") == host["hostId"]
+                and manifest and a.get("applicationId") == manifest["appId"]
+            ]
+            if needed in ("maintainer", "two-maintainers"):
+                matches = [a for a in matches if a.get("approver", {}).get("role") == "maintainer"]
+            if not matches:
+                errors.append(f"action '{action}' has no approval bound to this exact plan digest, tenant, host, and envelope")
+                continue
+            live = []
+            for approval in matches:
+                approved = parse_time(approval.get("approvedAt"), "approval", errors)
+                expires = parse_time(approval.get("expiresAt"), "approval", errors)
+                if approved and expires and eval_time and approved <= eval_time < expires:
+                    live.append(approval)
+            if not live:
+                errors.append(f"action '{action}' approval is expired or not yet valid at evaluation time")
+            if needed == "two-maintainers" and len({a["approver"]["approverId"] for a in live}) < 2:
+                errors.append(f"action '{action}' requires two distinct live maintainer approvals")
+
+    def check_contracts(sequence_steps, procedure, label):
+        if not procedure:
+            return
+        contracts = {c["capability"]: c for c in procedure.get("parameterContracts", [])}
+        sequence = procedure.get("capabilitySequence", [])
+        if set(contracts) != set(sequence):
+            errors.append(f"{label}: parameterContracts must cover exactly the capability sequence")
+        for step in sequence_steps:
+            contract = contracts.get(step.get("capability"))
+            if not contract:
+                continue
+            params = step.get("parameters", {})
+            missing = [name for name in contract.get("requiredParameters", []) if name not in params]
+            if missing:
+                errors.append(f"step {step['stepId']}: missing procedure-required parameters {missing}")
+            for key, value in (contract.get("fixedParameters") or {}).items():
+                if params.get(key) != value:
+                    errors.append(f"step {step['stepId']}: parameter '{key}' must equal the procedure-fixed value")
+    check_contracts(steps, proc, "forward procedure")
+    check_contracts(rollback_steps, rollback_proc, "rollback procedure")
+
+    compensation_contract = {
+        "compose.up": ("compose.down", ("service", "projectName")),
+        "compose.down": ("compose.up", ("service", "projectName")),
+        "secret.inject": ("compose.down", ("service",)),
+        "proxy.configure": ("proxy.remove", ("hostname",)),
+        "volume.restore": ("volume.backup", ("volume",)),
+    }
+    rollback_by_id = {s["stepId"]: s for s in rollback_steps}
+    for step in steps:
+        expected = compensation_contract.get(step.get("capability"))
+        if not expected:
+            continue
+        target_id = step.get("rollbackStepId")
+        if not target_id:
+            errors.append(f"step {step['stepId']}: mutating capability '{step.get('capability')}' has no compensation (rollbackStepId)")
+            continue
+        target = rollback_by_id.get(target_id)
+        if target is None:
+            continue
+        want_capability, resource_keys = expected
+        if target.get("capability") != want_capability:
+            errors.append(f"step {step['stepId']}: compensation must be '{want_capability}' but rollbackStepId points to '{target.get('capability')}'")
+            continue
+        for key in resource_keys:
+            if target.get("parameters", {}).get(key) != step.get("parameters", {}).get(key):
+                errors.append(f"step {step['stepId']}: compensation resource '{key}' does not match the mutated resource")
+
+    needs_checkpoint = any(p.get("requiresCheckpoint") for p in procs.values()) or (envelope.get("rollbackStrategy") or {}).get("checkpointRequired")
+    if needs_checkpoint:
+        checkpoint = (envelope.get("rollbackStrategy") or {}).get("checkpoint")
+        if not checkpoint:
+            errors.append("checkpoint-dependent procedure has no typed checkpoint reference in the envelope")
+        else:
+            mutating_caps = {"compose.up", "compose.down", "volume.restore"}
+            first_mutation = next((i for i, s in enumerate(steps) if s.get("capability") in mutating_caps), len(steps))
+            matched = any(
+                s.get("capability") == "volume.backup"
+                and s.get("parameters", {}).get("backupId") == checkpoint.get("backupId")
+                and s.get("parameters", {}).get("volume") == checkpoint.get("volume")
+                and i < first_mutation
+                for i, s in enumerate(steps))
+            if not matched:
+                errors.append("no volume.backup checkpoint step matching the envelope checkpoint reference before the first mutation")
+    return errors
+
+
 def semantic_errors(records, eval_time):
     """Cross-record validation of one deployment graph.
 
@@ -395,11 +715,6 @@ def semantic_errors(records, eval_time):
             errors.append(f"rollback procedure '{rid}' has no typed procedure record")
         elif rollback_ref.get("digest") != digests.get(rid):
             errors.append(f"rollback procedureRef digest mismatch for '{rid}'")
-    if plan.get("composeArtifactRef", {}).get("recordId") != artifact["artifactId"]:
-        errors.append("plan composeArtifactRef does not reference the envelope compose artifact")
-    elif plan["composeArtifactRef"].get("digest") != digests[artifact["artifactId"]]:
-        errors.append("plan composeArtifactRef digest mismatch")
-
     # Identity and tenant agreement.
     if envelope.get("applicationId") != manifest.get("appId"):
         errors.append("envelope applicationId does not match manifest appId")
@@ -413,97 +728,20 @@ def semantic_errors(records, eval_time):
     if len(tenants) != 1:
         errors.append(f"tenant scopes disagree across envelope/host/policy: {sorted(t for t in tenants if t)}")
     tenant = envelope.get("tenantScope")
-    if plan.get("envelopeId") != envelope.get("envelopeId"):
-        errors.append("plan envelopeId does not match envelope")
-    if plan.get("operation") != envelope.get("operation"):
-        errors.append("plan operation does not match envelope operation")
 
-    # Procedure agreement.
-    proc = procedures.get(envelope.get("procedureRef", {}).get("recordId"))
-    if proc:
-        if proc.get("operation") != envelope.get("operation"):
-            errors.append("procedure operation does not match envelope operation")
-        if proc.get("applicationId") != envelope.get("applicationId"):
-            errors.append("procedure applicationId does not match envelope applicationId")
-        if proc.get("reviewState") not in ("signed", "canary", "stable"):
-            errors.append("procedure must have a signed review state")
-        if [s.get("capability") for s in plan.get("steps", [])] != proc.get("capabilitySequence"):
-            errors.append("forward capability sequence does not match procedure order")
-
-    # Capability authorisation: plan <= envelope <= policy, minus denials.
-    allowed_env = set(envelope.get("allowedCapabilities", []))
-    allowed_policy = set(policy.get("allowedCapabilities", []))
-    denied_policy = set(policy.get("deniedCapabilities", []))
-    forbidden = set(envelope.get("forbiddenOperations", []))
-    if allowed_env - (allowed_policy - denied_policy):
-        errors.append("envelope capabilities exceed policy allowlist or include policy denials")
+    # Shared plan binding (procedure, capabilities, rollback links,
+    # parameters, citations, approvals, contracts, compensation,
+    # checkpoint): see plan_binding_errors above.
+    errors.extend(plan_binding_errors(
+        plan, envelope, manifest, host, policy, artifact, procedures,
+        approvals=approvals, eval_time=eval_time))
     steps = plan.get("steps", [])
     rollback_steps = plan.get("rollbackSteps", [])
-    step_ids = {s["stepId"] for s in steps}
-    rollback_ids = {s["stepId"] for s in rollback_steps}
-    if len(step_ids) != len(steps) or len(rollback_ids) != len(rollback_steps):
-        errors.append("step ids must be unique within each sequence")
-    rollback_proc = procedures.get((rollback_ref or {}).get("recordId"))
-    if rollback_proc and rollback_steps:
-        if [s.get("capability") for s in rollback_steps] != rollback_proc.get("capabilitySequence"):
-            errors.append("rollback capability sequence does not match procedure order")
-        if rollback_proc.get("operation") != "rollback" or rollback_proc.get("applicationId") != manifest.get("appId"):
-            errors.append("rollback procedure operation/application does not match graph")
-    if step_ids & rollback_ids:
-        errors.append("step ids collide between steps and rollbackSteps")
-    for step in steps + rollback_steps:
-        cap = step.get("capability")
-        if cap not in allowed_env:
-            errors.append(f"step {step.get('stepId')}: capability '{cap}' not allowed by envelope")
-        if cap not in allowed_policy or cap in denied_policy:
-            errors.append(f"step {step.get('stepId')}: capability '{cap}' not allowed by policy")
-        if cap in forbidden:
-            errors.append(f"step {step.get('stepId')}: capability '{cap}' is forbidden by envelope")
-        if proc and cap not in proc.get("capabilitySequence", []) and step in steps:
-            errors.append(f"step {step.get('stepId')}: capability '{cap}' not in procedure sequence")
-    for step in steps:
-        target = step.get("rollbackStepId")
-        if target:
-            if target in step_ids:
-                errors.append(f"step {step['stepId']}: rollbackStepId '{target}' points into steps, not rollbackSteps")
-            elif target not in rollback_ids:
-                errors.append(f"step {step['stepId']}: rollbackStepId '{target}' does not exist in rollbackSteps")
-    for step in rollback_steps:
-        if step.get("rollbackStepId"):
-            errors.append(f"rollback step {step['stepId']} must not itself declare a rollbackStepId")
 
-    # Step parameter agreement with the manifest and artifact.
-    image_digests = {img["service"]: img["digest"] for img in manifest.get("release", {}).get("images", [])}
-    for step in steps + rollback_steps:
-        params = step.get("parameters", {})
-        if "service" in params and params["service"] not in artifact.get("services", []):
-            errors.append(f"step {step['stepId']}: service is not declared in compose artifact")
-        if "projectName" in params and params["projectName"] != artifact.get("projectName"):
-            errors.append(f"step {step['stepId']}: projectName does not match artifact")
-        if step.get("capability") == "manifest.verify" and params.get("manifestDigest") != manifest_digest:
-            errors.append(f"step {step['stepId']}: manifest.verify digest does not match manifest")
-        if step.get("capability") == "compose.pull" and params.get("imageDigest") != image_digests.get(params.get("service")):
-            errors.append(f"step {step['stepId']}: compose.pull imageDigest does not match manifest image digest")
-        if step.get("capability") == "compose.up":
-            if params.get("composeArtifactDigest") != artifact.get("composeDigest"):
-                errors.append(f"step {step['stepId']}: compose.up composeArtifactDigest does not match artifact")
-            if params.get("projectName") != artifact.get("projectName"):
-                errors.append(f"step {step['stepId']}: compose.up projectName does not match artifact")
-        if step.get("capability") == "secret.inject":
-            known = {ref["secretRef"] for ref in envelope.get("secretReferences", [])}
-            if params.get("secretRef") not in known:
-                errors.append(f"step {step['stepId']}: secret.inject references a secretRef not declared in the envelope")
-            declared = {(e.get("name"), e.get("secretRef")) for e in manifest.get("release", {}).get("environment", [])}
-            if (params.get("targetEnv"), params.get("secretRef")) not in declared:
-                errors.append(f"step {step['stepId']}: secret target does not match manifest environment")
-
-    # Citations must resolve to records in the graph.
+    # Envelope citations must resolve to records in the graph
+    # (plan step citations are checked by plan_binding_errors).
     known_ids = set(digests) | {envelope["envelopeId"], plan["planId"], manifest["appId"]}
     known_ids |= {p.get("provenance", {}).get("sourceId") for p in [manifest] if p.get("provenance")}
-    for step in steps + rollback_steps:
-        for citation in step.get("citations", []):
-            if citation not in known_ids:
-                errors.append(f"step {step.get('stepId')}: citation '{citation}' does not resolve to a known record")
     for source in envelope.get("citedSources", []):
         if source.get("recordId") not in known_ids:
             errors.append(f"envelope citation '{source.get('recordId')}' does not resolve to a known record")
@@ -513,65 +751,7 @@ def semantic_errors(records, eval_time):
         if expected_hash and source.get("contentHash") != expected_hash:
             errors.append("envelope citation contentHash does not match cited record")
 
-    # Approvals: every required action needs a live, digest-bound approval.
-    if plan.get("unresolvedQuestions"):
-        errors.append("plan has unresolvedQuestions; execution is blocked")
-    required_actions = set(envelope.get("requiredApprovals", [])) | set(plan.get("requiredApprovals", []))
-    if any(p.get("exposure") == "public" for p in manifest.get("release", {}).get("ports", [])):
-        required_actions.add("public-exposure")
-    public_sources = (
-        any(p.get("exposure") == "public" for p in manifest.get("release", {}).get("ports", []))
-        or any(
-            s.get("capability") == "proxy.configure" and s.get("parameters", {}).get("exposure") == "public"
-            for s in steps
-        )
-    )
-    if public_sources and (policy.get("network") or {}).get("allowPublicExposure") is not True:
-        errors.append("public exposure is denied by policy; approval cannot override denial")
-    for step in steps + rollback_steps:
-        params = step.get("parameters", {})
-        if step.get("capability") == "proxy.configure" and params.get("exposure") == "public":
-            required_actions.add("public-exposure")
-        if step.get("capability") == "compose.down" and params.get("removeVolumes"):
-            required_actions.add("destructive-storage")
-        if step.get("capability") == "volume.restore":
-            required_actions.add("destructive-storage")
-    if plan.get("operation") in ("upgrade", "rollback", "uninstall"):
-        required_actions.add(plan["operation"])
-    actions = [r["action"] for r in policy.get("approvalRules", [])]
-    if len(set(actions)) != len(actions):
-        errors.append("policy has duplicate approval rules for an action")
-    rules = {rule["action"]: rule["approval"] for rule in policy.get("approvalRules", [])}
-    plan_digest = canonical_digest(plan)
-    for action in sorted(required_actions):
-        needed = rules.get(action, "user")
-        if needed == "none":
-            continue
-        matches = [
-            a for a in approvals
-            if a.get("action") == action and a.get("decision") == "approved"
-            and a.get("planId") == plan["planId"] and a.get("planDigest") == plan_digest
-            and a.get("envelopeId") == envelope["envelopeId"]
-            and a.get("envelopeDigest") == canonical_digest(envelope)
-            and a.get("tenantScope") == tenant and a.get("hostId") == host["hostId"]
-            and a.get("applicationId") == manifest["appId"]
-        ]
-        if needed in ("maintainer", "two-maintainers"):
-            matches = [a for a in matches if a.get("approver", {}).get("role") == "maintainer"]
-        if not matches:
-            errors.append(f"action '{action}' has no approval bound to this exact plan digest, tenant, host, and envelope")
-            continue
-        live = []
-        for approval in matches:
-            approved = parse_time(approval.get("approvedAt"), "approval", errors)
-            expires = parse_time(approval.get("expiresAt"), "approval", errors)
-            if approved and expires and eval_time and approved <= eval_time < expires:
-                live.append(approval)
-        if not live:
-            errors.append(f"action '{action}' approval is expired or not yet valid at evaluation time")
-        if needed == "two-maintainers" and len({a["approver"]["approverId"] for a in live}) < 2:
-            errors.append(f"action '{action}' requires two distinct live maintainer approvals")
-
+    # (Approval records are checked by plan_binding_errors above.)
     # Freshness and ordering at the injected clock.
     def ordered(start, end, label):
         first = parse_time(start, label, errors)
@@ -623,19 +803,6 @@ def semantic_errors(records, eval_time):
     for port in manifest.get("release", {}).get("ports", []):
         if port.get("service") not in service_set:
             errors.append(f"port for service '{port.get('service')}' does not resolve to a manifest service")
-    for step in steps + rollback_steps:
-        if step.get("capability") == "secret.inject":
-            params = step.get("parameters", {})
-            declared = {
-                (entry.get("service") or sole_service, entry.get("name"), entry.get("secretRef"))
-                for entry in manifest.get("release", {}).get("environment", [])
-            }
-            if (params.get("service"), params.get("targetEnv"), params.get("secretRef")) not in declared:
-                errors.append(
-                    f"step {step['stepId']}: secret.inject (service, environment, secretRef) "
-                    "does not match a manifest environment entry owned by that service"
-                )
-
     case = records.get("case")
     if case:
         if case.get("tenantScope") != tenant:
@@ -721,61 +888,6 @@ def semantic_errors(records, eval_time):
                 ):
                     errors.append(f"manifest is revoked ({entry.get('reason')})")
 
-    # Procedure parameter contracts: the signed program surface.
-    def check_contracts(sequence_steps, procedure, label):
-        if not procedure:
-            return
-        contracts = {c["capability"]: c for c in procedure.get("parameterContracts", [])}
-        sequence = procedure.get("capabilitySequence", [])
-        if set(contracts) != set(sequence):
-            errors.append(f"{label}: parameterContracts must cover exactly the capability sequence")
-        for step in sequence_steps:
-            contract = contracts.get(step.get("capability"))
-            if not contract:
-                continue
-            params = step.get("parameters", {})
-            missing = [name for name in contract.get("requiredParameters", []) if name not in params]
-            if missing:
-                errors.append(f"step {step['stepId']}: missing procedure-required parameters {missing}")
-            for key, value in (contract.get("fixedParameters") or {}).items():
-                if params.get(key) != value:
-                    errors.append(f"step {step['stepId']}: parameter '{key}' must equal the procedure-fixed value")
-    check_contracts(steps, proc, "forward procedure")
-    check_contracts(rollback_steps, rollback_proc, "rollback procedure")
-
-    # Compensation: a rollbackStepId identifies the specific compensation
-    # step for a mutation (not merely any step in the rollback sequence).
-    # Capability and resource must correspond, per this contract:
-    compensation_contract = {
-        "compose.up": ("compose.down", ("service", "projectName")),
-        "compose.down": ("compose.up", ("service", "projectName")),
-        "secret.inject": ("compose.down", ("service",)),
-        "proxy.configure": ("proxy.remove", ("hostname",)),
-        "volume.restore": ("volume.backup", ("volume",)),
-    }
-    rollback_by_id = {s["stepId"]: s for s in rollback_steps}
-    for step in steps:
-        expected = compensation_contract.get(step.get("capability"))
-        if not expected:
-            continue
-        target_id = step.get("rollbackStepId")
-        if not target_id:
-            errors.append(f"step {step['stepId']}: mutating capability '{step.get('capability')}' has no compensation (rollbackStepId)")
-            continue
-        target = rollback_by_id.get(target_id)
-        if target is None:
-            continue  # unresolved pointers are reported above
-        want_capability, resource_keys = expected
-        if target.get("capability") != want_capability:
-            errors.append(
-                f"step {step['stepId']}: compensation must be '{want_capability}' "
-                f"but rollbackStepId points to '{target.get('capability')}'"
-            )
-            continue
-        for key in resource_keys:
-            if target.get("parameters", {}).get(key) != step.get("parameters", {}).get(key):
-                errors.append(f"step {step['stepId']}: compensation resource '{key}' does not match the mutated resource")
-
     # Compose artifact: bytes are required for this gate and must equal
     # both the recorded digest and a fresh render of the manifest.
     if not artifact.get("localPath"):
@@ -799,29 +911,6 @@ def semantic_errors(records, eval_time):
             f"but the installed renderer is '{renderer_version}'; version dispatch is not supported"
         )
 
-    # Checkpoint: a checkpoint-dependent procedure needs a typed,
-    # verified checkpoint step before the first mutating compose step.
-    needs_checkpoint = any(
-        p.get("requiresCheckpoint") for p in procedures.values()
-    ) or (envelope.get("rollbackStrategy") or {}).get("checkpointRequired")
-    if needs_checkpoint:
-        checkpoint = (envelope.get("rollbackStrategy") or {}).get("checkpoint")
-        if not checkpoint:
-            errors.append("checkpoint-dependent procedure has no typed checkpoint reference in the envelope")
-        else:
-            mutating_caps = {"compose.up", "compose.down", "volume.restore"}
-            first_mutation = next(
-                (i for i, s in enumerate(steps) if s.get("capability") in mutating_caps), len(steps)
-            )
-            matched = any(
-                s.get("capability") == "volume.backup"
-                and s.get("parameters", {}).get("backupId") == checkpoint.get("backupId")
-                and s.get("parameters", {}).get("volume") == checkpoint.get("volume")
-                and i < first_mutation
-                for i, s in enumerate(steps)
-            )
-            if not matched:
-                errors.append("no volume.backup checkpoint step matching the envelope checkpoint reference before the first mutation")
     return errors
 
 

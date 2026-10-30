@@ -431,7 +431,7 @@ class RetrievalResult:
     failure_cases: list = field(default_factory=list)
     failure_signatures: list = field(default_factory=list)
     envelope: dict = None
-    revocation_mode: str = ""  # unchecked | metadata-validated | fixture-record | fixture-no-record
+    revocation_mode: str = "unvalidated"  # unvalidated | metadata-validated | fixture-record | fixture-no-record
 
 
 def _case_ref(case):
@@ -531,209 +531,30 @@ def envelope_schema_errors(envelope):
 
 
 def plan_schema_errors(plan):
-    schemas = {name: validate.load(ROOT / "schemas" / name)
-               for name in sorted(validate.REQUIRED_SCHEMAS)}
-    registry = validate.build_registry(schemas)
-    validator = validate.make_validator(
-        schemas["deployment-plan.schema.json"], registry)
-    return validate.schema_errors(validator, plan)
+    return _record_schema_errors("deployment-plan.schema.json", plan)
 
 
 def plan_binding_errors(plan, envelope, procedure, all_procedures, policy,
-                        manifest=None, artifact=None):
-    """Plan contract + execution-binding validation.
+                        manifest=None, artifact=None, host=None, eval_time=None):
+    """Delegate to the shared validator in validate.py.
 
-    Mirrors the plan-relevant sections of validate.semantic_errors:
-    exact forward (and rollback) capability order, parameter
-    contracts (required + fixed, exact coverage), envelope
-    capabilities within policy allowlists minus denials, plan
-    composeArtifactRef binding, step parameter agreement with the
-    manifest/artifact (service, projectName, manifest/image/artifact
-    digests, secret references), unresolvedQuestions, step-id and
-    rollback-pointer integrity, and rollback compensation
-    (validate.py:399,475,517,746). Full graph semantics that need
-    records this path does not own (approvals, case/evidence,
-    artifact bytes/render, freshness) remain the validate.py graph
-    gate; an accept here is plan-bound, not full-graph validated.
-    Returns a list of errors; empty means the plan fully binds.
+    Retrieval acceptance is not execution approval: approvals=None
+    checks approval declarations only, never live approval records.
+    The selected `procedure` is already bound via the assembled
+    envelope's procedureRef, which the shared validator resolves
+    against all_procedures.
     """
-    errors = []
-    if plan.get("envelopeId") != envelope.get("envelopeId"):
-        errors.append("plan envelopeId does not match the envelope")
-    if plan.get("operation") != envelope.get("operation"):
-        errors.append("plan operation does not match envelope operation")
-    if plan.get("unresolvedQuestions"):
-        errors.append("plan has unresolvedQuestions; execution is blocked")
+    return validate.plan_binding_errors(
+        plan, envelope, manifest, host, policy, artifact,
+        all_procedures, approvals=None, eval_time=eval_time)
 
-    # Plan artifact binding (validate.py:398-401), via the artifact
-    # record when supplied and via the bound envelope ref otherwise.
-    plan_ref = plan.get("composeArtifactRef") or {}
-    if artifact is not None:
-        if plan_ref.get("recordId") != artifact.get("artifactId"):
-            errors.append("plan composeArtifactRef does not reference the envelope compose artifact")
-        elif plan_ref.get("digest") != validate.canonical_digest(artifact):
-            errors.append("plan composeArtifactRef digest mismatch")
-    else:
-        env_ref = envelope.get("composeArtifactRef") or {}
-        if plan_ref.get("recordId") != env_ref.get("recordId"):
-            errors.append("plan composeArtifactRef does not reference the envelope compose artifact")
-        elif env_ref.get("digest") and plan_ref.get("digest") != env_ref.get("digest"):
-            errors.append("plan composeArtifactRef digest mismatch")
 
-    steps = plan.get("steps") or []
-    rollback_steps = plan.get("rollbackSteps") or []
 
-    # Exact capability order (not just membership).
-    forward_caps = [s.get("capability") for s in steps]
-    proc_sequence = procedure.get("capabilitySequence") or []
-    if forward_caps != proc_sequence:
-        errors.append("forward capability sequence does not match procedure order")
-    # Membership retained for precise per-step diagnostics.
-    allowed_proc = set(proc_sequence)
-    for step in steps:
-        if step.get("capability") not in allowed_proc:
-            errors.append(
-                f"plan step {step.get('stepId')} capability is outside the signed procedure")
 
-    # Rollback order when a rollback procedure is known.
-    rollback_proc = None
-    rollback_id = procedure.get("rollbackProcedureId") or (
-        (envelope.get("rollbackStrategy") or {}).get("procedureRef") or {}
-    ).get("recordId")
-    if rollback_id:
-        rollback_proc = next(
-            (p for p in (all_procedures or []) if p.get("procedureId") == rollback_id),
-            None)
-    if rollback_steps and rollback_proc:
-        rollback_caps = [s.get("capability") for s in rollback_steps]
-        if rollback_caps != (rollback_proc.get("capabilitySequence") or []):
-            errors.append("rollback capability sequence does not match procedure order")
 
-    # Envelope capabilities must stay within policy allowlist minus denials.
-    allowed_env = set(envelope.get("allowedCapabilities") or [])
-    allowed_policy = set(policy.get("allowedCapabilities") or [])
-    denied_policy = set(policy.get("deniedCapabilities") or [])
-    forbidden = set(envelope.get("forbiddenOperations") or [])
-    if allowed_env - (allowed_policy - denied_policy):
-        errors.append("envelope capabilities exceed policy allowlist or include policy denials")
-    for step in steps + rollback_steps:
-        cap = step.get("capability")
-        if cap not in allowed_env:
-            errors.append(f"step {step.get('stepId')}: capability '{cap}' not allowed by envelope")
-        if cap not in allowed_policy or cap in denied_policy:
-            errors.append(f"step {step.get('stepId')}: capability '{cap}' not allowed by policy")
-        if cap in forbidden:
-            errors.append(f"step {step.get('stepId')}: capability '{cap}' is forbidden by envelope")
 
-    # Parameter contracts: the signed program surface.
-    def check_contracts(sequence_steps, proc, label):
-        if not proc:
-            return
-        contracts = {c["capability"]: c for c in proc.get("parameterContracts", [])}
-        sequence = proc.get("capabilitySequence", [])
-        if set(contracts) != set(sequence):
-            errors.append(f"{label}: parameterContracts must cover exactly the capability sequence")
-        for step in sequence_steps:
-            contract = contracts.get(step.get("capability"))
-            if not contract:
-                continue
-            params = step.get("parameters") or {}
-            missing = [name for name in contract.get("requiredParameters", []) if name not in params]
-            if missing:
-                errors.append(f"step {step['stepId']}: missing procedure-required parameters {missing}")
-            for key, value in (contract.get("fixedParameters") or {}).items():
-                if params.get(key) != value:
-                    errors.append(f"step {step['stepId']}: parameter '{key}' must equal the procedure-fixed value")
 
-    check_contracts(steps, procedure, "forward procedure")
-    if rollback_steps:
-        check_contracts(rollback_steps, rollback_proc, "rollback procedure")
 
-    # Step-id and rollback-pointer integrity (validate.py:442-473).
-    step_ids = [s.get("stepId") for s in steps]
-    rollback_ids = [s.get("stepId") for s in rollback_steps]
-    if len(set(step_ids)) != len(steps) or len(set(rollback_ids)) != len(rollback_steps):
-        errors.append("step ids must be unique within each sequence")
-    if set(step_ids) & set(rollback_ids):
-        errors.append("step ids collide between steps and rollbackSteps")
-    for step in steps:
-        target = step.get("rollbackStepId")
-        if target:
-            if target in set(step_ids):
-                errors.append(f"step {step['stepId']}: rollbackStepId '{target}' points into steps, not rollbackSteps")
-            elif target not in set(rollback_ids):
-                errors.append(f"step {step['stepId']}: rollbackStepId '{target}' does not exist in rollbackSteps")
-    for step in rollback_steps:
-        if step.get("rollbackStepId"):
-            errors.append(f"rollback step {step['stepId']} must not itself declare a rollbackStepId")
-
-    # Step parameter agreement with manifest/artifact (validate.py:475-498,626-637).
-    manifest_digest = validate.canonical_digest(manifest) if manifest else envelope.get("manifestDigest")
-    image_digests = {}
-    declared_env = set()
-    declared_owned = set()
-    if manifest:
-        image_digests = {img["service"]: img["digest"]
-                         for img in (manifest.get("release") or {}).get("images", [])}
-        env_entries = (manifest.get("release") or {}).get("environment", [])
-        declared_env = {(e.get("name"), e.get("secretRef")) for e in env_entries}
-        service_names = list(image_digests)
-        sole_service = service_names[0] if len(service_names) == 1 else None
-        declared_owned = {(e.get("service") or sole_service, e.get("name"), e.get("secretRef"))
-                          for e in env_entries}
-    for step in steps + rollback_steps:
-        params = step.get("parameters") or {}
-        cap = step.get("capability")
-        if artifact is not None and "service" in params and params["service"] not in artifact.get("services", []):
-            errors.append(f"step {step['stepId']}: service is not declared in compose artifact")
-        if artifact is not None and "projectName" in params and params["projectName"] != artifact.get("projectName"):
-            errors.append(f"step {step['stepId']}: projectName does not match artifact")
-        if cap == "manifest.verify" and params.get("manifestDigest") != manifest_digest:
-            errors.append(f"step {step['stepId']}: manifest.verify digest does not match manifest")
-        if cap == "compose.pull" and manifest and params.get("imageDigest") != image_digests.get(params.get("service")):
-            errors.append(f"step {step['stepId']}: compose.pull imageDigest does not match manifest image digest")
-        if cap == "compose.up":
-            if artifact is not None and params.get("composeArtifactDigest") != artifact.get("composeDigest"):
-                errors.append(f"step {step['stepId']}: compose.up composeArtifactDigest does not match artifact")
-            if artifact is not None and params.get("projectName") != artifact.get("projectName"):
-                errors.append(f"step {step['stepId']}: compose.up projectName does not match artifact")
-        if cap == "secret.inject":
-            known = {ref["secretRef"] for ref in envelope.get("secretReferences", [])}
-            if params.get("secretRef") not in known:
-                errors.append(f"step {step['stepId']}: secret.inject references a secretRef not declared in the envelope")
-            if manifest and (params.get("targetEnv"), params.get("secretRef")) not in declared_env:
-                errors.append(f"step {step['stepId']}: secret target does not match manifest environment")
-            if manifest and (params.get("service"), params.get("targetEnv"), params.get("secretRef")) not in declared_owned:
-                errors.append(f"step {step['stepId']}: secret.inject (service, environment, secretRef) does not match a manifest environment entry owned by that service")
-
-    # Rollback compensation (validate.py:746-777).
-    compensation_contract = {
-        "compose.up": ("compose.down", ("service", "projectName")),
-        "compose.down": ("compose.up", ("service", "projectName")),
-        "secret.inject": ("compose.down", ("service",)),
-        "proxy.configure": ("proxy.remove", ("hostname",)),
-        "volume.restore": ("volume.backup", ("volume",)),
-    }
-    rollback_by_id = {s["stepId"]: s for s in rollback_steps}
-    for step in steps:
-        expected = compensation_contract.get(step.get("capability"))
-        if not expected:
-            continue
-        target_id = step.get("rollbackStepId")
-        if not target_id:
-            errors.append(f"step {step['stepId']}: mutating capability '{step.get('capability')}' has no compensation (rollbackStepId)")
-            continue
-        target = rollback_by_id.get(target_id)
-        if target is None:
-            continue
-        want_capability, resource_keys = expected
-        if target.get("capability") != want_capability:
-            errors.append(f"step {step['stepId']}: compensation must be '{want_capability}' but rollbackStepId points to '{target.get('capability')}'")
-            continue
-        for key in resource_keys:
-            if (target.get("parameters") or {}).get(key) != (step.get("parameters") or {}).get(key):
-                errors.append(f"step {step['stepId']}: compensation resource '{key}' does not match the mutated resource")
-    return errors
 
 
 def retrieve_context(request, manifest, host, policy, procedures, store,
@@ -748,8 +569,12 @@ def retrieve_context(request, manifest, host, policy, procedures, store,
     isolation, redaction (flag plus free-text scan), revocation,
     the hard engine, eligible procedure selection, tenant-scoped
     case retrieval, and envelope schema+binding validation all pass.
+    An "accept" here is retrieval acceptance only, not execution
+    approval: when a plan is supplied it is schema- and binding-
+    validated via validate.plan_binding_errors (approvals=None),
+    but no live approval record or deployment is authorised.
 
-    Revocation modes: with live=True a current, non-rolled-back
+    Revocation modes: default is "unvalidated"; with live=True a current, non-rolled-back
     revocation snapshot is mandatory and its absence blocks. The
     snapshot check in this offline path is metadata validation
     only (payloadDigest, signer, algorithm) — it does NOT
@@ -820,8 +645,8 @@ def retrieve_context(request, manifest, host, policy, procedures, store,
     # only; it does not cryptographically verify the signature value.
     if live:
         # Only a snapshot that passes every check below earns
-        # "metadata-validated"; blocked live results stay "unchecked".
-        result.revocation_mode = "unchecked"
+        # "metadata-validated"; blocked live results stay "unvalidated".
+        result.revocation_mode = "unvalidated"
         if accepted_revocation_sequence is None:
             return block("revocation", "revocation-sequence-cursor-required",
                          "Live path requires a persisted accepted revocation sequence cursor; none supplied.")
@@ -960,7 +785,8 @@ def retrieve_context(request, manifest, host, policy, procedures, store,
                 return block("envelope", "plan-schema-invalid",
                              "Supplied plan fails the canonical deployment-plan schema; not accepting.")
             plan_errors = plan_binding_errors(plan, envelope, proc, procedures, policy,
-                                              manifest=manifest, artifact=artifact)
+                                              manifest=manifest, artifact=artifact, host=host,
+                                              eval_time=evaluation_time)
             if plan.get("operation") != request.get("operation"):
                 if "plan operation does not match envelope operation" not in plan_errors:
                     plan_errors.append("plan operation does not match the request")
@@ -1074,6 +900,14 @@ def evaluate_end_to_end():
     secret_host["redaction"] = {"applied": True, "secretValuesPresent": True}
     shell_template = copy.deepcopy(template)
     shell_template["allowedCapabilities"] = ["shell.exec"]
+    bad_plan_artifact = copy.deepcopy(plan)
+    bad_plan_artifact["composeArtifactRef"]["digest"] = "sha256:" + "0" * 64
+    bad_citation = copy.deepcopy(plan)
+    bad_citation["steps"][0]["citations"] = ["no_such_record"]
+    unresolved_plan = copy.deepcopy(plan)
+    unresolved_plan["unresolvedQuestions"] = ["which port?"]
+    tampered_revocation = copy.deepcopy(revocations)
+    tampered_revocation["sequence"] = 2  # payloadDigest no longer binds
 
     scenarios = [
         ("compatible-live", run(live=True, accepted_revocation_sequence=1), "accept"),
@@ -1093,6 +927,12 @@ def evaluate_end_to_end():
         ("shell-capability-envelope", run(template_envelope=shell_template), "not-accept"),
         ("wrong-release-binding",
          run(request=dict(request, releaseVersion="9.9.9")), "not-accept"),
+        ("plan-artifact-mismatch", run(plan=bad_plan_artifact), "not-accept"),
+        ("plan-citation-unresolved", run(plan=bad_citation), "not-accept"),
+        ("plan-unresolved-questions", run(plan=unresolved_plan), "not-accept"),
+        ("live-failed-metadata",
+         run(live=True, accepted_revocation_sequence=1,
+             revocation_record=tampered_revocation), "not-accept"),
     ]
     results, false_accepts = [], 0
     for name, result, want in scenarios:

@@ -20,4 +20,6 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & ".venv\Scripts\python.exe" scripts\test_secret_scan.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & ".venv\Scripts\python.exe" scripts\test_render_compose.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& ".venv\Scripts\python.exe" scripts\test_context_engine.py
 exit $LASTEXITCODE

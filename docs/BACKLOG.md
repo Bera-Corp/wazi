@@ -224,11 +224,11 @@ Complete these gates in order; later evidence depends on the earlier trust and e
 
 | Gate | Required exit evidence and current state |
 |---|---|
-| 1. Verified image provenance and Wazi release | Verify provenance for the exact Gitea image digest, then issue and verify a Wazi-signed release. Current: the Gitea 28.2.0 rootless digest is only a candidate; cryptographic provenance and Wazi release approval are absent. |
-| 2. Typed executor on the approved rootless boundary | Wire the existing preflight, approval, and operation-journal helpers into one typed executor on the approved rootless boundary. Enforce the authenticated policy, the pilot's configured single-approver rule, resource and helper limits, and intent-before-mutation journal behavior. Do not claim independent-human quorum for this pilot. Current: paired preflight now returns exact verified records and approval evidence, and the credential loader accepts one configured pilot principal; no executor or runtime adapter integrates the helpers, and live policy/approval configuration remains open. |
+| 1. Verified image provenance and Wazi release | Existing Wazi-signed B manifest binds digest `sha256:1518aab41242dd897f6806828e025fbd9360ac725f4d272e5b41e0ccdeacaeb6` (run 41106363479). On commit `3217408b0e6026638af4561276c6e8950cdd5d27`, A run 41113830342 passed provenance and archive-attestation checks for `sha256:afd05701641f238dc198f98d7733b1d3b09cb6ae1a3f1cd9b3bc2058e706570b`; B run 41113830385 passed for `sha256:7b7f6f93ac9f4d0a50abd1c0c5f204631f0813723e13529d5e14754288d53ce2`. The new A/B digests do not yet have matching Wazi-signed release records. Host signer trust and image transfer/pull remain unverified, so Gate 1 is open. |
+| 2. Typed executor on the approved rootless boundary | Local `agentclient.Executor` joins prepared preflight, typed plan steps, rootless-boundary checks, and durable intent/outcome journaling. The production rootless Docker adapter, control-plane job dispatch, live policy/approval configuration, and resource/helper enforcement are not wired. The pilot has one approver; this is 1-of-1 and does not establish independent-human quorum. |
 | 3. Live digest-bound stateful lifecycle | Install release A with known application data → backup → upgrade to release B → restore → verify application data → rollback to A on the approved boundary. Bind evidence at every stage to the exact image/release digests and deployment case. Current: no Gitea workload or lifecycle has run; the endpoint remains HTTP 501. |
 | 4. Live adversarial denial matrix | Exercise the unauthorized and failure cases on the live approved boundary and retain evidence proving zero unauthorized workload mutations. Current: local contract/adversarial tests pass, but the live matrix has not run. |
-| 5. Reboot, pairing, and remote CI acceptance | Record reboot/reconnect recovery evidence, obtain pairing sign-off, and record a passing remote services CI run. Current: reboot/reconnect passed and is recorded in artifacts/bera-003/20261030T171532Z/reboot-reconnect.json; pairing sign-off and remote CI remain open. |
+| 5. Reboot, pairing, and remote CI acceptance | Reboot/reconnect evidence is recorded at `artifacts/bera-003/20261030T171532Z/reboot-reconnect.json`; remote CI passed at run 41113830567 on commit `3217408b0e6026638af4561276c6e8950cdd5d27`. Pairing sign-off remains open. |
 
 The competition workstream runs alongside these gates: measure the
 beneficiary baseline early, prove one bounded real Meta proposal with
@@ -256,30 +256,30 @@ operations, and private alpha follow the phase order in
 [MVP_ROADMAP.md](MVP_ROADMAP.md). Do not start them before the Phase 1
 gate passes.
 
-- [partial] Phase 2 context retrieval (owner-directed parallel offline
-  work, 2026-10-30): `scripts/context_engine.py` implements the
+- [done] Phase 2 context retrieval — offline prototype complete
+  (2026-10-30): `scripts/context_engine.py` implements the
   retrieval pipeline from CONTEXT_ENGINEERING_PLAN.md - binding,
-  tenant isolation, redaction gate, revocation freshness (stale record
+  tenant isolation, redaction gate (blocked results clear case/envelope content; tenant pool scanned before attachment), revocation freshness (stale record
   fails closed), hard compatibility before ranking, explainable scored
   procedure ranking, failure signatures, comparable-case citation, and
   schema-valid envelope assembly. `scripts/test_context_engine.py`
-  covers the pipeline and adversarial denials; evaluation over the 17
+  covers the pipeline and adversarial denials (87 checks, wired into `scripts/validate.ps1` and the CI contracts job); evaluation over the 17
   labelled fixtures reports hard-engine accuracy 1.0 (hard filters
-  only); end-to-end adversarial retrieval (12 scenarios: tenant,
-  procedure trust, revocation, envelope) reports accuracy 1.0 and
+  only); end-to-end adversarial retrieval (17 scenarios: tenant,
+  procedure trust, revocation, envelope, plan, citations) reports accuracy 1.0 and
   false-accept rate 0. Review corrections landed 2026-10-30:
   tenant-scoped case retrieval (fail closed without scope), procedure
   eligibility (schema, signed/canary/stable, trusted signer, payload
   binding, exact release scope) before ranking, envelope rebound to
   current records with schema+binding validation before accept,
-  live-mode revocation proof (verified, current, non-rolled-back
-  snapshot mandatory; fixture mode explicitly labelled), and a
+  shared plan validation via `validate.plan_binding_errors` (graph gate requires live approvals; retrieval checks declarations only, accept is not execution approval; rollback reference digest/ID and signature trust, plan freshness at the injected time, and matching envelope/plan approval declarations are enforced), revocation mode defaulting to `unvalidated` with `metadata-validated` only after live metadata checks pass (not Cosign verification), and
+  fixture modes (`fixture-record`/`fixture-no-record`) explicitly labelled, and a
   free-text secret scan in addition to the host redaction flag.
   The demo at `demo/index.html` is generated from real pipeline
-  output by `scripts/build_demo_data.py` and shows one accept plus two
-  engine-produced denials. Still open: live host freshness, real
-  deployment cases (only eval fixtures exist today), ranking against
-  real deployments, and any AI planner (Phase 3). This does not advance
+  output by `scripts/build_demo_data.py` and shows one accept (`metadata-validated`) plus two
+  engine-produced denials (occupied port, `metadata-validated`; revoked, `fixture-no-record`). Follow-up (live acceptance, separate from this offline close): live host freshness, real
+  deployment cases, production revocation verification (Cosign plus durable persisted sequence cursor), and ranking against real deployments, and
+  any AI planner (Phase 3). This does not advance
   the Phase 1 execution gate, which stays 501.
 
 ## Worlds and S-Prints extension

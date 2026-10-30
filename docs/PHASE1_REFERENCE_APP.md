@@ -1,15 +1,29 @@
 # Phase 1 reference app: Gitea
 
-Status: Gitea is the owner-selected reference app, and budget revision 2 is
-owner-authorized within the 4 CPU / 2,048 MiB RAM / 98,304 MiB storage cap.
-Local paired-policy fetch, resource-bound preflight and a versioned Compose
-renderer now pass their focused checks. A live rootless managed-volume
-qualification passed after reboot at 2026-10-30T17:15:43Z and expired at
-17:30:43Z. Reboot/reconnect acceptance passed. Image provenance, live
-single-approver configuration, typed executor integration, pairing sign-off
-and application lifecycle acceptance remain open; deployment still returns
-501 and no Gitea workload has been created.
-Updated 30 October 2026.
+Status (30 October 2026): Bera-Corp's Gitea 28.2.0 image was rebuilt from the
+verified upstream v28.2.0 source and its exact digest was bound by the Wazi
+source-attestation workflow. A local, Wazi-signed pilot release manifest for
+that digest passes the Wazi schema/signature verifier and Cosign blob
+verification; details are in
+releases/phase1/gitea/28.2.0/build-evidence.json. This satisfies the B
+image/provenance portion of Gate 1 for that earlier digest. On commit
+`3217408b0e6026638af4561276c6e8950cdd5d27`, release A run 41113830342 passed
+provenance and archive-attestation checks for digest
+`sha256:afd05701641f238dc198f98d7733b1d3b09cb6ae1a3f1cd9b3bc2058e706570b`, and
+the refreshed B run 41113830385 passed for
+`sha256:7b7f6f93ac9f4d0a50abd1c0c5f204631f0813723e13529d5e14754288d53ce2`.
+These new A/B digests do not yet have matching Wazi-signed release records. The
+pilot signer policy is not installed on bera-003, and image transfer/pull has
+not been verified. The pilot has one approver and does not claim
+independent-human quorum. A typed orchestration interface and durable journal
+exist locally, but the rootless Docker boundary and control-plane dispatch are
+not integrated. The latest managed-volume qualification expired at 17:30:43Z.
+A fresh read-only host preflight at 19:09:32Z found no rootless containers or
+volumes, no configured GHCR pull credential, and no host mutation; see
+`artifacts/bera-003/20261030T190932Z/phase1-execution-preflight.json`. Pairing
+sign-off, the live digest-bound lifecycle and live denial matrix remain open.
+Remote CI passed run 41113830567. The deployment endpoint remains HTTP 501 and
+no Gitea workload has been created.
 
 The owner-confirmed, dependency-ordered Phase 1 exit gates and their current
 evidence are tracked in [BACKLOG.md](BACKLOG.md#owner-confirmed-phase-1-closure-order).
@@ -222,14 +236,14 @@ The Gitea lifecycle is evidence for the four owner-supplied judging pillars:
 These weights do not reduce the mandatory safety gates in the Phase 1
 acceptance criteria.
 
-## Read-only Phase 1 recheck — 30 October 2026
+## Read-only Phase 1 recheck — 30 October 2026 (historical snapshot)
 
 The SSH check succeeded and `wazi-controlplane-dev.service` was active. An
 empty JSON request to the loopback deployment route returned HTTP 501. The
 rootless runtime container and named-volume inventories were empty. These
 checks made no host changes. The recorded managed-volume qualification expired
 at `2026-10-30T14:47:26Z`; it was refreshed after reboot at `17:15:43Z` and expired
-at `17:30:43Z`. That disposable quota test made no application mutation. The
-Gitea image remains unqualified because its exact digest still
-lacks cryptographically verified image provenance, and the Wazi release has
-not been signed.
+at `17:30:43Z`. That disposable quota test made no application mutation.
+At the time of this snapshot, the Gitea image lacked verified image
+provenance and the Wazi release had not been signed. The later Gate 1 B-image
+evidence is recorded at the top of this document.
