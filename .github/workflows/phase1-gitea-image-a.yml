@@ -1,0 +1,217 @@
+name: phase1-gitea-image-a
+
+on:
+  push:
+    branches:
+      - codex/phase1-buildout
+    paths:
+      - .github/workflows/phase1-gitea-image-a.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITEA_TAG: v28.1.0
+      GITEA_TAG_OBJECT: acf5fd902d4be6ad7a62f20acad004a52fdea153
+      GITEA_SOURCE_COMMIT: 4ebd5e319b6a9e629bfd7a04292a6fe85b08dee9
+      IMAGE_NAME: ghcr.io/bera-corp/wazi-gitea-phase1
+      PROVENANCE_PREDICATE_TYPE: https://wazi.dev/attestations/gitea-source/v1
+    steps:
+      - name: Checkout Wazi build policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Checkout the exact upstream source tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: go-gitea/gitea
+          ref: v28.1.0
+          path: upstream
+          fetch-depth: 0
+
+      - name: Verify immutable tag and signed source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_object="$(git -C upstream rev-parse 'refs/tags/v28.1.0^{tag}')"
+          source_commit="$(git -C upstream rev-parse 'refs/tags/v28.1.0^{commit}')"
+          test "$tag_object" = "$GITEA_TAG_OBJECT"
+          test "$source_commit" = "$GITEA_SOURCE_COMMIT"
+          ref_json="$(gh api repos/go-gitea/gitea/git/ref/tags/v28.1.0)"
+          printf '%s' "$ref_json" | jq -e --arg sha "$GITEA_TAG_OBJECT" \
+            '.ref == "refs/tags/v28.1.0" and .object.type == "tag" and .object.sha == $sha' >/dev/null
+          tag_json="$(gh api "repos/go-gitea/gitea/git/tags/$GITEA_TAG_OBJECT")"
+          printf '%s' "$tag_json" | jq -e --arg sha "$GITEA_SOURCE_COMMIT" \
+            '.object.type == "commit" and .object.sha == $sha' >/dev/null
+          commit_json="$(gh api "repos/go-gitea/gitea/commits/$GITEA_SOURCE_COMMIT")"
+          printf '%s' "$commit_json" | jq -e --arg sha "$GITEA_SOURCE_COMMIT" \
+            '.sha == $sha and .commit.verification.verified == true and .commit.verification.reason == "valid"' >/dev/null
+          printf 'Verified %s tag-object=%s source-commit=%s signed-commit=valid\n' \
+            "$GITEA_TAG" "$tag_object" "$source_commit"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and publish the rootless Wazi image
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./upstream
+          file: ./upstream/Dockerfile.rootless
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:28.1.0-${{ github.run_id }}-${{ github.run_attempt }}
+          build-args: |
+            GITEA_VERSION=v28.1.0
+          provenance: mode=max
+
+      - name: Sign the exact image digest with GitHub build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}:28.1.0-${{ github.run_id }}-${{ github.run_attempt }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Create source-to-image provenance predicate
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+
+          predicate = {
+              "schemaVersion": "1.0.0",
+              "source": {
+                  "repository": "https://github.com/go-gitea/gitea",
+                  "tag": os.environ["GITEA_TAG"],
+                  "annotatedTagObject": os.environ["GITEA_TAG_OBJECT"],
+                  "commit": os.environ["GITEA_SOURCE_COMMIT"],
+                  "commitVerification": {
+                      "provider": "GitHub commit verification API",
+                      "verified": True,
+                      "reason": "valid",
+                  },
+              },
+              "builder": {
+                  "repository": os.environ["GITHUB_REPOSITORY"],
+                  "workflow": os.environ["GITHUB_WORKFLOW"],
+                  "workflowRef": os.environ["GITHUB_WORKFLOW_REF"],
+                  "workflowCommit": os.environ["GITHUB_SHA"],
+                  "runId": os.environ["GITHUB_RUN_ID"],
+                  "runAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              },
+              "build": {
+                  "dockerfile": "Dockerfile.rootless",
+                  "platforms": ["linux/amd64"],
+                  "buildArguments": {"GITEA_VERSION": os.environ["GITEA_TAG"]},
+              },
+          }
+          with open("gitea-source-provenance.json", "w", encoding="utf-8") as output:
+              json.dump(predicate, output, sort_keys=True, separators=(",", ":"))
+              output.write("\n")
+          PY
+
+      - name: Attest source-to-image binding
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}:28.1.0-${{ github.run_id }}-${{ github.run_attempt }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          predicate-type: ${{ env.PROVENANCE_PREDICATE_TYPE }}
+          predicate-path: gitea-source-provenance.json
+          push-to-registry: true
+
+      - name: Verify exact image provenance and source binding
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          image_ref="oci://$IMAGE_NAME@$IMAGE_DIGEST"
+          signer_workflow="$GITHUB_REPOSITORY/.github/workflows/phase1-gitea-image-a.yml"
+          gh attestation verify "$image_ref" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$signer_workflow" --source-digest "$GITHUB_SHA" >/dev/null
+          verified="$RUNNER_TEMP/gitea-source-attestation.json"
+          gh attestation verify "$image_ref" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$signer_workflow" --source-digest "$GITHUB_SHA" \
+            --predicate-type "$PROVENANCE_PREDICATE_TYPE" --format json > "$verified"
+          python3 - "$verified" "$IMAGE_NAME" "$IMAGE_DIGEST" "$GITEA_TAG" \
+            "$GITEA_TAG_OBJECT" "$GITEA_SOURCE_COMMIT" "$GITHUB_REPOSITORY" \
+            "$GITHUB_WORKFLOW" "$GITHUB_WORKFLOW_REF" "$GITHUB_SHA" \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" <<'PY'
+          import json
+          import sys
+
+          (path, image_name, image_digest, tag, tag_object, source_commit,
+           repository, workflow, workflow_ref, workflow_commit, run_id, run_attempt) = sys.argv[1:]
+          with open(path, encoding="utf-8") as source:
+              records = json.load(source)
+          expected_hex = image_digest.removeprefix("sha256:")
+          verified = False
+          for record in records:
+              result = record.get("verificationResult", {})
+              statement = result.get("statement", {})
+              if statement.get("predicateType") != "https://wazi.dev/attestations/gitea-source/v1":
+                  continue
+              subject_matches = any(
+                  subject.get("name") == image_name
+                  and subject.get("digest", {}).get("sha256") == expected_hex
+                  for subject in statement.get("subject", [])
+              )
+              predicate = statement.get("predicate", {})
+              source = predicate.get("source", {})
+              builder = predicate.get("builder", {})
+              build = predicate.get("build", {})
+              commit_verification = source.get("commitVerification", {})
+              verified = (
+                  subject_matches
+                  and predicate.get("schemaVersion") == "1.0.0"
+                  and source.get("repository") == "https://github.com/go-gitea/gitea"
+                  and source.get("tag") == tag
+                  and source.get("annotatedTagObject") == tag_object
+                  and source.get("commit") == source_commit
+                  and commit_verification.get("provider") == "GitHub commit verification API"
+                  and commit_verification.get("verified") is True
+                  and commit_verification.get("reason") == "valid"
+                  and builder.get("repository") == repository
+                  and builder.get("workflow") == workflow
+                  and builder.get("workflowRef") == workflow_ref
+                  and builder.get("workflowCommit") == workflow_commit
+                  and builder.get("runId") == run_id
+                  and str(builder.get("runAttempt")) == run_attempt
+                  and build.get("dockerfile") == "Dockerfile.rootless"
+                  and build.get("platforms") == ["linux/amd64"]
+                  and build.get("buildArguments") == {"GITEA_VERSION": tag}
+              )
+              if verified:
+                  break
+          if not verified:
+              raise SystemExit("verified attestation did not bind the exact image to the checked Gitea source")
+          print(f"Verified source-to-image binding for {image_name}@{image_digest}")
+          PY
+          {
+            printf 'Source tag: %s\n' "$GITEA_TAG"
+            printf 'Source tag object: %s\n' "$GITEA_TAG_OBJECT"
+            printf 'Source commit: %s\n' "$GITEA_SOURCE_COMMIT"
+            printf 'Source commit verification: GitHub API valid\n'
+            printf 'Image: %s@%s\n' "$IMAGE_NAME" "$IMAGE_DIGEST"
+          } >> "$GITHUB_STEP_SUMMARY"
