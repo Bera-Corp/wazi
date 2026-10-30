@@ -229,3 +229,4 @@ This file contains a growing ruleset that improves over time. **At session start
 158. [TOOL] Normalize null operation receipts before inspecting nested state — preflight rejections legitimately persist operation as null.
 159. [TOOL] Capture BashScriptPath SSH output through the tool result or an explicit remote evidence file — its ProcessStartInfo transport inherits stdout and bypasses PowerShell pipeline capture.
 160. [PROCESS] Store adversarial-test console logs outside the repository workspace — intentional synthetic secret fixtures in those logs are correctly flagged by the repository-wide secret scan, including under ignored artifacts.
+161. [PROCESS] Run gofmt on all staged Go sources, including modified regression tests, before pushing — tests and vet do not detect formatting failures in remote CI.

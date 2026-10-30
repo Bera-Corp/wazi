@@ -1,0 +1,8 @@
+{
+  "applicationHealth": "pass",
+  "applicationVersion": "v28.1.0",
+  "controlPlaneRootHTTPStatus": 200,
+  "postBackupMutationAbsent": true,
+  "proofSha256": "sha256:728836b371192e623885770f40710bbe833d0f76d6cdbadfd9495621c25dc3e6",
+  "verifiedAt": "2026-10-30T22:32:36+00:00"
+}
