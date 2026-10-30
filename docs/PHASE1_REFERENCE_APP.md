@@ -3,7 +3,7 @@
 **Current pilot status — 31 October 2026:** A/B lifecycle, pairing acceptance,
 reboot/service recovery and the declared live adversarial subset are recorded
 in [PHASE1_LIVE_EVIDENCE.md](PHASE1_LIVE_EVIDENCE.md). Gitea A is serving on
-bera-003. Final source CI is tracked separately; independent-human quorum,
+bera-003. The committed implementation has passing remote CI; independent-human quorum,
 automatic certificate renewal and automatic app recovery remain outside this
 pilot acceptance. The dated build observations below are historical.
 

@@ -164,5 +164,11 @@ listed live denial subset. Reboot evidence establishes unattended service
 startup and journal preservation; application recovery still requires a new
 approved job. Automatic certificate renewal and automatic application recovery
 have not been demonstrated. Independent-human quorum remains a production
-blocker. The final source commit must also pass remote CI; earlier CI runs
-do not qualify this worktree.
+blocker.
+
+Remote [CI run 41138899498](https://github.com/Bera-Corp/wazi/actions/runs/41138899498)
+passed for source commit `144e967907c9afe92d4e8159bf8ca16d8ca13cb3`.
+Contracts, secret scanning, Go tests/vet/formatting, Linux builds, canonical
+round-trip schema validation and native Linux race checks passed. Race checks
+include controlplane, pairing, agentclient, operationjournal and pilotqueue.
+This qualifies the committed pilot implementation; the limits above remain.

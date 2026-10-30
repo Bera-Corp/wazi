@@ -86,7 +86,7 @@ were subsequently verified at `3ae8345`.
 - [done] Licence-policy rules enforced semantically and in hard filters; deny precedence tested
 - [done] Canonical JSON, signature payloads and cross-language vectors (ADR-001)
 
-## Phase 1 — Deterministic vertical slice (local trust/resource gates; deployment disabled)
+## Phase 1 — Deterministic vertical slice (approved Gitea pilot accepted)
 
 - [done] Verify development-host SSH and sudo access; save local metadata
   and key path in ignored `.env.local`. See [development environments](DEVELOPMENT_ENVIRONMENTS.md)
@@ -214,7 +214,7 @@ have passing contract and adversarial evidence.
   containers, volumes, networks, image pulls, and application data within
   the declared scope. Rejection and audit evidence may still be written.
 
-**Gate:** Phase 1 closed for the approved Gitea pilot on 2026-10-30 (see
+**Gate:** Phase 1 accepted for the approved Gitea pilot on 31 October 2026 EAT (see
 the closure table below and [Phase 1 live evidence](PHASE1_LIVE_EVIDENCE.md)).
 Only the approved tenant, node, application, and artifact digests may execute.
 The pilot remains 1-of-1 approver without independent-human quorum.
@@ -229,7 +229,7 @@ Complete these gates in order; later evidence depends on the earlier trust and e
 | 2. Typed executor on the approved rootless boundary | CLOSED 2026-10-30. Control-plane dispatch, pilot-agent queue, signed policy/approval consumption, fresh host-profile checks, rootless Docker adapter, per-volume project quotas and container CPU/RAM inspection all execute live on bera-003. The pilot has one approver; this is 1-of-1 and does not establish independent-human quorum. |
 | 3. Live digest-bound stateful lifecycle | CLOSED 2026-10-30. Install A → known data → backup (both volumes, digest-bound) → upgrade B → post-backup mutation → restore (mutation removed, data exact) → rollback A all completed as journalled jobs on the approved boundary. Job/case IDs and digests: [Phase 1 live evidence](PHASE1_LIVE_EVIDENCE.md). |
 | 4. Live adversarial denial matrix | CLOSED 2026-10-30 for the live subset: tampered plan (approval-binding mismatch), exact job replay, revoked manifest (digest entry; version-mismatched entry correctly non-matching), daemon loss, and service-restart recovery were exercised live with zero unauthorized workload mutations (checkpoint digests, image, and application data unchanged). Untrusted signer, stale revocation/profile, wrong architecture, incompatible resources, disk-full and evidence-write failure remain covered by the Go contract/adversarial suites. Ambiguous operations were reconciled to blocked through the pilot agent reconcile endpoint with digest-bound observations. |
-| 5. Reboot, pairing, and remote CI acceptance | Pairing/reboot accepted; final source CI pending. Formal pairing acceptance recorded with digest-bound node/CA/registry evidence (acceptance record canonical SHA-256 `sha256:b0cc0f413bc90a6daf242d5ccfab10f0fe4788093fd876aa96809ced6a166696`; node cert SAN binds the pinned tenant and host; 18 terminal journal operations, zero pending reconciliation). Full host reboot proven unattended: boot ID `eae1e4f0-91c1-4b3c-8ac1-2b548f612323` -> `f364e12c-a52a-415a-a1d3-c58a5a38b6e4`, controlplane/pilot-agent/rootless Docker auto-started (pilot-agent boot enablement fixed in this pass), all 18 journal files byte-identical post-reboot, and `job_gitea_rollback_4` recovered the app (v28.1.0, health pass, data digest unchanged). Pairing is accepted 1-of-1 by `pilot_maintainer`; independent-human quorum cannot be met on this pilot and remains a production blocker, and the node certificate expires 2026-10-31T06:49:22Z. Earlier reboot/reconnect evidence: `artifacts/bera-003/20261030T171532Z/reboot-reconnect.json`. |
+| 5. Reboot, pairing, and remote CI acceptance | CLOSED for the bounded pilot, 31 October 2026 EAT. [Remote CI 41138899498](https://github.com/Bera-Corp/wazi/actions/runs/41138899498) passed on source commit 144e967907c9afe92d4e8159bf8ca16d8ca13cb3. Formal pairing acceptance recorded with digest-bound node/CA/registry evidence (acceptance record canonical SHA-256 `sha256:b0cc0f413bc90a6daf242d5ccfab10f0fe4788093fd876aa96809ced6a166696`; node cert SAN binds the pinned tenant and host; 18 terminal journal operations, zero pending reconciliation). Full host reboot proven unattended: boot ID `eae1e4f0-91c1-4b3c-8ac1-2b548f612323` -> `f364e12c-a52a-415a-a1d3-c58a5a38b6e4`, controlplane/pilot-agent/rootless Docker auto-started (pilot-agent boot enablement fixed in this pass), all 18 journal files byte-identical post-reboot, and `job_gitea_rollback_4` recovered the app (v28.1.0, health pass, data digest unchanged). Pairing is accepted 1-of-1 by `pilot_maintainer`; independent-human quorum cannot be met on this pilot and remains a production blocker, the node certificate was renewed to 2026-10-31T22:24:13Z (1 November 01:24 EAT). Automatic renewal and automatic app recovery remain open; current receipts are linked in the live evidence. Earlier reboot/reconnect evidence: `artifacts/bera-003/20261030T171532Z/reboot-reconnect.json`. |
 
 The competition workstream runs alongside these gates: measure the
 beneficiary baseline early, prove one bounded real Meta proposal with
