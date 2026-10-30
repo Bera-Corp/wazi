@@ -6,6 +6,7 @@ on:
       - codex/phase1-buildout
     paths:
       - .github/workflows/phase1-gitea-image-a.yml
+      - .github/actions/export-phase1-image/action.yml
   workflow_dispatch:
 
 permissions:
@@ -20,6 +21,7 @@ jobs:
       packages: write
       id-token: write
       attestations: write
+      artifact-metadata: write
     env:
       GH_TOKEN: ${{ github.token }}
       GITEA_TAG: v28.1.0
@@ -85,7 +87,7 @@ jobs:
       - name: Sign the exact image digest with GitHub build provenance
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
-          subject-name: ${{ env.IMAGE_NAME }}:28.1.0-${{ github.run_id }}-${{ github.run_attempt }}
+          subject-name: ${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
@@ -134,7 +136,7 @@ jobs:
       - name: Attest source-to-image binding
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
-          subject-name: ${{ env.IMAGE_NAME }}:28.1.0-${{ github.run_id }}-${{ github.run_attempt }}
+          subject-name: ${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build.outputs.digest }}
           predicate-type: ${{ env.PROVENANCE_PREDICATE_TYPE }}
           predicate-path: gitea-source-provenance.json
@@ -215,3 +217,12 @@ jobs:
             printf 'Source commit verification: GitHub API valid\n'
             printf 'Image: %s@%s\n' "$IMAGE_NAME" "$IMAGE_DIGEST"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Export the verified image for bera-003 transfer
+        uses: ./.github/actions/export-phase1-image
+        with:
+          image-name: ${{ env.IMAGE_NAME }}
+          image-digest: ${{ steps.build.outputs.digest }}
+          source-tag: ${{ env.GITEA_TAG }}
+          archive-name: gitea-28.1.0
+          source-workflow: .github/workflows/phase1-gitea-image-a.yml

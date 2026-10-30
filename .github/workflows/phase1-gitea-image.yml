@@ -18,6 +18,7 @@ jobs:
       packages: write
       id-token: write
       attestations: write
+      artifact-metadata: write
     env:
       GH_TOKEN: ${{ github.token }}
       GITEA_TAG: v28.2.0
@@ -203,3 +204,12 @@ jobs:
               raise SystemExit("verified attestation did not bind the exact image to the checked Gitea source")
           print(f"Verified source-to-image binding for {image_name}@{image_digest}")
           PY
+
+      - name: Export the verified image for bera-003 transfer
+        uses: ./.github/actions/export-phase1-image
+        with:
+          image-name: ${{ env.IMAGE_NAME }}
+          image-digest: ${{ steps.build.outputs.digest }}
+          source-tag: ${{ env.GITEA_TAG }}
+          archive-name: gitea-28.2.0
+          source-workflow: .github/workflows/phase1-gitea-image.yml

@@ -1,0 +1,198 @@
+name: Export verified Phase 1 image
+description: Pulls a digest-pinned Wazi image, records its config digest, attests a transport archive, and uploads it.
+inputs:
+  image-name:
+    description: Registry repository name without a tag.
+    required: true
+  image-digest:
+    description: Exact sha256 OCI digest emitted by the verified image build.
+    required: true
+  source-tag:
+    description: Verified upstream Gitea source tag.
+    required: true
+  archive-name:
+    description: Stable artifact label containing only letters, digits, dot, underscore, or hyphen.
+    required: true
+  source-workflow:
+    description: Repository-relative workflow file that built and attested the image.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Pull and export the exact image digest
+      shell: bash
+      env:
+        IMAGE_NAME: ${{ inputs.image-name }}
+        IMAGE_DIGEST: ${{ inputs.image-digest }}
+        SOURCE_TAG: ${{ inputs.source-tag }}
+        ARCHIVE_NAME: ${{ inputs.archive-name }}
+        SOURCE_WORKFLOW: ${{ inputs.source-workflow }}
+      run: |
+        set -euo pipefail
+        [[ "$IMAGE_NAME" =~ ^ghcr[.]io/bera-corp/wazi-gitea-phase1$ ]]
+        [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+        [[ "$SOURCE_TAG" =~ ^v28[.]([12])[.]0$ ]]
+        [[ "$ARCHIVE_NAME" =~ ^[A-Za-z0-9._-]+$ ]]
+        [[ "$SOURCE_WORKFLOW" =~ ^[.]github/workflows/phase1-gitea-image(-a)?[.]yml$ ]]
+        if [ "$SOURCE_TAG" = "v28.1.0" ]; then
+          test "$SOURCE_WORKFLOW" = .github/workflows/phase1-gitea-image-a.yml
+        else
+          test "$SOURCE_WORKFLOW" = .github/workflows/phase1-gitea-image.yml
+        fi
+        image_ref="$IMAGE_NAME@$IMAGE_DIGEST"
+        docker pull "$image_ref"
+        repo_digests="$(docker image inspect "$image_ref" --format '{{json .RepoDigests}}')"
+        printf '%s' "$repo_digests" | jq -e --arg ref "$image_ref" 'index($ref) != null' >/dev/null
+        config_digest="$(docker image inspect "$image_ref" --format '{{.Id}}')"
+        [[ "$config_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+        export_dir="$RUNNER_TEMP/wazi-phase1-image-export/$ARCHIVE_NAME"
+        mkdir -p "$export_dir"
+        archive_path="$export_dir/gitea-image.tar"
+        docker save "$image_ref" --output "$archive_path"
+        sha256sum "$archive_path" > "$export_dir/gitea-image.tar.sha256"
+        archive_digest="sha256:$(cut -d ' ' -f 1 "$export_dir/gitea-image.tar.sha256")"
+        export IMAGE_NAME IMAGE_DIGEST SOURCE_TAG ARCHIVE_NAME SOURCE_WORKFLOW config_digest archive_digest
+        python3 - <<'PY'
+        import json
+        import os
+
+        predicate = {
+            "schemaVersion": "1.0.0",
+            "archive": {
+                "name": os.environ["ARCHIVE_NAME"],
+                "file": "gitea-image.tar",
+                "format": "docker-archive",
+                "sha256": os.environ["archive_digest"],
+            },
+            "image": {
+                "name": os.environ["IMAGE_NAME"],
+                "digest": os.environ["IMAGE_DIGEST"],
+                "configDigest": os.environ["config_digest"],
+                "platform": "linux/amd64",
+            },
+            "source": {
+                "repository": "https://github.com/go-gitea/gitea",
+                "tag": os.environ["SOURCE_TAG"],
+                "workflow": os.environ["SOURCE_WORKFLOW"],
+                "buildRunId": os.environ["GITHUB_RUN_ID"],
+                "buildRunAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+            },
+            "exporter": {
+                "repository": os.environ["GITHUB_REPOSITORY"],
+                "workflow": os.environ["GITHUB_WORKFLOW"],
+                "workflowRef": os.environ["GITHUB_WORKFLOW_REF"],
+                "workflowCommit": os.environ["GITHUB_SHA"],
+                "runId": os.environ["GITHUB_RUN_ID"],
+                "runAttempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+            },
+        }
+        with open("gitea-image-archive-provenance.json", "w", encoding="utf-8") as output:
+            json.dump(predicate, output, sort_keys=True, separators=(",", ":"))
+            output.write("\n")
+        PY
+        {
+          printf 'Transport archive: %s\n' "$archive_path"
+          printf 'Transport archive digest: %s\n' "$archive_digest"
+          printf 'OCI image digest: %s\n' "$IMAGE_DIGEST"
+          printf 'OCI config digest: %s\n' "$config_digest"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload digest-pinned transport artifact
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: ${{ inputs.archive-name }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ runner.temp }}/wazi-phase1-image-export/${{ inputs.archive-name }}/gitea-image.tar
+          ${{ runner.temp }}/wazi-phase1-image-export/${{ inputs.archive-name }}/gitea-image.tar.sha256
+          gitea-image-archive-provenance.json
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Attest the exact transport archive
+      uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+      with:
+        subject-name: ${{ inputs.archive-name }}-image-archive.tar
+        subject-path: ${{ runner.temp }}/wazi-phase1-image-export/${{ inputs.archive-name }}/gitea-image.tar
+        predicate-type: https://wazi.dev/attestations/gitea-image-archive/v1
+        predicate-path: gitea-image-archive-provenance.json
+
+    - name: Verify archive attestation
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ARCHIVE_NAME: ${{ inputs.archive-name }}
+        ARCHIVE_PATH: ${{ runner.temp }}/wazi-phase1-image-export/${{ inputs.archive-name }}/gitea-image.tar
+        EXPECTED_IMAGE_NAME: ${{ inputs.image-name }}
+        EXPECTED_IMAGE_DIGEST: ${{ inputs.image-digest }}
+        EXPECTED_SOURCE_TAG: ${{ inputs.source-tag }}
+        EXPECTED_SOURCE_WORKFLOW: ${{ inputs.source-workflow }}
+        SOURCE_WORKFLOW: ${{ inputs.source-workflow }}
+      run: |
+        set -euo pipefail
+        signer_workflow="$GITHUB_REPOSITORY/$SOURCE_WORKFLOW"
+        verified="$RUNNER_TEMP/gitea-image-archive-attestation.json"
+        gh attestation verify "$ARCHIVE_PATH" --repo "$GITHUB_REPOSITORY" \
+          --signer-workflow "$signer_workflow" --source-digest "$GITHUB_SHA" \
+          --predicate-type https://wazi.dev/attestations/gitea-image-archive/v1 \
+          --format json > "$verified"
+        archive_digest="sha256:$(sha256sum "$ARCHIVE_PATH" | cut -d ' ' -f 1)"
+        config_digest="$(docker image inspect "$EXPECTED_IMAGE_NAME@$EXPECTED_IMAGE_DIGEST" --format '{{.Id}}')"
+        python3 - "$verified" "$ARCHIVE_NAME" "$archive_digest" \
+          "$EXPECTED_IMAGE_NAME" "$EXPECTED_IMAGE_DIGEST" "$config_digest" \
+          "$EXPECTED_SOURCE_TAG" "$EXPECTED_SOURCE_WORKFLOW" "$GITHUB_REPOSITORY" "$GITHUB_WORKFLOW" \
+          "$GITHUB_WORKFLOW_REF" "$GITHUB_SHA" "$GITHUB_RUN_ID" \
+          "$GITHUB_RUN_ATTEMPT" <<'PY'
+        import json
+        import sys
+
+        (path, archive_name, archive_digest, image_name, image_digest,
+         config_digest, source_tag, source_workflow, repository, workflow, workflow_ref,
+         workflow_commit, run_id, run_attempt) = sys.argv[1:]
+        with open(path, encoding="utf-8") as source:
+            records = json.load(source)
+        expected_hex = archive_digest.removeprefix("sha256:")
+        verified = False
+        for record in records:
+            statement = record.get("verificationResult", {}).get("statement", {})
+            if statement.get("predicateType") != "https://wazi.dev/attestations/gitea-image-archive/v1":
+                continue
+            subjects = statement.get("subject", [])
+            subject_matches = any(
+                subject.get("name") == archive_name + "-image-archive.tar"
+                and subject.get("digest", {}).get("sha256") == expected_hex
+                for subject in subjects
+            )
+            predicate = statement.get("predicate", {})
+            archive = predicate.get("archive", {})
+            image = predicate.get("image", {})
+            source_binding = predicate.get("source", {})
+            exporter = predicate.get("exporter", {})
+            verified = (
+                subject_matches
+                and predicate.get("schemaVersion") == "1.0.0"
+                and archive.get("name") == archive_name
+                and archive.get("file") == "gitea-image.tar"
+                and archive.get("format") == "docker-archive"
+                and archive.get("sha256") == archive_digest
+                and image.get("name") == image_name
+                and image.get("digest") == image_digest
+                and image.get("configDigest") == config_digest
+                and image.get("platform") == "linux/amd64"
+                and source_binding.get("repository") == "https://github.com/go-gitea/gitea"
+                and source_binding.get("tag") == source_tag
+                and source_binding.get("workflow") == source_workflow
+                and str(source_binding.get("buildRunId")) == run_id
+                and str(source_binding.get("buildRunAttempt")) == run_attempt
+                and exporter.get("repository") == repository
+                and exporter.get("workflow") == workflow
+                and exporter.get("workflowRef") == workflow_ref
+                and exporter.get("workflowCommit") == workflow_commit
+                and exporter.get("runId") == run_id
+                and str(exporter.get("runAttempt")) == run_attempt
+            )
+            if verified:
+                break
+        if not verified:
+            raise SystemExit("archive attestation did not bind the uploaded bytes to the exact OCI image")
+        print(f"Verified transport archive {archive_name} for {image_name}@{image_digest}")
+        PY
