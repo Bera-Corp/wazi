@@ -160,6 +160,50 @@ func TestExecutorRejectsUnverifiedReadOnlyOutcome(t *testing.T) {
 	}
 }
 
+func TestExecutorRejectsImageAndComposeDigestMismatchesBeforeRuntime(t *testing.T) {
+	tests := []struct {
+		name       string
+		capability string
+		parameters string
+	}{
+		{
+			name:       "image digest differs from signed manifest",
+			capability: "compose.pull",
+			parameters: "{\"service\":\"gitea\",\"imageDigest\":\"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"}",
+		},
+		{
+			name:       "compose artifact digest differs from signed release",
+			capability: "compose.up",
+			parameters: "{\"service\":\"gitea\",\"projectName\":\"wazi-gitea\",\"composeArtifactDigest\":\"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\"}",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			prepared := executorPrepared(t, test.capability, test.parameters)
+			journal := executorJournal(t)
+			boundary := &executorBoundary{journal: journal, jobID: "job_executor_digest"}
+			executor, err := New(Config{
+				Journal: journal, Boundary: boundary,
+				Preflight: func(context.Context) (PreparedExecution, error) { return prepared, nil },
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := executor.Execute(context.Background(), Request{
+				JobID: "job_executor_digest", CaseID: "case_executor_digest",
+			}); err == nil {
+				t.Fatal("mismatched digest was accepted")
+			}
+			if _, exists := journal.GetByJob("job_executor_digest"); exists {
+				t.Fatal("mismatched digest created a journal operation")
+			}
+			if boundary.verifyCalls != 0 || boundary.executeCalls != 0 {
+				t.Fatalf("mismatched digest reached runtime: verify=%d execute=%d", boundary.verifyCalls, boundary.executeCalls)
+			}
+		})
+	}
+}
+
 func executorJournal(t *testing.T) *operationjournal.Journal {
 	t.Helper()
 	journal, err := operationjournal.New(filepath.Join(t.TempDir(), "journal"), nil)
