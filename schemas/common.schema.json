@@ -24,7 +24,7 @@
     "approvalAction": {
       "enum": [
         "install", "public-exposure", "destructive-storage", "migration",
-        "upgrade", "rollback", "uninstall", "privilege-escalation",
+        "upgrade", "rollback", "uninstall", "backup", "privilege-escalation",
         "manifest-promotion"
       ]
     },

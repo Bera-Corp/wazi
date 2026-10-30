@@ -1,0 +1,46 @@
+{
+ "record": "phase1-pairing-acceptance",
+ "scope": {
+  "tenantScope": "tenant_live_20261030T064834Z",
+  "hostId": "host_bera-003",
+  "applicationId": "org.gitea.gitea",
+  "project": "wazi-gitea-phase1"
+ },
+ "decision": "accepted-for-pilot",
+ "approver": {
+  "approverId": "pilot_maintainer",
+  "quorum": "1-of-1",
+  "independentHumanQuorum": false
+ },
+ "pairingEvidence": {
+  "nodeCertificateSha256": "sha256:a951efa5763e34f47596a92c52309990c06d1772461f2870dd833a9129138c8c",
+  "pairingCaSha256": "sha256:6827f47dc080bff8a27a40961e859b629611e9f4c02f7d6a6c3fa60650ebd497",
+  "issuerCaSha256": "sha256:f304f65a4f3556ad9f960aa8572352d3d53edabaed910b50dc8bcba83ac23ea5",
+  "certificateSubject": "CN=host_bera-003",
+  "certificateIssuer": "CN=wazi-bera003-dev-pairing-ca",
+  "certificateSanUri": "urn:wazi:tenant:tenant_live_20261030T064834Z:node:host_bera-003",
+  "registryNodeFingerprint": "34546c8241357c8868bc7ec255e952120a70295190c61302bd252c9f787619ef",
+  "registrySha256": "sha256:4478801ad97247302e190835a0cdc95c1c1eb99ab083ac710d35be4d24e258b3",
+  "enrolledAt": "2026-10-30T09:49:22.07933112+03:00",
+  "certificateExpiresAt": "2026-10-31T06:49:22Z",
+  "revoked": false
+ },
+ "operationalEvidence": {
+  "journalOperationsTerminal": 18,
+  "journalStatesAtAcceptance": "12 completed, 5 blocked (reconciled), 1 failed; zero pending reconciliation",
+  "pairedIdentityExercisedBy": [
+   "job_gitea_install_17",
+   "job_gitea_upgrade_3",
+   "job_gitea_backup_2",
+   "job_gitea_restore_4",
+   "job_gitea_rollback_2",
+   "job_adv_tamper_1",
+   "job_adv_revoked_2"
+  ]
+ },
+ "limitations": [
+  "Single configured approver (pilot_maintainer): this acceptance is 1-of-1 and does not establish independent-human quorum, which remains a production blocker.",
+  "Node certificate expires 2026-10-31T06:49:22Z; renewal must complete before expiry for continued unattended operation."
+ ],
+ "acceptedAt": "2026-10-30T22:15:37Z"
+}

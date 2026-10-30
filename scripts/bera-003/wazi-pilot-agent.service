@@ -1,0 +1,30 @@
+[Unit]
+Description=Wazi bounded Phase 1 Gitea pilot worker (rootless)
+After=network.target
+
+[Service]
+Type=simple
+User=wazi-runtime
+Group=wazi-runtime
+Slice=user-1002.slice
+Environment=HOME=/srv/wazi-runtime/home
+Environment=XDG_RUNTIME_DIR=/run/user/1002
+Environment=DOCKER_CONTEXT=rootless
+Environment=PATH=/usr/bin:/bin
+ExecStart=/opt/wazi-dev/20261030T201437Z/wazi-pilot-agent -config /etc/wazi-phase1/agent.json
+RuntimeDirectory=wazi-phase1
+RuntimeDirectoryMode=0770
+UMask=0077
+# NoNewPrivileges must stay off: the worker crosses to root only via the
+# sudoers-pinned fixed quota helper (/usr/local/libexec/wazi-phase1-quota).
+NoNewPrivileges=false
+PrivateTmp=true
+ReadWritePaths=/srv/wazi-runtime /run/wazi-phase1
+MemoryMax=192M
+CPUQuota=25%
+TasksMax=128
+Restart=no
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

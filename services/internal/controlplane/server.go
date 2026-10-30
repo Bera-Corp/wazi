@@ -39,6 +39,9 @@ const (
 // a CA is configured; plain mode is a loopback-only dev mode and the
 // binary refuses to bind it beyond loopback.
 type Config struct {
+	// PilotAgentSocket enables only the operator-authenticated private pilot
+	// dispatcher. The agent independently verifies and journals every job.
+	PilotAgentSocket       string
 	Registry               *pairing.Registry
 	ManifestRegistry       *manifestregistry.Registry
 	ApprovalRegistry       *approvalregistry.Registry
@@ -124,7 +127,7 @@ func (s *Server) TLSConfig(serverCert tls.Certificate) *tls.Config {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	registerBrandAssets(mux)
-	mux.HandleFunc("GET /{$}", handleStatusPage)
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) { renderStatusPage(w, s.cfg.PilotAgentSocket != "") })
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
@@ -146,12 +149,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/approvals/{approvalID}/consume", s.handleConsumeApproval)
 	// Deployment stays disabled until approval, runtime-boundary,
 	// revocation, journal, and lifecycle gates pass.
-	mux.HandleFunc("POST /v1/deployments", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusNotImplemented, map[string]string{
-			"error":  "deployment_disabled",
-			"detail": "deployment is disabled until operator approval, policy and revocation checks, bounded runtime, journal recovery, and lifecycle acceptance pass",
-		})
-	})
+	mux.HandleFunc("POST /v1/deployments", s.handlePilotDeployment)
+	mux.HandleFunc("GET /v1/deployments/{jobID}", s.handlePilotDeploymentStatus)
 	return mux
 }
 

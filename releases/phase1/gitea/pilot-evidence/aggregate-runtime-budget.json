@@ -1,0 +1,14 @@
+{
+  "agent": {
+    "CPUQuotaPerSecUSec": "250ms",
+    "ControlGroup": "/user.slice/user-1002.slice/wazi-pilot-agent.service",
+    "MemoryMax": "201326592"
+  },
+  "applicationHealth": "pass",
+  "parent": {
+    "CPUQuotaPerSecUSec": "2.625000s",
+    "ControlGroup": "/user.slice/user-1002.slice",
+    "MemoryMax": "1610612736"
+  },
+  "verifiedAt": "2026-10-30T22:25:06+00:00"
+}

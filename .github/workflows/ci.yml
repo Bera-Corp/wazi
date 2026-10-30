@@ -45,7 +45,7 @@ jobs:
         run: go test ./... -count=1
       - name: Go race tests (native Linux)
         working-directory: services
-        run: go test -race ./internal/controlplane/ ./internal/pairing/ ./internal/agentclient/ -count=1
+        run: go test -race ./internal/controlplane/ ./internal/pairing/ ./internal/agentclient/ ./internal/operationjournal/ ./internal/pilotqueue/ -count=1
       - name: Go vet (native and cross)
         working-directory: services
         run: |

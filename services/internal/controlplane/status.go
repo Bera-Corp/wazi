@@ -1,15 +1,27 @@
 package controlplane
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 // The development browser entry point contains no tenant or credential data.
 // Protected APIs retain their existing authentication and execution gates.
 func handleStatusPage(w http.ResponseWriter, _ *http.Request) {
+	renderStatusPage(w, false)
+}
+
+func renderStatusPage(w http.ResponseWriter, pilot bool) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
-	_, _ = w.Write([]byte(statusPage))
+	page := statusPage
+	if pilot {
+		page = strings.ReplaceAll(page, "Disabled · safety gates open", "Pilot enabled · Gitea only")
+		page = strings.ReplaceAll(page, "Application execution remains disabled until its verification gates pass.", "The Gitea pilot requires authenticated approval and verification. General application deployment remains disabled.")
+	}
+	_, _ = w.Write([]byte(page))
 }
 
 const statusPage = `<!doctype html>

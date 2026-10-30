@@ -358,8 +358,20 @@ func bindProcedureSteps(steps []map[string]any, procedure map[string]any, label 
 		}
 		contractByCapability[capability] = contract
 	}
-	if len(contractByCapability) != len(sequence) {
+	// Contracts are keyed by capability while the sequence may repeat a
+	// capability (e.g. backing up two volumes). Exact cover therefore
+	// compares capability sets, not sequence length.
+	covered := make(map[string]bool, len(sequence))
+	for _, capability := range sequence {
+		covered[capability] = true
+	}
+	if len(contractByCapability) != len(covered) {
 		return fmt.Errorf("%s procedure parameterContracts must cover exactly the capability sequence", label)
+	}
+	for capability := range contractByCapability {
+		if !covered[capability] {
+			return fmt.Errorf("%s procedure parameterContracts must cover exactly the capability sequence", label)
+		}
 	}
 	for index, step := range steps {
 		capability, _ := step["capability"].(string)

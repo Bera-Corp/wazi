@@ -171,6 +171,13 @@ func (e *Executor) Execute(ctx context.Context, request Request) (operationjourn
 	if !prepared.Verified() {
 		return operationjournal.Snapshot{}, fmt.Errorf("execution preflight returned an unverified value")
 	}
+	// A production boundary can reject an unsupported plan in its entirety
+	// before journaling or invoking even its first supported mutation.
+	if validator, ok := e.boundary.(interface{ ValidatePrepared(PreparedExecution) error }); ok {
+		if err := validator.ValidatePrepared(prepared); err != nil {
+			return operationjournal.Snapshot{}, fmt.Errorf("runtime plan rejected before mutation: %w", err)
+		}
+	}
 	plan, appID, err := decodePrepared(prepared)
 	if err != nil {
 		return operationjournal.Snapshot{}, err

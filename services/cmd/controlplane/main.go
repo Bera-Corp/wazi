@@ -57,9 +57,13 @@ func run(ctx context.Context) error {
 	approverCredentialsFile := flag.String("approver-credentials-file", os.Getenv("WAZI_APPROVER_CREDENTIALS_FILE"), "private file containing distinct approver credential hashes")
 	approverID := flag.String("approver-id", os.Getenv("WAZI_APPROVER_ID"), "configured local operator identity recorded on approvals")
 	approverRole := flag.String("approver-role", os.Getenv("WAZI_APPROVER_ROLE"), "configured approver role: user or maintainer")
+	pilotSocket := flag.String("pilot-agent-socket", os.Getenv("WAZI_PILOT_AGENT_SOCKET"), "private Unix socket for the bounded Phase 1 pilot agent")
 	flag.Parse()
 
 	mtlsEnabled := *tlsCertFile != "" && *tlsKeyFile != ""
+	if *pilotSocket != "" && (*pilotSocket != "/run/wazi-phase1/agent.sock" || !mtlsEnabled || os.Getenv("WAZI_OPERATOR_TOKEN") == "" || *approvalRegistryDir == "" || *manifestRegistryDir == "" || *capabilityPolicyFile == "") {
+		return fmt.Errorf("pilot dispatch requires the fixed Unix socket, mTLS, operator authorization, approvals, manifest registry and capability policy")
+	}
 	if *capabilityPolicyFile != "" && !mtlsEnabled {
 		return fmt.Errorf("capability policy serving requires a TLS listener with paired-node client authentication")
 	}
@@ -110,6 +114,7 @@ func run(ctx context.Context) error {
 	}
 
 	cfg := controlplane.Config{
+		PilotAgentSocket:       *pilotSocket,
 		AllowPlaintextProfiles: *allowPlain,
 		CapabilityPolicyBundle: capabilityPolicyBundle,
 		// Operator token comes from the environment only: it must

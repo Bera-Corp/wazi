@@ -1,13 +1,21 @@
 # Wazi services (Phase 1)
 
-Go workspace for the deterministic vertical slice. Single module,
-standard library only for now.
+Go workspace for the deterministic vertical slice. Signature verification uses
+the standard library; canonical schema validation uses jsonschema/v6.
+
+**31 October 2026:** the bounded Gitea pilot runs on bera-003, including the
+signed A/B lifecycle, approvals, journal recovery and the documented live denial
+subset. See [the live evidence](../docs/PHASE1_LIVE_EVIDENCE.md) for current
+scope, limits and CI status. General deployment remains disabled by default.
+The incremental implementation notes below predate live pilot qualification.
 
 | Path | Responsibility |
 |---|---|
 | internal/verify | Strict canonical JSON, versioned signer-policy loading, and offline Cosign v3.1.4 ECDSA verification using policy-pinned keys |
 | `cmd/agent` | Host agent: live inventory → host-profile, optional mTLS pairing + submission. Later: typed capability execution, evidence reporting |
 | `cmd/controlplane` | Control plane: pairing (one-time codes, CSR issuance, revocation), authenticated host-profile intake, signed manifest/procedure registry, and configured approval pilot |
+| `cmd/pilot-agent` | Operator-configured rootless Gitea worker: persistent queue, immediate preflight, typed capabilities, backup/restore, and journal reconciliation |
+| `internal/pilotqueue` | Durable private Unix-socket job transport, identity conflict rejection and retained results |
 | `internal/agentclient` | Agent-side enrollment (node key stays on the node; only a CSR is sent), mTLS profile submission, signed release fetch/verification, read-only execution binding, and approval checks |
 | `internal/controlplane` | HTTP surface: strict host-profile intake, operator-authenticated manifest/procedure ingest, paired-node reads, and approval issue/consume routes; deployment remains disabled (501) |
 | `internal/pairing` | Pairing registry and CA: one-time expiring codes bound to (tenant, node), certificate binding, revocation |

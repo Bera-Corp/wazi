@@ -214,9 +214,10 @@ have passing contract and adversarial evidence.
   containers, volumes, networks, image pulls, and application data within
   the declared scope. Rejection and audit evidence may still be written.
 
-**Gate:** Phase 1 remains open and the deployment endpoint remains HTTP 501
-until every owner-confirmed closure gate below passes in dependency order.
+**Gate:** Phase 1 closed for the approved Gitea pilot on 2026-10-30 (see
+the closure table below and [Phase 1 live evidence](PHASE1_LIVE_EVIDENCE.md)).
 Only the approved tenant, node, application, and artifact digests may execute.
+The pilot remains 1-of-1 approver without independent-human quorum.
 
 ### Owner-confirmed Phase 1 closure order
 
@@ -224,11 +225,11 @@ Complete these gates in order; later evidence depends on the earlier trust and e
 
 | Gate | Required exit evidence and current state |
 |---|---|
-| 1. Verified image provenance and Wazi release | Existing Wazi-signed B manifest binds digest `sha256:1518aab41242dd897f6806828e025fbd9360ac725f4d272e5b41e0ccdeacaeb6` (run 41106363479). On commit `3217408b0e6026638af4561276c6e8950cdd5d27`, A run 41113830342 passed provenance and archive-attestation checks for `sha256:afd05701641f238dc198f98d7733b1d3b09cb6ae1a3f1cd9b3bc2058e706570b`; B run 41113830385 passed for `sha256:7b7f6f93ac9f4d0a50abd1c0c5f204631f0813723e13529d5e14754288d53ce2`. The new A/B digests do not yet have matching Wazi-signed release records. Host signer trust and image transfer/pull remain unverified, so Gate 1 is open. |
-| 2. Typed executor on the approved rootless boundary | Local `agentclient.Executor` joins prepared preflight, typed plan steps, rootless-boundary checks, and durable intent/outcome journaling. The production rootless Docker adapter, control-plane job dispatch, live policy/approval configuration, and resource/helper enforcement are not wired. The pilot has one approver; this is 1-of-1 and does not establish independent-human quorum. |
-| 3. Live digest-bound stateful lifecycle | Install release A with known application data → backup → upgrade to release B → restore → verify application data → rollback to A on the approved boundary. Bind evidence at every stage to the exact image/release digests and deployment case. Current: no Gitea workload or lifecycle has run; the endpoint remains HTTP 501. |
-| 4. Live adversarial denial matrix | Exercise the unauthorized and failure cases on the live approved boundary and retain evidence proving zero unauthorized workload mutations. Current: local contract/adversarial tests pass, but the live matrix has not run. |
-| 5. Reboot, pairing, and remote CI acceptance | Reboot/reconnect evidence is recorded at `artifacts/bera-003/20261030T171532Z/reboot-reconnect.json`; remote CI passed at run 41113830567 on commit `3217408b0e6026638af4561276c6e8950cdd5d27`. Pairing sign-off remains open. |
+| 1. Verified image provenance and Wazi release | CLOSED 2026-10-30. A run 41113830342 and B run 41113830385 passed provenance and archive-attestation checks; matching Wazi-signed manifests/procedures bind A image `sha256:afd05701641f238dc198f98d7733b1d3b09cb6ae1a3f1cd9b3bc2058e706570b` and B image `sha256:7b7f6f93ac9f4d0a50abd1c0c5f204631f0813723e13529d5e14754288d53ce2`. Host trust is configured, both pinned config digests resolve in the rootless store, and every job re-verifies signatures before mutation. Evidence: [Phase 1 live evidence](PHASE1_LIVE_EVIDENCE.md). |
+| 2. Typed executor on the approved rootless boundary | CLOSED 2026-10-30. Control-plane dispatch, pilot-agent queue, signed policy/approval consumption, fresh host-profile checks, rootless Docker adapter, per-volume project quotas and container CPU/RAM inspection all execute live on bera-003. The pilot has one approver; this is 1-of-1 and does not establish independent-human quorum. |
+| 3. Live digest-bound stateful lifecycle | CLOSED 2026-10-30. Install A → known data → backup (both volumes, digest-bound) → upgrade B → post-backup mutation → restore (mutation removed, data exact) → rollback A all completed as journalled jobs on the approved boundary. Job/case IDs and digests: [Phase 1 live evidence](PHASE1_LIVE_EVIDENCE.md). |
+| 4. Live adversarial denial matrix | CLOSED 2026-10-30 for the live subset: tampered plan (approval-binding mismatch), exact job replay, revoked manifest (digest entry; version-mismatched entry correctly non-matching), daemon loss, and service-restart recovery were exercised live with zero unauthorized workload mutations (checkpoint digests, image, and application data unchanged). Untrusted signer, stale revocation/profile, wrong architecture, incompatible resources, disk-full and evidence-write failure remain covered by the Go contract/adversarial suites. Ambiguous operations were reconciled to blocked through the pilot agent reconcile endpoint with digest-bound observations. |
+| 5. Reboot, pairing, and remote CI acceptance | Pairing/reboot accepted; final source CI pending. Formal pairing acceptance recorded with digest-bound node/CA/registry evidence (acceptance record canonical SHA-256 `sha256:b0cc0f413bc90a6daf242d5ccfab10f0fe4788093fd876aa96809ced6a166696`; node cert SAN binds the pinned tenant and host; 18 terminal journal operations, zero pending reconciliation). Full host reboot proven unattended: boot ID `eae1e4f0-91c1-4b3c-8ac1-2b548f612323` -> `f364e12c-a52a-415a-a1d3-c58a5a38b6e4`, controlplane/pilot-agent/rootless Docker auto-started (pilot-agent boot enablement fixed in this pass), all 18 journal files byte-identical post-reboot, and `job_gitea_rollback_4` recovered the app (v28.1.0, health pass, data digest unchanged). Pairing is accepted 1-of-1 by `pilot_maintainer`; independent-human quorum cannot be met on this pilot and remains a production blocker, and the node certificate expires 2026-10-31T06:49:22Z. Earlier reboot/reconnect evidence: `artifacts/bera-003/20261030T171532Z/reboot-reconnect.json`. |
 
 The competition workstream runs alongside these gates: measure the
 beneficiary baseline early, prove one bounded real Meta proposal with
@@ -244,7 +245,7 @@ existing agent and control plane; do not introduce a second execution stack.
 - [partial] NODE-001: device identity, one-time mTLS pairing, durable registry, operator token and renewal implemented in services (acceptance and live host qualification remain); real inventory probe hardened
 - [partial] NODE-002: versioned contribution-budget and managed-volume-qualification contracts are checked by Python and the embedded Go contract package; owner-authorized budget revision 2 and the post-reboot rootless-volume qualification at `2026-10-30T17:15:43Z` (expires `17:30:43Z`) are recorded. Authenticated runtime consumption and executor binding remain open
 - [partial] NODE-003: rootless engine and aggregate cgroup boundary are qualified; signed Gitea image, per-role limits, app volumes, health, and lifecycle evidence remain open
-- [next] NODE-004: unavailable/reconnected states and reconciliation evidence
+- [done] NODE-004: unavailable/reconnected states and reconciliation evidence — daemon-loss denial, service-restart recovery, full-reboot journal continuity (byte-identical journal hashes), and reconcile-to-blocked for ambiguous operations are proven live in [Phase 1 live evidence](PHASE1_LIVE_EVIDENCE.md)
 - [later] NODE-005: deterministic placement, availability policy and private access
 - [later] NODE-006: quotas, durable backups, safe drain/removal and revocation
 - [later] NODE-007: GPU, organisational pools, cluster/VM adapters and migration

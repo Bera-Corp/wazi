@@ -1,5 +1,12 @@
 # Phase 1 reference app: Gitea
 
+**Current pilot status — 31 October 2026:** A/B lifecycle, pairing acceptance,
+reboot/service recovery and the declared live adversarial subset are recorded
+in [PHASE1_LIVE_EVIDENCE.md](PHASE1_LIVE_EVIDENCE.md). Gitea A is serving on
+bera-003. Final source CI is tracked separately; independent-human quorum,
+automatic certificate renewal and automatic app recovery remain outside this
+pilot acceptance. The dated build observations below are historical.
+
 Status (30 October 2026): Bera-Corp's Gitea 28.2.0 image was rebuilt from the
 verified upstream v28.2.0 source and its exact digest was bound by the Wazi
 source-attestation workflow. A local, Wazi-signed pilot release manifest for
@@ -17,13 +24,13 @@ pilot signer policy is not installed on bera-003, and image transfer/pull has
 not been verified. The pilot has one approver and does not claim
 independent-human quorum. A typed orchestration interface and durable journal
 exist locally, but the rootless Docker boundary and control-plane dispatch are
-not integrated. The latest managed-volume qualification expired at 17:30:43Z.
+not integrated. [Superseded 2026-10-30: integrated and executing for the pinned pilot; see [Phase 1 live evidence](PHASE1_LIVE_EVIDENCE.md).] The latest managed-volume qualification expired at 17:30:43Z.
 A fresh read-only host preflight at 19:09:32Z found no rootless containers or
 volumes, no configured GHCR pull credential, and no host mutation; see
 `artifacts/bera-003/20261030T190932Z/phase1-execution-preflight.json`. Pairing
 sign-off, the live digest-bound lifecycle and live denial matrix remain open.
 Remote CI passed run 41113830567. The deployment endpoint remains HTTP 501 and
-no Gitea workload has been created.
+no Gitea workload has been created. [Superseded 2026-10-30: lifecycle, denial matrix, and reconciliation passed live; the generic deployment route stays disabled outside the pinned pilot.]
 
 The owner-confirmed, dependency-ordered Phase 1 exit gates and their current
 evidence are tracked in [BACKLOG.md](BACKLOG.md#owner-confirmed-phase-1-closure-order).

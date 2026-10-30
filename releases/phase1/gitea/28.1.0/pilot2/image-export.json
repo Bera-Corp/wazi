@@ -1,0 +1,30 @@
+{
+  "archive": {
+    "file": "gitea-image.tar",
+    "format": "docker-archive",
+    "name": "gitea-28.1.0",
+    "sha256": "sha256:12b871207f95518975384364720e5b95ecf9155a7b0059e3f1dfd7c4fa6e384e"
+  },
+  "exporter": {
+    "repository": "Bera-Corp/wazi",
+    "runAttempt": 1,
+    "runId": "41113830342",
+    "workflow": "phase1-gitea-image-a",
+    "workflowCommit": "3217408b0e6026638af4561276c6e8950cdd5d27",
+    "workflowRef": "Bera-Corp/wazi/.github/workflows/phase1-gitea-image-a.yml@refs/heads/codex/phase1-buildout"
+  },
+  "image": {
+    "configDigest": "sha256:07a1cbdc452fe6ba4984b8733874c4ff729a29a5c318c073911c0fc5a39e2bae",
+    "digest": "sha256:afd05701641f238dc198f98d7733b1d3b09cb6ae1a3f1cd9b3bc2058e706570b",
+    "name": "ghcr.io/bera-corp/wazi-gitea-phase1",
+    "platform": "linux/amd64"
+  },
+  "schemaVersion": "1.0.0",
+  "source": {
+    "buildRunAttempt": 1,
+    "buildRunId": "41113830342",
+    "repository": "https://github.com/go-gitea/gitea",
+    "tag": "v28.1.0",
+    "workflow": ".github/workflows/phase1-gitea-image-a.yml"
+  }
+}

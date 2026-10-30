@@ -96,6 +96,9 @@ func VerifyExecutionBindingWithResources(
 	if err := validateApplicationResourceLimits(manifest, budget); err != nil {
 		return empty, fmt.Errorf("application resource limits rejected: %w", err)
 	}
+	if err := verifyHostCompatibility(manifest, hostProfile); err != nil {
+		return empty, fmt.Errorf("host compatibility rejected: %w", err)
+	}
 	qualification, err := contracts.DecodeManagedVolumeQualification(resources.ManagedVolumeQualificationRaw)
 	if err != nil {
 		return empty, fmt.Errorf("managed-volume qualification rejected: %w", err)

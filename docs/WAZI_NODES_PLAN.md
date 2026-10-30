@@ -12,19 +12,13 @@ existing VPS resources and future managed compute. Capacity and permission
 determine eligibility; provider names do not establish compatibility.
 
 Start with the owner running their own workloads on one Linux machine.
-The verified [bera-003 development host](DEVELOPMENT_ENVIRONMENTS.md) is the
-first test target. It is reachable by SSH/sudo. Local Go agent/inventory,
-mTLS pairing (one-time codes, revocation epochs, durable registry, renewal)
-and authenticated intake are implemented in `services/` with adversarial
-tests; pairing acceptance remains open. Local code now renders signed
-per-service CPU/RAM ceilings, checks those ceilings against the approved
-application allocation, checks signed per-volume storage ceilings, and fetches
-the referenced policy bundle over paired mTLS. The live executor, per-volume
-quota application, service/helper role enforcement and lifecycle runtime are
-not integrated. The dedicated rootless runtime boundary passed reboot/
-reconnect acceptance; the most recent managed-volume qualification passed at
-2026-10-30T17:15:43Z and expired at 17:30:43Z. Deployment remains disabled
-(501).
+The [bera-003 Gitea pilot](PHASE1_LIVE_EVIDENCE.md) now has live signed
+A/B lifecycle, pairing, quota/limit enforcement and recovery evidence.
+Its scope is one tenant, node and application, with a single configured
+approver and the explicitly documented live denial subset. General
+application deployment remains disabled. Service startup after reboot is
+automatic; application recovery uses a fresh approved job. Final source CI
+is tracked separately from live operational qualification.
 
 ## Smallest useful build
 
@@ -42,10 +36,10 @@ the product agent only accepts authenticated, typed capabilities.
 
 | Work package | Phase / status | Acceptance evidence |
 |---|---|---|
-| NODE-000 Development target | Access verified | SSH key auth, sudo, OS/architecture and current tools recorded; no claim of installed runtime |
-| NODE-001 Identity and inventory | Phase 1, implemented (acceptance open) | Node-generated private key with CSR-only enrollment; one-time expiring codes bound to (tenant, node) and invalidated by revocation; wrong-tenant/replay/revoked/renewal/in-flight-commit tests in `services/`; durable hashed-code registry and operator token; pairing sign-off remains open |
-| NODE-002 Contribution contract | Phase 1, contracts, budget and live storage qualification recorded | `contribution-budget` and `managed-volume-qualification` v1 schemas are embedded by the Go contract package; Python and Go enforce resource nesting, unique allocation roles, local-daemon constraints and exact validity-window ordering. Owner-authorized budget revision 2 preserves the 4 CPU / 2048 MiB RAM / 98304 MiB storage cap. The post-reboot live rootless named-volume project-quota test passed at 2026-10-30T17:15:43Z and expires at 17:30:43Z. Local paired mTLS policy retrieval and resource binding are implemented and tested, but live configuration and executor consumption remain open |
-| NODE-003 One application | Phase 1, B release provenance verified; runtime integration open | Separate rootless Docker identity, rootful-socket denial, aggregate CPU/RAM cgroup limits, filesystem quota behavior, and local per-service CPU/RAM rendering are verified. Gitea 28.2.0 B has Wazi source-binding provenance and a locally verified pilot-signed release; A is not built, host signer trust/image pull are unverified, and the latest live volume qualification has expired. Rootless runtime adapter, per-role/helper limits, per-volume quota application, app health and lifecycle evidence remain open |
+| NODE-000 Development target | Qualified for the pilot | Native Go/Docker, SSH/sudo, rootless runtime and reboot evidence are recorded in the live pilot evidence |
+| NODE-001 Identity and inventory | Accepted for the pilot | Digest-bound pairing acceptance is recorded, node identity was renewed on 31 October EAT, and current inventory remains tenant/node scoped. Acceptance is 1-of-1; production quorum remains open |
+| NODE-002 Contribution contract | Bound and enforced in the pilot | Jobs consume pinned budget and managed-volume records. App volumes have 18 GiB / 2 GiB project quotas and the app has 2 CPU / 1 GiB limits. Rootless Docker and the 192 MiB worker share a 2.625 CPU / 1536 MiB parent ceiling. Fresh qualification remains required for later jobs |
+| NODE-003 One application | Live lifecycle qualified for the pilot | Verified A/B archives and signed records feed the typed rootless executor. Install, backup, upgrade, restore and rollback retain known data with digest-bound evidence; live adversarial coverage and remaining limits are explicit in PHASE1_LIVE_EVIDENCE.md |
 | NODE-004 Availability/reconnect | Phase 1 extension, planned | Heartbeat expires to unavailable; UI says unreachable/unknown rather than deleted; reconnect re-inventories and reconciles the same deployment without duplicates |
 | NODE-005 Selection and private access | Phase 2, planned | Inspectable eligible/ineligible destination reasons, availability classes, per-owner policy, private connectivity and atomic resource reservation |
 | NODE-006 Durable operations | Phase 4/alpha, planned | Encrypted backups, restore evidence, quota accounting, drain/revocation and safe removal; actual storage reservation strategy |

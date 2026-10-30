@@ -1,0 +1,17 @@
+{
+  "applicationHealth": "pass",
+  "certificateDates": [
+    "notBefore=Oct 30 22:23:13 2026 GMT",
+    "notAfter=Oct 31 22:24:13 2026 GMT"
+  ],
+  "hostId": "host_bera-003",
+  "journalFilesUnchanged": 19,
+  "newCertificateFingerprint": "sha256:a421f34b6486258b9d135c28588103378342f78da331818c18cd7e2ee9ab2f21",
+  "newCertificatePemSha256": "sha256:5e72c046462e871bb28df3d837a25117b26e97fd052382eced6cf925773b499b",
+  "operation": "paired-node-renewal",
+  "previousCertificateFingerprint": "sha256:34546c8241357c8868bc7ec255e952120a70295190c61302bd252c9f787619ef",
+  "serverAnchorUnchanged": true,
+  "tenantScope": "tenant_live_20261030T064834Z",
+  "verifiedAt": "2026-10-30T22:24:13+00:00",
+  "workerActive": true
+}

@@ -222,3 +222,10 @@ This file contains a growing ruleset that improves over time. **At session start
 152. [PROCESS] Keep OCI attestation subject-name equal to the repository identity and carry run-specific tags only in the push tag — the verifier compares the subject against the untagged image name.
 
 153. [TOOL] Confirm each replacement belongs to the named target file before composing a multi-file patch — a backlog table row cannot match inside the reference-app document.
+154. [TOOL] Enumerate contract helper filenames before searching them with rg — schema helpers are not guaranteed to live in schema.go.
+155. [TOOL] Resolve test filenames with rg --files before reading — approval HTTP tests may be grouped in server_test.go rather than approvals_test.go.
+156. [TOOL] Check helper signatures before integrating them — beginBodyRead takes only the ResponseWriter and does not return an error.
+157. [PROCESS] Include context/examples and root schemas in native service qualification archives — Go tests read repository fixtures outside the services module.
+158. [TOOL] Normalize null operation receipts before inspecting nested state — preflight rejections legitimately persist operation as null.
+159. [TOOL] Capture BashScriptPath SSH output through the tool result or an explicit remote evidence file — its ProcessStartInfo transport inherits stdout and bypasses PowerShell pipeline capture.
+160. [PROCESS] Store adversarial-test console logs outside the repository workspace — intentional synthetic secret fixtures in those logs are correctly flagged by the repository-wide secret scan, including under ignored artifacts.

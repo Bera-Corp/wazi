@@ -40,7 +40,9 @@ engineering dependency order; the competition track is planned alongside it.
 **Gate:** reference app completes its lifecycle on the supported matrix without AI.
 
 The [Linux development environment](DEVELOPMENT_ENVIRONMENTS.md) is reachable
-for SSH/sudo bootstrap. Go and Docker prerequisites are pending. Integrate
+for SSH/sudo bootstrap. Go and Docker are qualified, and the approved Gitea
+pilot has [live lifecycle evidence](PHASE1_LIVE_EVIDENCE.md). Broader acceptance
+retains the limits in that record. Integrate
 the first [Wazi Node](WAZI_NODES_PLAN.md) through this same slice: authenticated
 inventory, owner contribution limits, one signed application, enforced
 CPU/RAM limits, persistent data and unavailable/reconnected evidence.

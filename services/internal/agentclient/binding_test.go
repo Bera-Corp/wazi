@@ -310,3 +310,29 @@ func findPlanStep(t *testing.T, steps []any, stepID string) map[string]any {
 	t.Fatalf("plan step %q not found", stepID)
 	return nil
 }
+
+// A capability may repeat in a signed sequence (backing up two
+// volumes) while its parameter contract appears once. Exact cover is
+// a set comparison; foreign contracts still fail.
+func TestBindProcedureStepsAllowsRepeatedCapability(t *testing.T) {
+	procedure := map[string]any{
+		"capabilitySequence": []any{"manifest.verify", "volume.backup", "volume.backup"},
+		"parameterContracts": []any{
+			map[string]any{"capability": "manifest.verify", "requiredParameters": []any{"manifestDigest", "requireReviewState"}},
+			map[string]any{"capability": "volume.backup", "requiredParameters": []any{"volume", "backupId"}},
+		},
+	}
+	steps := []map[string]any{
+		{"capability": "manifest.verify", "parameters": map[string]any{"manifestDigest": "sha256:x", "requireReviewState": "signed"}},
+		{"capability": "volume.backup", "parameters": map[string]any{"volume": "gitea-data", "backupId": "bak_1"}},
+		{"capability": "volume.backup", "parameters": map[string]any{"volume": "gitea-config", "backupId": "bak_1"}},
+	}
+	if err := bindProcedureSteps(steps, procedure, "forward"); err != nil {
+		t.Fatalf("repeated capability rejected: %v", err)
+	}
+	procedure["parameterContracts"] = append(procedure["parameterContracts"].([]any),
+		map[string]any{"capability": "compose.up", "requiredParameters": []any{"service"}})
+	if err := bindProcedureSteps(steps, procedure, "forward"); err == nil {
+		t.Fatal("foreign parameter contract accepted")
+	}
+}

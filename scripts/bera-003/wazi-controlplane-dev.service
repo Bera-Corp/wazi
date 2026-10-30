@@ -1,0 +1,28 @@
+[Unit]
+Description=Wazi development pairing control plane (bounded Gitea pilot dispatch enabled)
+After=network.target
+
+[Service]
+Type=simple
+User=wazi-controlplane-dev
+Group=wazi-controlplane-dev
+EnvironmentFile=/etc/wazi-controlplane-dev/operator.env
+ExecStart=/opt/wazi-dev/20261030T201437Z/wazi-controlplane -addr 127.0.0.1:9443 -tls-cert /etc/wazi-controlplane-dev/server.crt -tls-key /etc/wazi-controlplane-dev/server.key -ca-cert /etc/wazi-controlplane-dev/pairing-ca.crt -ca-key /etc/wazi-controlplane-dev/pairing-ca.key -registry-file /var/lib/wazi-controlplane-dev/registry.json -signing-policy-file /etc/wazi-controlplane-dev/signing-policy.json -manifest-registry-dir /var/lib/wazi-controlplane-dev/manifests -approval-registry-dir /var/lib/wazi-controlplane-dev/approvals -approver-id pilot_maintainer -approver-role maintainer -capability-policy-file /etc/wazi-controlplane-dev/policy-bundle.json -pilot-agent-socket /run/wazi-phase1/agent.sock
+WorkingDirectory=/var/lib/wazi-controlplane-dev
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/wazi-controlplane-dev
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=128M
+CPUQuota=25%
+TasksMax=64
+Restart=no
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

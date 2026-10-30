@@ -5,6 +5,13 @@
 
 **Research and product architecture report for Bera-Corp/Wazi**
 
+**31 October 2026 implementation update:** the approved Gitea pilot on
+bera-003 has live lifecycle, pairing and recovery evidence. See
+[the pilot record](PHASE1_LIVE_EVIDENCE.md) for its exact denial-test coverage,
+operational limits and final CI status. It remains a single-app, single-approver
+pilot; the production quorum requirement is open. The extension notes below
+describe earlier implementation snapshots.
+
 **30 October 2026 extension:** [Wazi Nodes and Fabric](WAZI_NODES_PLAN.md)
 integrates owner-controlled hardware as a first-class compute destination.
 It extends the existing agent/Phase 1 slice; SSH access to a development

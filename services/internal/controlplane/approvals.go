@@ -69,7 +69,7 @@ func (s *Server) handleIssueApproval(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_approval_plan", "detail": err.Error()})
 		return
 	}
-	envelope, err := parseApprovalContext(request.Envelope, "execution context envelope", contracts.ValidateExecutionContextEnvelope)
+	envelope, err := parseApprovalContext(request.Envelope, "execution context envelope", validateApprovalEnvelope)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_approval_envelope", "detail": err.Error()})
 		return
@@ -208,6 +208,25 @@ func (s *Server) handleIssueApproval(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInsufficientStorage, map[string]string{"error": "approval_registry_limit"})
 	default:
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "approval_registry_error", "detail": err.Error()})
+	}
+}
+
+// Approval issuance must validate the resource-bound v2 envelope with its own
+// schema. Never fall back to a different version after schema validation fails.
+func validateApprovalEnvelope(raw []byte) error {
+	var header struct {
+		SchemaVersion string `json:"schemaVersion"`
+	}
+	if err := json.Unmarshal(raw, &header); err != nil {
+		return err
+	}
+	switch header.SchemaVersion {
+	case "1.0.0":
+		return contracts.ValidateExecutionContextEnvelope(raw)
+	case "2.0.0":
+		return contracts.ValidateExecutionContextEnvelopeV2(raw)
+	default:
+		return fmt.Errorf("unsupported execution envelope schema version %q", header.SchemaVersion)
 	}
 }
 
