@@ -39,9 +39,11 @@ jobs:
         run: |
           set -euo pipefail
           gh release verify "$GITEA_TAG" --repo go-gitea/gitea
-          source_commit="$(git -C upstream rev-parse HEAD)"
-          test "$source_commit" = 1dc1ecdddcdc60ab14ec14e30e7bb4d84242f21f
-          printf 'Verified %s at %s\n' "$GITEA_TAG" "$source_commit"
+          tag_object="$(git -C upstream rev-parse 'refs/tags/v28.2.0^{tag}')"
+          source_commit="$(git -C upstream rev-parse 'refs/tags/v28.2.0^{commit}')"
+          test "$tag_object" = 1dc1ecdddcdc60ab14ec14e30e7bb4d84242f21f
+          test "$source_commit" = 829b49c1ae96015e345f9d2a0eb1ea7acd5f31e1
+          printf 'Verified %s tag-object=%s source-commit=%s\n' "$GITEA_TAG" "$tag_object" "$source_commit"
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1

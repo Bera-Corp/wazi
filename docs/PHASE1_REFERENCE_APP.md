@@ -61,9 +61,12 @@ The image remains unqualified until an image-level provenance statement can
 be cryptographically verified.
 
 At 2026-10-30T16:30Z, `gh release verify v28.2.0 --repo go-gitea/gitea`
-successfully verified GitHub's release attestation. Its subjects cover the
-signed source tag and release assets; none is the Gitea OCI index digest. The
-same CLI's API lookup for the exact index digest returned 404, and
+successfully verified GitHub's release attestation. The signed annotated tag
+object is `1dc1ecdddcdc60ab14ec14e30e7bb4d84242f21f`; its peeled source commit
+is `829b49c1ae96015e345f9d2a0eb1ea7acd5f31e1`. The build workflow checks both
+identities explicitly. The release attestation's subjects cover the signed
+source tag and release assets; none is the Gitea OCI index digest. The same
+CLI's API lookup for the exact index digest returned 404, and
 `--bundle-from-oci` reported no registry attestations. This verifies the
 upstream source release and release files, not the container image, so Gate 1
 remains open. See the [GitHub CLI release verification command](https://cli.github.com/manual/gh_release_verify).

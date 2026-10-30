@@ -10,7 +10,7 @@ import (
 
 func TestOperationJournalPersistsIntentAndRequiresReconciliationAfterRestart(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "journal")
 	journal := openJournal(t, root, &now)
 	created, existing, err := journal.Begin(testIdentity())
 	if err != nil || existing {
@@ -68,7 +68,7 @@ func TestOperationJournalPersistsIntentAndRequiresReconciliationAfterRestart(t *
 
 func TestAmbiguousOutcomeRequiresReconciliationAndBlocksFurtherMutations(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	journal := openJournal(t, t.TempDir(), &now)
+	journal := openJournal(t, filepath.Join(t.TempDir(), "journal"), &now)
 	defer closeJournal(t, journal)
 	operation, _, err := journal.Begin(testIdentity())
 	if err != nil {
@@ -101,7 +101,7 @@ func TestAmbiguousOutcomeRequiresReconciliationAndBlocksFurtherMutations(t *test
 
 func TestRestartBeforeFirstMutationBlocksRatherThanResuming(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "journal")
 	journal := openJournal(t, root, &now)
 	operation, _, err := journal.Begin(testIdentity())
 	if err != nil {
@@ -130,7 +130,7 @@ func TestRestartBeforeFirstMutationBlocksRatherThanResuming(t *testing.T) {
 
 func TestBeginIsIdempotentAndRejectsCaseReuse(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	journal := openJournal(t, t.TempDir(), &now)
+	journal := openJournal(t, filepath.Join(t.TempDir(), "journal"), &now)
 	defer closeJournal(t, journal)
 	first, existing, err := journal.Begin(testIdentity())
 	if err != nil || existing {
@@ -155,7 +155,7 @@ func TestBeginIsIdempotentAndRejectsCaseReuse(t *testing.T) {
 
 func TestFailedMutationCanBeCompensatedBeforeOperationCompletes(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	journal := openJournal(t, t.TempDir(), &now)
+	journal := openJournal(t, filepath.Join(t.TempDir(), "journal"), &now)
 	defer closeJournal(t, journal)
 	operation, _, err := journal.Begin(testIdentity())
 	if err != nil {
@@ -187,7 +187,7 @@ func TestFailedMutationCanBeCompensatedBeforeOperationCompletes(t *testing.T) {
 
 func TestCancellationCannotEraseAnUnresolvedMutation(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	journal := openJournal(t, t.TempDir(), &now)
+	journal := openJournal(t, filepath.Join(t.TempDir(), "journal"), &now)
 	defer closeJournal(t, journal)
 	operation, _, err := journal.Begin(testIdentity())
 	if err != nil {
@@ -221,7 +221,7 @@ func TestCancellationCannotEraseAnUnresolvedMutation(t *testing.T) {
 
 func TestJournalRejectsReadOnlyCapabilitiesAndCorruptRestart(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "journal")
 	journal := openJournal(t, root, &now)
 	operation, _, err := journal.Begin(testIdentity())
 	if err != nil {
@@ -247,7 +247,7 @@ func TestJournalRejectsReadOnlyCapabilitiesAndCorruptRestart(t *testing.T) {
 
 func TestJournalAllowsOnlyOneWriterAndReturnsDefensiveSnapshots(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "journal")
 	journal := openJournal(t, root, &now)
 	if _, err := New(root, func() time.Time { return now }); err == nil {
 		t.Fatal("second writer unexpectedly opened")
@@ -270,7 +270,7 @@ func TestJournalAllowsOnlyOneWriterAndReturnsDefensiveSnapshots(t *testing.T) {
 
 func TestJournalRejectsClockRollback(t *testing.T) {
 	now := time.Date(2026, time.October, 30, 8, 0, 0, 0, time.UTC)
-	journal := openJournal(t, t.TempDir(), &now)
+	journal := openJournal(t, filepath.Join(t.TempDir(), "journal"), &now)
 	defer closeJournal(t, journal)
 	operation, _, err := journal.Begin(testIdentity())
 	if err != nil {

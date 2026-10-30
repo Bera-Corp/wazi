@@ -13,7 +13,7 @@ import (
 
 func TestApprovalConsumptionIsDurableSingleUseAndIdempotentPerJob(t *testing.T) {
 	now := time.Date(2026, time.October, 21, 9, 5, 0, 0, time.UTC)
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "store")
 	registry := openApprovalRegistry(t, root, now)
 	raw := canonicalApprovalFixture(t)
 	if _, err := registry.Put(raw); err != nil {
@@ -48,7 +48,7 @@ func TestApprovalConsumptionIsDurableSingleUseAndIdempotentPerJob(t *testing.T) 
 
 func TestApprovalConsumptionRejectsMismatchedCaseOrDigestsBeforeMutation(t *testing.T) {
 	now := time.Date(2026, time.October, 21, 9, 5, 0, 0, time.UTC)
-	registry := openApprovalRegistry(t, t.TempDir(), now)
+	registry := openApprovalRegistry(t, filepath.Join(t.TempDir(), "store"), now)
 	defer closeApprovalRegistry(t, registry)
 	if _, err := registry.Put(canonicalApprovalFixture(t)); err != nil {
 		t.Fatal(err)
@@ -79,13 +79,16 @@ func TestApprovalConsumptionRejectsMismatchedCaseOrDigestsBeforeMutation(t *test
 
 func TestApprovalRegistryRejectsExpiredAndCorruptRecords(t *testing.T) {
 	now := time.Date(2026, time.October, 22, 0, 0, 0, 0, time.UTC)
-	registry := openApprovalRegistry(t, t.TempDir(), now)
+	registry := openApprovalRegistry(t, filepath.Join(t.TempDir(), "store"), now)
 	defer closeApprovalRegistry(t, registry)
 	if _, err := registry.Put(canonicalApprovalFixture(t)); err == nil {
 		t.Fatal("expired approval was stored")
 	}
 
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "store")
+	if err := os.Mkdir(root, 0700); err != nil {
+		t.Fatal(err)
+	}
 	corruptPath := filepath.Join(root, "appr_corrupt.json")
 	if err := os.WriteFile(corruptPath, []byte("not-json"), 0600); err != nil {
 		t.Fatal(err)
@@ -96,7 +99,7 @@ func TestApprovalRegistryRejectsExpiredAndCorruptRecords(t *testing.T) {
 }
 
 func TestApprovalRegistryAllowsOnlyOneWriter(t *testing.T) {
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "store")
 	first := openApprovalRegistry(t, root, time.Now())
 	if _, err := New(root, time.Now); err == nil {
 		t.Fatal("second registry writer unexpectedly opened")

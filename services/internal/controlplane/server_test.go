@@ -891,7 +891,7 @@ func TestDistinctApproverCredentialsReachAgentQuorum(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Date(2026, time.October, 21, 9, 5, 0, 0, time.UTC)
-	approvalStore, err := approvalregistry.New(t.TempDir(), func() time.Time { return now })
+	approvalStore, err := approvalregistry.New(filepath.Join(t.TempDir(), "approval-registry"), func() time.Time { return now })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1041,7 +1041,7 @@ func newApprovalMTLSFixture(t *testing.T) (*fixture, *approvalregistry.Registry)
 		t.Fatal(err)
 	}
 	now := time.Date(2026, time.October, 21, 9, 5, 0, 0, time.UTC)
-	approvalStore, err := approvalregistry.New(t.TempDir(), func() time.Time { return now })
+	approvalStore, err := approvalregistry.New(filepath.Join(t.TempDir(), "approval-registry"), func() time.Time { return now })
 	if err != nil {
 		t.Fatal(err)
 	}
