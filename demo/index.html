@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wazi — Phase 2 Context Retrieval Demo</title>
+<style>
+  :root {
+    --ink: #17202a; --muted: #5b6b7a; --line: #d7dee5; --paper: #ffffff;
+    --wash: #eef2f0; --teal: #0e6b5c; --teal-dark: #0a4f43; --amber: #9a6206;
+    --red: #a3271e; --mono: "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--wash); }
+  header { background: #10231f; color: #eaf3f0; padding: 20px 28px 16px; }
+  header h1 { margin: 0 0 4px; font-size: 24px; font-weight: 650; }
+  header p { margin: 0; color: #b9cdc7; font-size: 14px; max-width: 76ch; }
+  .banner { background: #fdf3d7; border-bottom: 1px solid #e3cf8f; color: #5c4303; padding: 9px 28px; font-size: 13.5px; }
+  main { padding: 18px 28px 36px; max-width: 1180px; margin: 0 auto; }
+  .metrics { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .metric { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; min-width: 180px; }
+  .metric b { display: block; font-size: 20px; }
+  .metric span { font-size: 12.5px; color: var(--muted); }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tabs button { background: var(--paper); color: var(--ink); border: 1px solid var(--line); }
+  .tabs button[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .grid { display: grid; grid-template-columns: 300px 1fr; gap: 18px; align-items: start; }
+  section { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; margin-bottom: 18px; }
+  section h2 { margin: 0 0 6px; font-size: 17px; }
+  section h2 .stage { color: var(--teal); font-size: 13px; font-weight: 600; margin-right: 8px; }
+  .sub { color: var(--muted); font-size: 13.5px; margin: 0 0 14px; max-width: 78ch; }
+  dl { display: grid; grid-template-columns: 160px 1fr; gap: 6px 14px; font-size: 14px; margin: 0 0 12px; }
+  dt { color: var(--muted); } dd { margin: 0; }
+  code, .digest { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+  .verdict { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .verdict.ok { background: #dff0e9; color: var(--teal-dark); }
+  .verdict.no { background: #fbe3e0; color: var(--red); }
+  .verdict.wait { background: #fdf3d7; color: var(--amber); }
+  button { font: inherit; font-size: 14px; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--teal); background: var(--teal); color: #fff; cursor: pointer; }
+  button.secondary { background: #fff; color: var(--teal-dark); }
+  button.danger { background: #fff; border-color: var(--red); color: var(--red); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button:focus-visible { outline: 3px solid #7fb8ab; outline-offset: 2px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; margin-bottom: 12px; }
+  th, td { border: 1px solid var(--line); padding: 7px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--wash); font-weight: 600; }
+  ol.explain { margin: 0; padding-left: 20px; font-size: 13.5px; display: grid; gap: 8px; }
+  ul.cases { margin: 0 0 12px; padding-left: 18px; font-size: 13.5px; display: grid; gap: 4px; }
+  pre { background: #10231f; color: #d9ebe5; border-radius: 8px; padding: 14px; overflow: auto; max-height: 420px; font-size: 11.5px; }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .steps li { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 6px; padding: 9px 12px; font-size: 14px; }
+  .steps .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #b7c3cc; display: inline-block; }
+  .steps li.running .dot { border-color: var(--amber); background: #f5c95c; }
+  .steps li.done .dot { border-color: var(--teal); background: var(--teal); }
+  .note { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; margin-top: 14px; }
+  .hidden { display: none; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } dl { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Wazi Phase 2 — context retrieval, explained</h1>
+  <p>Pick a scenario. The pipeline binds the request, enforces tenant isolation and redaction,
+     rejects stale or revoked context, runs hard compatibility filters, then ranks signed
+     procedures with an explainable score and assembles a digest-bound envelope.</p>
+</header>
+<div class="banner"><strong>Fixture demo, real engine.</strong> All decisions, rankings and denials below are
+  generated by <code>scripts/context_engine.py</code> into <code>demo/data.js</code> (regenerate with
+  <code>scripts/build_demo_data.py</code>). No host is touched; live execution stays
+  <code>501 deployment_disabled</code> until Phase 1 gates pass.</div>
+<main>
+  <div class="metrics" id="metrics"></div>
+  <div class="tabs" id="scenario-tabs" role="group" aria-label="Retrieval scenarios"></div>
+  <div class="grid">
+    <section aria-labelledby="h-pipeline">
+      <h2><span class="stage">Pipeline</span><span id="h-pipeline">Why this outcome?</span></h2>
+      <p class="sub">Every stage leaves a line here. A denial names the stage that stopped it.</p>
+      <ol class="explain" id="explanation"></ol>
+    </section>
+    <div id="panels"></div>
+  </div>
+</main>
+<script src="data.js"></script>
+<script>
+(function () {
+  var D = window.WAZI_DEMO;
+  if (!D) { document.getElementById("panels").innerHTML = "<section><h2>Missing data</h2><p>Run scripts/build_demo_data.py to generate demo/data.js.</p></section>"; return; }
+  var approved = false, running = false, timer = null, current = null;
+
+  var metrics = document.getElementById("metrics");
+  metrics.innerHTML =
+    metric(D.metrics.endToEndAccuracy, "end-to-end retrieval accuracy on " + D.metrics.scenarios + " adversarial scenarios") +
+    metric(D.metrics.falseAcceptRate, "end-to-end false-accept rate (must stay 0)") +
+    metric(D.metrics.hardEngineDecisionAccuracy, "hard-engine only accuracy on " + D.metrics.fixtures + " fixtures") +
+    metric(D.metrics.hardEngineFalseCompatibleRate, "hard-engine false-compatible rate") +
+    metric(D.metrics.staleRejectionRecall, "stale/revoked rejection recall");
+  function metric(v, label) { return '<div class="metric"><b>' + v + '</b><span>' + label + '</span></div>'; }
+
+  var tabs = document.getElementById("scenario-tabs");
+  D.scenarios.forEach(function (s, i) {
+    var b = document.createElement("button");
+    b.textContent = s.label; b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+    b.addEventListener("click", function () { select(s.id); });
+    b.id = "tab-" + s.id; tabs.appendChild(b);
+  });
+
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function verdict(decision) {
+    if (decision === "accept") return '<span class="verdict ok">accept</span>';
+    if (decision === "blocked") return '<span class="verdict wait">blocked</span>';
+    return '<span class="verdict no">reject</span>';
+  }
+  function short(d) { return d ? esc(d.slice(0, 19)) + "&hellip;" + esc(d.slice(-5)) : ""; }
+
+  function renderPanels() {
+    var r = current.result, p = document.getElementById("panels");
+    var html = "";
+    html += '<section><h2><span class="stage">Review</span>What the engine saw</h2>' +
+      '<dl>' +
+      '<dt>Application</dt><dd>' + esc(D.records.manifest.name) + ' <code>' + esc(D.records.manifest.appId) + '</code> v' + esc(D.records.manifest.version) + ' &middot; ' + verdict(r.decision) + '</dd>' +
+      '<dt>Manifest digest</dt><dd><span class="digest">' + short(D.records.manifest.digest) + '</span> &middot; review state ' + esc(D.records.manifest.reviewState) + '</dd>' +
+      '<dt>Host</dt><dd><code>' + esc(D.records.host.hostId) + '</code> &middot; ' + esc((D.records.host.os || {}).family) + ' ' + esc(D.records.host.architecture) + ' &middot; ' + D.records.host.resources.cpuCores + ' CPU &middot; ' + D.records.host.resources.ramMb + ' MB &middot; ports ' + esc((D.records.host.occupiedPorts || []).join(", ")) + '</dd>' +
+      '<dt>Request</dt><dd><code>' + esc(D.request.operation) + '</code> for tenant <code>' + esc(D.request.tenantScope) + '</code> at ' + esc(D.evaluationTime) + '</dd>' +
+      '<dt>Revocation</dt><dd>mode <code>' + esc(r.revocationMode || "n/a") + '</code> (metadata-validated = payloadDigest/signer/algorithm checked only, not cryptographic Cosign verification; fixture modes are labelled, never silent)</dd>' +
+      '<dt>Cases cited</dt><dd>' + r.successCases.length + ' success, ' + r.failureCases.length + ' failure — tenant-scoped to <code>' + esc(D.request.tenantScope) + '</code></dd>' +
+      (r.decision !== "accept" ? '<dt>Stopped at</dt><dd><span class="verdict no">' + esc(r.blockedStage) + '</span> reason <code>' + esc(r.reasons.join(", ")) + '</code></dd>' : '') +
+      '</dl>';
+    if (r.ranked.length) {
+      html += '<h3 style="font-size:15px;margin:14px 0 8px">Procedure ranking (compatible first, explainable score)</h3>' +
+        '<table><thead><tr><th>Procedure</th><th>Compatible</th><th>Score</th><th>Why</th></tr></thead><tbody>' +
+        r.ranked.map(function (x) {
+          return '<tr><td><code>' + esc(x.procedureId) + '</code> v' + esc(x.version) + '<br><span class="sub">' + esc(x.operation) + '</span></td>' +
+            '<td>' + (x.compatible ? '<span class="verdict ok">yes</span>' : '<span class="verdict no">no</span>') + '</td>' +
+            '<td>' + (x.compatible ? x.score : '&mdash;') + '</td>' +
+            '<td>' + esc(x.compatible ? x.explanation : x.reasons.join(", ")) + '</td></tr>';
+        }).join("") + '</tbody></table>';
+    } else {
+      html += '<p class="sub">Ranking never ran: hard filters decide before any procedure is scored.</p>';
+    }
+    html += '<h3 style="font-size:15px;margin:14px 0 8px">Cited cases</h3>' +
+      '<p class="sub" style="margin-bottom:6px">Successes: ' + (r.successCases.length ? r.successCases.map(function (c) { return '<code>' + esc(c.caseId) + '</code>'; }).join(", ") : "none comparable yet") + '</p>' +
+      '<p class="sub">Failure signatures for this app: ' + (r.failureSignatures.length ? r.failureSignatures.map(function (s) { return '<code>' + esc(s.reason) + '</code> (&times;' + s.count + ')'; }).join(", ") : "none") + '</p>' +
+      '</section>';
+
+    html += '<section><h2><span class="stage">Inspector</span>Execution-context envelope</h2>';
+    if (r.envelope) {
+      html += '<p class="sub">Schema-valid and digest-bound. Change any referenced record and this envelope no longer verifies.</p><pre>' + esc(JSON.stringify(r.envelope, null, 1)) + '</pre>';
+    } else {
+      html += '<p class="sub">No envelope was assembled. Wazi stops here: it explains the denial and cites the failure signatures above instead of inventing a plan.</p>';
+    }
+    html += '</section>';
+
+    html += '<section><h2><span class="stage">Approval</span>Human decision, then progress</h2>';
+    if (r.decision !== "accept") {
+      html += '<p class="sub">Disabled for this scenario: approval only exists for an accepted, envelope-bound plan.</p>' +
+        '<div class="row"><button disabled>Approve public exposure</button><button disabled>Run approved plan</button></div>';
+    } else {
+      html += '<p class="sub">One step needs a human: <code>proxy.configure</code> (public exposure). The approval binds to the plan and envelope digests. Pilot limit: one operator identity, no distinct-approver quorum yet.</p>' +
+        '<dl><dt>Decision</dt><dd><span id="approval-state" class="verdict wait">awaiting decision</span></dd></dl>' +
+        '<div class="row"><button id="btn-approve">Approve public exposure</button><button id="btn-reject" class="danger">Reject</button><button id="btn-reset" class="secondary">Reset</button></div>' +
+        '<ol class="steps" id="plan-steps" style="margin-top:16px"></ol>' +
+        '<div class="row" style="margin-top:14px"><button id="btn-run" disabled>Run approved plan</button><span id="run-state" class="sub" style="margin:0">Approval required before anything can run.</span></div>';
+    }
+    html += '</section>';
+
+    html += '<section><h2><span class="stage">Evidence</span>Receipts, not claims</h2><div id="evidence-slot">' +
+      '<span class="verdict wait">no evidence yet</span> <span class="sub">Complete an approved run in the compatible scenario.</span></div></section>';
+
+    p.innerHTML = html;
+    document.getElementById("explanation").innerHTML =
+      r.explanation.map(function (line) { return "<li>" + esc(line) + "</li>"; }).join("");
+    if (r.decision === "accept") { wireJourney(); }
+  }
+
+  function wireJourney() {
+    var list = document.getElementById("plan-steps");
+    D.planSteps.forEach(function (s) {
+      var li = document.createElement("li"); li.id = "row-" + s.stepId;
+      li.innerHTML = '<span class="dot" aria-hidden="true"></span><span>' + esc(s.capability) +
+        (s.requiresApproval ? ' <span class="verdict wait">needs approval</span>' : "") +
+        '</span><span class="st">pending</span>';
+      list.appendChild(li);
+    });
+    function setApproval(state, text, cls) {
+      var el = document.getElementById("approval-state");
+      el.textContent = text; el.className = "verdict " + cls;
+      document.getElementById("btn-run").disabled = !approved || running;
+      document.getElementById("run-state").textContent = state;
+    }
+    document.getElementById("btn-approve").addEventListener("click", function () {
+      approved = true; setApproval("Approved. The plan can run exactly as reviewed.", "approved by user_demo", "ok");
+    });
+    document.getElementById("btn-reject").addEventListener("click", function () {
+      approved = false; setApproval("Rejected. Nothing can run; the plan returns to review.", "rejected", "no");
+    });
+    document.getElementById("btn-reset").addEventListener("click", function () { select(current.id); });
+    document.getElementById("btn-run").addEventListener("click", function () {
+      if (!approved || running) { return; }
+      running = true; this.disabled = true;
+      document.getElementById("run-state").textContent = "Running (simulated on fixture records; journalled per step on a qualified host).";
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var i = 0;
+      function startStep() {
+        var s = D.planSteps[i], li = document.getElementById("row-" + s.stepId);
+        li.classList.add("running"); li.querySelector(".st").textContent = "running";
+        timer = setTimeout(function () {
+          li.classList.remove("running"); li.classList.add("done");
+          li.querySelector(".st").textContent = "done";
+          i += 1;
+          if (i < D.planSteps.length) { startStep(); } else {
+            running = false;
+            document.getElementById("run-state").textContent = "Run complete. Evidence recorded below.";
+            showEvidence();
+          }
+        }, reduced ? 60 : 650);
+      }
+      startStep();
+    });
+  }
+
+  function showEvidence() {
+    var ev = (D.evidence || [])[0] || {}, c = D.case || {};
+    document.getElementById("evidence-slot").innerHTML =
+      '<dl><dt>Health check</dt><dd><span class="verdict ok">' + esc(ev.result || "pass") + '</span> <code>' + esc(ev.evidenceId || "") + '</code> by ' + esc((ev.tool || {}).name || "") + ' ' + esc((ev.tool || {}).version || "") + '</dd>' +
+      '<dt>Case</dt><dd><code>' + esc(c.caseId || "") + '</code> &middot; outcome <strong>' + esc(c.outcome || "") + '</strong> &middot; ' + esc(c.durationSeconds || "") + 's &middot; ' + esc(c.interventionCount || 0) + ' interventions</dd>' +
+      '<dt>Redaction</dt><dd>applied, no secret values in evidence</dd></dl>' +
+      '<p class="note">Fixture receipts from <code>context/examples/</code>. What this does not prove: a live lifecycle on bera-003, a genuine Gitea signature, beneficiary impact, or Meta AI usage — tracked in <code>docs/BACKLOG.md</code>.</p>';
+  }
+
+  function select(id) {
+    if (timer) { clearTimeout(timer); timer = null; }
+    approved = false; running = false;
+    current = D.scenarios.find(function (s) { return s.id === id; }) || D.scenarios[0];
+    D.scenarios.forEach(function (s) {
+      document.getElementById("tab-" + s.id).setAttribute("aria-pressed", s === current ? "true" : "false");
+    });
+    renderPanels();
+  }
+  select(D.scenarios[0].id);
+})();
+</script>
+</body>
+</html>

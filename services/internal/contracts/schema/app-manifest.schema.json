@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/app-manifest.schema.json",
+  "title": "Wazi Application Manifest",
+  "description": "Signed, reviewed deployment manifest for one application release. AI may only produce candidates (reviewState candidate).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "appId", "name", "version", "license",
+    "provenance", "reviewState", "release", "requirements"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "appId": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)([-+][0-9A-Za-z.-]+)?$" },
+    "license": { "type": "string", "minLength": 2, "description": "SPDX identifier. Explicit licence required." },
+    "provenance": { "$ref": "common.schema.json#/$defs/provenance" },
+    "reviewState": { "$ref": "common.schema.json#/$defs/reviewState" },
+    "signature": { "$ref": "common.schema.json#/$defs/signature" },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["images", "ports", "healthCheck"],
+      "properties": {
+        "images": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["service", "image", "digest"],
+            "properties": {
+              "service": { "type": "string", "minLength": 1 },
+              "image": { "type": "string", "minLength": 1 },
+              "digest": { "$ref": "common.schema.json#/$defs/sha256Digest" }
+            }
+          }
+        },
+        "resourceLimits": {
+          "type": "array", "minItems": 1,
+          "description": "Hard per-service CPU and memory ceilings used by the Phase 1 resource-aware renderer. Every service must appear exactly once; cross-record budget checks are performed by the agent preflight.",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["service", "cpuCores", "ramMb"],
+            "properties": {
+              "service": { "type": "string", "minLength": 1 },
+              "cpuCores": { "type": "number", "exclusiveMinimum": 0 },
+              "ramMb": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["service", "containerPort", "exposure"],
+            "properties": {
+              "service": { "type": "string" },
+              "containerPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "hostPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+              "exposure": { "enum": ["internal", "loopback", "private", "public"] }
+            }
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["name", "mountPath", "backup"],
+            "properties": {
+              "name": { "type": "string" },
+              "service": { "type": "string", "description": "Owning service. Required by the renderer when the manifest has multiple services; unowned entries are rejected rather than copied to every service." },
+              "mountPath": { "type": "string", "pattern": "^/" },
+              "backup": { "type": "boolean" },
+              "storageLimitMb": { "type": "integer", "minimum": 1, "description": "Hard per-volume storage ceiling in MiB. Required by the Phase 1 resource-bound preflight for every managed volume." }
+            }
+          }
+        },
+        "environment": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["name"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" },
+              "service": { "type": "string", "description": "Owning service. Required by the renderer when the manifest has multiple services." },
+              "secretRef": { "$ref": "common.schema.json#/$defs/secretRef" },
+              "default": { "type": "string" }
+            },
+            "allOf": [
+              { "not": { "required": ["secretRef", "default"] } },
+              {
+                "not": {
+                  "type": "object",
+                  "properties": { "name": { "pattern": "(SECRET|PASSWORD|PASSWD|TOKEN|API_KEY|PRIVATE_KEY)" } },
+                  "required": ["name", "default"]
+                },
+                "description": "Sensitive-named entries must use secretRef, never a plaintext default."
+              }
+            ]
+          }
+        },
+        "healthCheck": {
+          "type": "object", "additionalProperties": false, "required": ["type", "target"],
+          "properties": {
+            "type": { "enum": ["http", "tcp", "compose-ps"] },
+            "target": { "type": "string", "minLength": 1 },
+            "intervalSeconds": { "type": "integer", "minimum": 5 },
+            "timeoutSeconds": { "type": "integer", "minimum": 1 },
+            "retries": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "backup": {
+          "type": "object", "additionalProperties": false, "required": ["supported", "procedureRef"],
+          "properties": {
+            "supported": { "type": "boolean" },
+            "procedureRef": { "type": "string" },
+            "restoreVerified": { "type": "boolean" }
+          }
+        },
+        "rollback": {
+          "type": "object", "additionalProperties": false, "required": ["supported"],
+          "properties": {
+            "supported": { "type": "boolean" },
+            "procedureRef": { "type": "string" },
+            "notes": { "type": "string" }
+          }
+        }
+      }
+    },
+    "requirements": {
+      "type": "object", "additionalProperties": false,
+      "required": ["architectures", "osFamilies", "minCpuCores", "minRamMb", "minStorageMb", "minDockerVersion", "minComposeVersion", "privileged"],
+      "properties": {
+        "architectures": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["x86_64", "arm64"] } },
+        "osFamilies": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["linux"] } },
+        "minCpuCores": { "type": "number", "exclusiveMinimum": 0 },
+        "minRamMb": { "type": "integer", "minimum": 128 },
+        "minStorageMb": { "type": "integer", "minimum": 100 },
+        "minDockerVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "minComposeVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "privileged": {
+          "const": false,
+          "description": "Privileged containers are rejected for the initial supported catalogue. Revisit only via ADR plus a dedicated policy-exception contract."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "reviewState": { "enum": ["signed", "canary", "stable"] } } },
+      "then": { "required": ["signature"] }
+    }
+  ]
+}

@@ -115,6 +115,8 @@ def build_compose(manifest):
 
 
 def render(manifest):
+    if "resourceLimits" in manifest.get("release", {}):
+        raise ValueError("resourceLimits requires wazi-compose-renderer 0.3.0")
     text = yaml.safe_dump(
         build_compose(manifest),
         sort_keys=False,

@@ -5,10 +5,16 @@
   "description": "Freshness-bound revocation data. Semantic validation fails closed when policy requires revocation checks and this list is missing, stale, or not yet valid. See docs/ADR-001-canonical-json-and-signing.md.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "listId", "generatedAt", "expiresAt", "entries"],
+  "required": ["schemaVersion", "listId", "sequence", "generatedAt", "expiresAt", "entries", "signature"],
   "properties": {
     "schemaVersion": { "const": "1.0.0" },
     "listId": { "type": "string", "pattern": "^revlist_[A-Za-z0-9_-]+$" },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9223372036854775807,
+      "description": "Strictly increasing sequence for this listId. Agents persist the accepted sequence and reject rollback."
+    },
     "generatedAt": { "type": "string", "format": "date-time" },
     "expiresAt": { "type": "string", "format": "date-time" },
     "entries": {
@@ -25,6 +31,7 @@
           "reason": { "type": "string", "minLength": 1 }
         }
       }
-    }
+    },
+    "signature": { "$ref": "common.schema.json#/$defs/signature" }
   }
 }

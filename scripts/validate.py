@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 0 contract validation (fail-closed).
+"""Phase 0 and versioned Phase 1 contract validation (fail-closed).
 
 Layers, each of which can fail the run:
  1. Required schema inventory (a missing schema is an error, never a skip).
@@ -25,7 +25,39 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
 EXAMPLE_EVAL_TIME = "2026-10-21T09:05:00Z"
+
+
+def load_compose_renderer(version):
+    """Load only an explicitly supported, versioned Compose renderer."""
+    renderer_files = {
+        "0.2.0": ("render_compose", SCRIPTS / "render_compose.py"),
+        "0.3.0": ("render_compose_v1", SCRIPTS / "render_compose_v1.py"),
+    }
+    selected = renderer_files.get(version)
+    if selected is None:
+        return None
+    module_name, path = selected
+    if module_name == "render_compose_v1" and "render_compose" not in sys.modules:
+        base_spec = importlib.util.spec_from_file_location("render_compose", SCRIPTS / "render_compose.py")
+        if base_spec is None or base_spec.loader is None:
+            return None
+        base_module = importlib.util.module_from_spec(base_spec)
+        sys.modules["render_compose"] = base_module
+        base_spec.loader.exec_module(base_module)
+    module = sys.modules.get(module_name)
+    if module is not None:
+        return module
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
 
 try:
     from jsonschema import Draft202012Validator, FormatChecker
@@ -38,8 +70,10 @@ REQUIRED_SCHEMAS = {
     "app-manifest.schema.json",
     "deployment-plan.schema.json",
     "execution-context-envelope.schema.json",
+    "execution-context-envelope-v2.schema.json",
     "host-profile.schema.json",
     "policy-bundle.schema.json",
+    "phase1-signing-policy.schema.json",
     "evidence-record.schema.json",
     "deployment-case.schema.json",
     "procedure.schema.json",
@@ -47,6 +81,8 @@ REQUIRED_SCHEMAS = {
     "compose-artifact.schema.json",
     "revocation-record.schema.json",
     "eval-fixture.schema.json",
+    "contribution-budget.schema.json",
+    "managed-volume-qualification.schema.json",
 }
 
 EXAMPLE_MAP = {
@@ -62,7 +98,82 @@ EXAMPLE_MAP = {
     "compose-artifact.json": "compose-artifact.schema.json",
     "approval-record.json": "approval-record.schema.json",
     "revocation-list.json": "revocation-record.schema.json",
+    "contribution-budget.json": "contribution-budget.schema.json",
+    "managed-volume-qualification.json": "managed-volume-qualification.schema.json",
 }
+
+_RESOURCES = ("cpuCores", "ramMb", "storageMb")
+
+
+def contribution_budget_errors(record):
+    """Semantic rules JSON Schema cannot express for a budget record.
+
+    Distinct quantities must nest: per-role allocations plus the
+    protected system reserve fit inside the owner budget, and the
+    owner budget fits inside physical totals, per resource.
+    """
+    errors = []
+    physical = record.get("physical") or {}
+    budget = record.get("ownerBudget") or {}
+    reserve = record.get("systemReserve") or {}
+    allocations = record.get("allocations") or []
+    seen_roles = set()
+    for allocation in allocations:
+        role = allocation.get("role")
+        if role in seen_roles:
+            errors.append(f"contribution budget: duplicate allocation role '{role}'")
+        seen_roles.add(role)
+    for resource in _RESOURCES:
+        allocated = sum((a.get("resources") or {}).get(resource, 0) for a in allocations)
+        if allocated + reserve.get(resource, 0) > budget.get(resource, 0):
+            errors.append(
+                f"contribution budget: allocations + systemReserve exceed ownerBudget for {resource}"
+            )
+        if budget.get(resource, 0) > physical.get(resource, 0):
+            errors.append(f"contribution budget: ownerBudget exceeds physical for {resource}")
+    valid_from, valid_until = record.get("validFrom"), record.get("validUntil")
+    if valid_from and valid_until:
+        parsed_from = instant_order_key(
+            valid_from, "contribution budget validFrom", errors
+        )
+        parsed_until = instant_order_key(
+            valid_until, "contribution budget validUntil", errors
+        )
+        if parsed_from and parsed_until and parsed_from >= parsed_until:
+            errors.append("contribution budget: validFrom must be before validUntil")
+    return errors
+
+
+def managed_volume_errors(record):
+    """Semantic rules for a managed-volume qualification record."""
+    errors = []
+    observed, expires = record.get("observedAt"), record.get("expiresAt")
+    if observed and expires:
+        parsed_observed = instant_order_key(
+            observed, "managed-volume qualification observedAt", errors
+        )
+        parsed_expires = instant_order_key(
+            expires, "managed-volume qualification expiresAt", errors
+        )
+        if parsed_observed and parsed_expires and parsed_observed >= parsed_expires:
+            errors.append("managed-volume qualification: expiresAt must be after observedAt")
+    storage = record.get("storage") or {}
+    if record.get("result") == "qualified":
+        if storage.get("managedVolumesCapable") is not True:
+            errors.append("managed-volume qualification: qualified without managed-volume capability")
+        if (
+            storage.get("quotaEnforceable") is not True
+            or storage.get("enforcementMethod") not in {
+                "docker-volume-quota",
+                "filesystem-quota",
+            }
+        ):
+            errors.append(
+                "managed-volume qualification: qualified without enforceable storage quota"
+            )
+        if storage.get("storageFreeMb", 0) <= 0:
+            errors.append("managed-volume qualification: qualified with no free storage")
+    return errors
 
 FORBIDDEN_KEYS = {"secretvalue", "secret_value", "password", "token", "apikey", "api_key"}
 SECRET_PATTERNS = [
@@ -73,6 +184,10 @@ SECRET_PATTERNS = [
     re.compile(r"-----BEGIN"),
 ]
 SENSITIVE_NAME = re.compile(r"(SECRET|PASSWORD|PASSWD|TOKEN|API_KEY|PRIVATE_KEY)")
+_RFC3339_TIMESTAMP = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}"
+    r"(?:\.(?P<fraction>\d+))?(?:[Zz]|[+-]\d{2}:\d{2})\Z"
+)
 
 
 def load(path):
@@ -90,13 +205,33 @@ def canonical_digest(obj):
 
 def parse_time(value, where, errors):
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        normalized = str(value).replace("Z", "+00:00").replace("z", "+00:00")
+        parsed = datetime.fromisoformat(normalized)
         if parsed.tzinfo is None:
             raise ValueError("missing timezone")
         return parsed
     except Exception:  # noqa: BLE001
         errors.append(f"{where}: invalid or timezone-less timestamp '{value}'")
         return None
+
+
+def instant_order_key(value, where, errors):
+    """Return a UTC second and exact RFC 3339 fraction for ordering.
+
+    ``datetime`` stores only microseconds, while RFC 3339 permits longer
+    fractional seconds. Keep the fraction as digits so valid sub-microsecond
+    windows retain their exact ordering.
+    """
+    parsed = parse_time(value, where, errors)
+    if parsed is None:
+        return None
+    match = _RFC3339_TIMESTAMP.fullmatch(str(value))
+    if match is None:
+        errors.append(f"{where}: timestamp is not in RFC 3339 form")
+        return None
+    whole_second_utc = parsed.replace(microsecond=0).astimezone(timezone.utc)
+    fraction = (match.group("fraction") or "").rstrip("0")
+    return whole_second_utc, fraction
 
 
 def check_secrets(node, where, errors):
@@ -768,20 +903,29 @@ def main():
 
     raw, example_errors = load_examples(registry, schemas)
     errors += example_errors
+    if "contribution-budget.json" in raw:
+        for err in contribution_budget_errors(raw["contribution-budget.json"]):
+            errors.append(f"contribution-budget.json: {err}")
+    if "managed-volume-qualification.json" in raw:
+        for err in managed_volume_errors(raw["managed-volume-qualification.json"]):
+            errors.append(f"managed-volume-qualification.json: {err}")
     eval_time = parse_time(EXAMPLE_EVAL_TIME, "evaluation clock", errors)
     if not example_errors and len(raw) == len(EXAMPLE_MAP):
         graph = graph_from_examples(raw)
         local_path = graph["artifact"].get("localPath")
         if local_path and (ROOT / local_path).exists():
             graph["artifactFileDigest"] = "sha256:" + hashlib.sha256((ROOT / local_path).read_bytes()).hexdigest()
-        render_spec = importlib.util.spec_from_file_location("render_compose", ROOT / "scripts" / "render_compose.py")
-        render_module = importlib.util.module_from_spec(render_spec)
-        render_spec.loader.exec_module(render_module)
-        graph["rendererVersion"] = render_module.RENDERER_VERSION
-        try:
-            graph["artifactRenderedDigest"] = "sha256:" + hashlib.sha256(render_module.render(graph["manifest"])).hexdigest()
-        except Exception as exc:  # noqa: BLE001 - renderer rejection is a validation failure, not a crash
-            errors.append(f"example graph: renderer rejected the manifest: {exc}")
+        declared_renderer = graph["artifact"].get("renderer", {}).get("version")
+        render_module = load_compose_renderer(declared_renderer)
+        if render_module is None:
+            errors.append(f"example graph: renderer version {declared_renderer!r} is not supported")
+            graph["rendererVersion"] = None
+        else:
+            graph["rendererVersion"] = render_module.RENDERER_VERSION
+            try:
+                graph["artifactRenderedDigest"] = "sha256:" + hashlib.sha256(render_module.render(graph["manifest"])).hexdigest()
+            except Exception as exc:  # noqa: BLE001 - renderer rejection is a validation failure, not a crash
+                errors.append(f"example graph: renderer rejected the manifest: {exc}")
         for err in semantic_errors(graph, eval_time):
             errors.append(f"example graph: {err}")
 

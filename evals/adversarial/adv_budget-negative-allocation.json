@@ -1,0 +1,22 @@
+{
+  "fixtureId": "adv_budget-negative-allocation",
+  "description": "Negative allocation resources must fail.",
+  "schema": "contribution-budget.schema.json",
+  "record": {
+    "schemaVersion": "1.0.0",
+    "budgetId": "budget_bad",
+    "tenantScope": "tenant_demo",
+    "hostId": "host_demo01",
+    "approvalState": "draft",
+    "approvedBy": "example",
+    "approvedAt": "2026-10-21T08:00:00Z",
+    "validFrom": "2026-10-21T09:00:00Z",
+    "validUntil": "2026-11-21T09:00:00Z",
+    "physical": { "cpuCores": 8, "ramMb": 7163, "storageMb": 479232 },
+    "ownerBudget": { "cpuCores": 2, "ramMb": 2048, "storageMb": 40960 },
+    "systemReserve": { "cpuCores": 0.5, "ramMb": 512, "storageMb": 10240 },
+    "allocations": [
+      { "role": "application", "resources": { "cpuCores": 1, "ramMb": -1024, "storageMb": 20480 } }
+    ]
+  }
+}

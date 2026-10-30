@@ -1,0 +1,1 @@
+{"appId":"org.example.cosign-fixture","reviewState":"signed","schemaVersion":"1.0.0","signature":{"algorithm":"sigstore-cosign","payloadDigest":"sha256:0de7400bd40b4f01ec9bbb32d7b86da54d15b7f143952687fcd680389aefa713","signedBy":"cosign-v3.1.4-fixture","value":"MEQCICy00CvuvBgS06uYP5RZqNevOdZnSsjdVCutjS0vPj3fAiB3VpjkXC5E+RC8Y+dgTeQASlQTkApGhe2JyN+xhMpStQ=="}}

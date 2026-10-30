@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v2/execution-context-envelope.schema.json",
+  "title": "Wazi Execution Context Envelope v2",
+  "description": "Typed, inspectable packet for one operation. References are digest-bound (recordRef): changing a referenced record invalidates the envelope. Never contains secret values. Version 2 binds contribution-budget and managed-volume-qualification records by digest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "envelopeId",
+    "tenantScope",
+    "operation",
+    "deploymentMode",
+    "applicationId",
+    "releaseVersion",
+    "manifestDigest",
+    "manifestReviewState",
+    "hostProfileRef",
+    "policyBundleRef",
+    "procedureRef",
+    "composeArtifactRef",
+    "secretReferences",
+    "allowedCapabilities",
+    "forbiddenOperations",
+    "requiredApprovals",
+    "verificationChecks",
+    "rollbackStrategy",
+    "citedSources",
+    "createdAt",
+    "expiresAt",
+    "contributionBudgetRef",
+    "managedVolumeQualificationRef"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "2.0.0"
+    },
+    "envelopeId": {
+      "type": "string",
+      "pattern": "^env_[A-Za-z0-9_-]+$"
+    },
+    "tenantScope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operation": {
+      "enum": [
+        "install",
+        "upgrade",
+        "backup",
+        "restore",
+        "rollback",
+        "uninstall",
+        "health-check"
+      ]
+    },
+    "deploymentMode": {
+      "enum": [
+        "deterministic",
+        "ai-assisted"
+      ]
+    },
+    "applicationId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+    },
+    "releaseVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "manifestDigest": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/sha256Digest"
+    },
+    "manifestReviewState": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/reviewState"
+    },
+    "hostProfileRef": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+    },
+    "policyBundleRef": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+    },
+    "procedureRef": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+    },
+    "composeArtifactRef": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+    },
+    "selectedSuccessCaseRefs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+      },
+      "default": []
+    },
+    "selectedFailureCaseRefs": {
+      "type": "array",
+      "items": {
+        "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+      },
+      "default": []
+    },
+    "secretReferences": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "secretRef",
+          "injectionPoint"
+        ],
+        "properties": {
+          "secretRef": {
+            "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/secretRef"
+          },
+          "injectionPoint": {
+            "type": "string",
+            "minLength": 1
+          },
+          "format": {
+            "type": "string"
+          },
+          "rotationRequired": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    "allowedCapabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/capability"
+      }
+    },
+    "forbiddenOperations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "requiredApprovals": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/approvalAction"
+      }
+    },
+    "verificationChecks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "health",
+              "backup-exists",
+              "restore-verified",
+              "scan-clean",
+              "port-free"
+            ]
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rollbackStrategy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supported"
+      ],
+      "properties": {
+        "supported": {
+          "type": "boolean"
+        },
+        "procedureRef": {
+          "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+        },
+        "checkpointRequired": {
+          "type": "boolean",
+          "default": false
+        },
+        "checkpoint": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "backupId",
+            "volume"
+          ],
+          "properties": {
+            "backupId": {
+              "type": "string",
+              "pattern": "^bak_[A-Za-z0-9_-]+$"
+            },
+            "volume": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "description": "Typed checkpoint reference. Semantic validation requires a volume.backup plan step with this backupId and volume before the first mutating compose step."
+        }
+      }
+    },
+    "citedSources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "recordId",
+          "contentHash"
+        ],
+        "properties": {
+          "recordId": {
+            "type": "string"
+          },
+          "contentHash": {
+            "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/sha256Digest"
+          }
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "contributionBudgetRef": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+    },
+    "managedVolumeQualificationRef": {
+      "$ref": "https://wazi.dev/schemas/v1/common.schema.json#/$defs/recordRef"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "deploymentMode": {
+            "const": "deterministic"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "manifestReviewState": {
+            "enum": [
+              "signed",
+              "canary",
+              "stable"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "rollbackStrategy": {
+            "properties": {
+              "supported": {
+                "const": true
+              }
+            },
+            "required": [
+              "supported"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rollbackStrategy": {
+            "required": [
+              "procedureRef"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "rollbackStrategy": {
+            "properties": {
+              "checkpointRequired": {
+                "const": true
+              }
+            },
+            "required": [
+              "checkpointRequired"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rollbackStrategy": {
+            "required": [
+              "checkpoint"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

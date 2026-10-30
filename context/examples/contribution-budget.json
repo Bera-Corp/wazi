@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "budgetId": "budget_gitea_example",
+  "tenantScope": "tenant_demo",
+  "hostId": "host_demo01",
+  "approvalState": "draft",
+  "approvedBy": "example-owner (synthetic draft, not an approval)",
+  "approvedAt": "2026-10-21T08:00:00Z",
+  "validFrom": "2026-10-21T09:00:00Z",
+  "validUntil": "2026-11-21T09:00:00Z",
+  "physical": { "cpuCores": 8, "ramMb": 7163, "storageMb": 479232 },
+  "ownerBudget": { "cpuCores": 2, "ramMb": 2048, "storageMb": 40960 },
+  "systemReserve": { "cpuCores": 0.5, "ramMb": 512, "storageMb": 10240 },
+  "allocations": [
+    { "role": "application", "resources": { "cpuCores": 1, "ramMb": 1024, "storageMb": 20480 } },
+    { "role": "backup-helper", "resources": { "cpuCores": 0.25, "ramMb": 256, "storageMb": 5120 } },
+    { "role": "restore-helper", "resources": { "cpuCores": 0.25, "ramMb": 256, "storageMb": 5120 } }
+  ]
+}

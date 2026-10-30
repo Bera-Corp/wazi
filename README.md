@@ -330,6 +330,10 @@ The original Wazi deterministic Linux Docker Compose architecture remains the pr
 
 - [Wazi Unified Master Plan](docs/WAZI_MASTER_PLAN.md) — full research-based product strategy and long-term architecture.
 - [Meta Hackathon 2026 Execution Plan](docs/HACKATHON_2026_EXECUTION_PLAN.md) — build priority, acceptance gates, schedule, missing requirements, demo script and issue list.
+- [Judging pillars and delivery rubric](docs/JUDGING_PILLARS.md) — Impact 30%, Meta AI Tooling 25%, Technical Depth & Execution 20%, Demo 25%; feature evidence, acceptance and demo readiness.
+- [Development environments](docs/DEVELOPMENT_ENVIRONMENTS.md) — agent connection discovery and verified Linux-host readiness.
+- [Wazi Nodes and Fabric](docs/WAZI_NODES_PLAN.md) — own-hardware compute, resource contribution, qualification and phased buildout.
+- [Three-minute film workspace](video/README.md) — transcript, motion direction, voiceover, timing and an evolving inspiration inbox.
 - [Wazi Installer and Store Bridge](docs/WAZI_INSTALLER_AND_STORE_BRIDGE.md) — researched future native desktop installation and external-store distribution paths.
 - [Preview & Insider Program](docs/PREVIEW_AND_INSIDER_PROGRAM.md) — future optional preview release channels, granular telemetry consent and developer bug feedback.
 

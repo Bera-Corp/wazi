@@ -1,0 +1,16 @@
+{
+  "fixtureId": "adv_volqual-unenforceable-quota-claim",
+  "description": "Claiming a quota enforcement method while quotaEnforceable is false must fail; unenforceable capacity is preflight-only.",
+  "schema": "managed-volume-qualification.schema.json",
+  "record": {
+    "schemaVersion": "1.0.0",
+    "qualificationId": "volqual_bad_quota",
+    "tenantScope": "tenant_demo",
+    "hostId": "host_demo01",
+    "observedAt": "2026-10-21T09:00:00Z",
+    "expiresAt": "2026-10-21T09:30:00Z",
+    "daemon": { "contextName": "default", "endpointKind": "unix", "serverVersion": "29.1.3", "rootDir": "/var/lib/docker" },
+    "storage": { "managedVolumesCapable": true, "enforcementMethod": "docker-volume-quota", "quotaEnforceable": false, "storageFreeMb": 1024, "filesystemType": "ext4" },
+    "result": "qualified"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/managed-volume-qualification.schema.json",
+  "title": "Wazi Daemon-Managed Volume Qualification (NODE-002/003)",
+  "description": "Versioned qualification of daemon-managed storage for one tenant on one host, recorded separately from the host profile so the truthful dockerRootWritable=false direct-filesystem observation is never weakened. Qualification requires a local daemon endpoint. If the selected path cannot enforce a storage quota, enforcementMethod must be preflight-only: capacity is then a preflight constraint, never a claimed hard limit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "qualificationId", "tenantScope", "hostId", "observedAt", "expiresAt", "daemon", "storage", "result"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "qualificationId": { "type": "string", "pattern": "^volqual_[A-Za-z0-9_-]+$" },
+    "tenantScope": { "type": "string", "minLength": 1 },
+    "hostId": { "type": "string", "pattern": "^host_[A-Za-z0-9_-]+$" },
+    "observedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "daemon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contextName", "endpointKind", "serverVersion", "rootDir"],
+      "properties": {
+        "contextName": { "type": "string", "minLength": 1 },
+        "endpointKind": { "enum": ["unix", "npipe"] },
+        "serverVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "rootDir": { "type": "string", "minLength": 1 }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["managedVolumesCapable", "enforcementMethod", "quotaEnforceable", "storageFreeMb", "filesystemType"],
+      "properties": {
+        "managedVolumesCapable": { "type": "boolean" },
+        "enforcementMethod": { "enum": ["docker-volume-quota", "filesystem-quota", "preflight-only"] },
+        "quotaEnforceable": { "type": "boolean" },
+        "storageFreeMb": { "type": "integer", "minimum": 0, "description": "Observed free capacity in MiB; this value is not a quota." },
+        "filesystemType": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "quotaEnforceable": { "const": false } }, "required": ["quotaEnforceable"] },
+          "then": { "properties": { "enforcementMethod": { "const": "preflight-only" } } }
+        },
+        {
+          "if": { "properties": { "managedVolumesCapable": { "const": false } }, "required": ["managedVolumesCapable"] },
+          "then": { "properties": { "enforcementMethod": { "const": "preflight-only" }, "quotaEnforceable": { "const": false } } }
+        }
+      ]
+    },
+    "volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "purpose"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]+$" },
+          "purpose": { "enum": ["application-data", "application-config", "backup-scratch", "restore-scratch"] }
+        }
+      }
+    },
+    "result": { "enum": ["qualified", "not-qualified"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "result": { "const": "qualified" } }, "required": ["result"] },
+      "then": {
+        "properties": {
+          "storage": {
+            "properties": {
+              "managedVolumesCapable": { "const": true },
+              "quotaEnforceable": { "const": true },
+              "enforcementMethod": { "enum": ["docker-volume-quota", "filesystem-quota"] }
+            },
+            "required": ["managedVolumesCapable", "quotaEnforceable", "enforcementMethod"]
+          }
+        }
+      }
+    }
+  ]
+}

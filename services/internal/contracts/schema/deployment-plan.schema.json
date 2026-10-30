@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/deployment-plan.schema.json",
+  "title": "Wazi Deployment Plan",
+  "description": "Planner output contract. Steps and rollbackSteps are separate sequences. Every step has closed, capability-specific typed parameters: unknown fields (including command/password) are rejected, so shell execution is not representable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "planId", "envelopeId", "composeArtifactRef", "operation",
+    "origin", "steps", "rollbackSteps", "requiredApprovals", "createdAt", "expiresAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "planId": { "type": "string", "pattern": "^plan_[A-Za-z0-9_-]+$" },
+    "envelopeId": { "type": "string", "pattern": "^env_[A-Za-z0-9_-]+$" },
+    "composeArtifactRef": { "$ref": "common.schema.json#/$defs/recordRef" },
+    "operation": { "enum": ["install", "upgrade", "backup", "restore", "rollback", "uninstall", "health-check"] },
+    "origin": { "enum": ["deterministic-resolver", "ai-planner"] },
+    "unresolvedQuestions": {
+      "type": "array", "items": { "type": "string", "minLength": 1 }, "default": [],
+      "description": "Non-empty blocks execution in semantic validation."
+    },
+    "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+    "rollbackSteps": { "type": "array", "items": { "$ref": "#/$defs/step" } },
+    "requiredApprovals": {
+      "type": "array", "uniqueItems": true,
+      "items": { "$ref": "common.schema.json#/$defs/approvalAction" }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "service": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+    "projectName": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+    "backupId": { "type": "string", "pattern": "^bak_[A-Za-z0-9_-]+$" },
+    "params": {
+      "hostProbe": {
+        "type": "object", "additionalProperties": false, "required": ["checks"],
+        "properties": { "checks": { "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "enum": ["os", "architecture", "resources", "docker", "compose", "ports", "filesystem"] } } }
+      },
+      "manifestVerify": {
+        "type": "object", "additionalProperties": false,
+        "required": ["manifestDigest", "requireReviewState"],
+        "properties": {
+          "manifestDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
+          "requireReviewState": { "enum": ["signed", "canary", "stable"] } }
+      },
+      "composePull": {
+        "type": "object", "additionalProperties": false, "required": ["service", "imageDigest"],
+        "properties": { "service": { "$ref": "#/$defs/service" },
+          "imageDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" } }
+      },
+      "composeUp": {
+        "type": "object", "additionalProperties": false,
+        "required": ["service", "projectName", "composeArtifactDigest"],
+        "properties": { "service": { "$ref": "#/$defs/service" },
+          "projectName": { "$ref": "#/$defs/projectName" },
+          "composeArtifactDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" } }
+      },
+      "composeDown": {
+        "type": "object", "additionalProperties": false, "required": ["service", "projectName"],
+        "properties": { "service": { "$ref": "#/$defs/service" },
+          "projectName": { "$ref": "#/$defs/projectName" },
+          "removeVolumes": { "type": "boolean", "default": false } }
+      },
+      "composePs": {
+        "type": "object", "additionalProperties": false, "required": ["service", "projectName"],
+        "properties": { "service": { "$ref": "#/$defs/service" },
+          "projectName": { "$ref": "#/$defs/projectName" } }
+      },
+      "composeLogsRedacted": {
+        "type": "object", "additionalProperties": false,
+        "required": ["service", "projectName", "redactionProfile"],
+        "properties": { "service": { "$ref": "#/$defs/service" },
+          "projectName": { "$ref": "#/$defs/projectName" },
+          "sinceMinutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+          "redactionProfile": { "const": "default" } }
+      },
+      "volumeBackup": {
+        "type": "object", "additionalProperties": false, "required": ["volume", "backupId"],
+        "properties": { "volume": { "type": "string", "minLength": 1 },
+          "backupId": { "$ref": "#/$defs/backupId" } }
+      },
+      "volumeRestore": {
+        "type": "object", "additionalProperties": false, "required": ["volume", "backupId"],
+        "properties": { "volume": { "type": "string", "minLength": 1 },
+          "backupId": { "$ref": "#/$defs/backupId" } }
+      },
+      "healthCheck": {
+        "type": "object", "additionalProperties": false, "required": ["target"],
+        "properties": { "target": { "type": "string", "pattern": "^https?://[^\\s]+$" },
+          "expectedStatus": { "type": "integer", "minimum": 100, "maximum": 599 },
+          "timeoutSeconds": { "type": "integer", "minimum": 1, "maximum": 120 } }
+      },
+      "proxyConfigure": {
+        "type": "object", "additionalProperties": false,
+        "required": ["hostname", "upstreamPort", "exposure"],
+        "properties": { "hostname": { "type": "string", "pattern": "^[a-z0-9.-]+$" },
+          "upstreamPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+          "tls": { "enum": ["letsencrypt", "provided", "none"] },
+          "exposure": { "enum": ["private", "public"] } }
+      },
+      "proxyRemove": {
+        "type": "object", "additionalProperties": false, "required": ["hostname"],
+        "properties": { "hostname": { "type": "string", "pattern": "^[a-z0-9.-]+$" } }
+      },
+      "secretInject": {
+        "type": "object", "additionalProperties": false,
+        "required": ["secretRef", "targetEnv", "service"],
+        "properties": { "secretRef": { "$ref": "common.schema.json#/$defs/secretRef" },
+          "targetEnv": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]*$" },
+          "service": { "$ref": "#/$defs/service" } }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stepId", "capability", "parameters", "citations", "requiresApproval", "verification"],
+      "properties": {
+        "stepId": { "type": "string", "pattern": "^step_[a-z0-9_]+$" },
+        "capability": { "$ref": "common.schema.json#/$defs/capability" },
+        "parameters": { "type": "object" },
+        "citations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "requiresApproval": { "type": "boolean" },
+        "failureConditions": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "verification": {
+          "type": "object", "additionalProperties": false, "required": ["type"],
+          "properties": {
+            "type": { "enum": ["health", "exit-state", "file-exists", "scan", "manual"] },
+            "target": { "type": "string" } }
+        },
+        "rollbackStepId": {
+          "type": "string", "pattern": "^step_[a-z0-9_]+$",
+          "description": "Must reference an entry in rollbackSteps, never in steps. Enforced semantically."
+        }
+      },
+      "oneOf": [
+        { "properties": { "capability": { "const": "host.probe" }, "parameters": { "$ref": "#/$defs/params/hostProbe" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "manifest.verify" }, "parameters": { "$ref": "#/$defs/params/manifestVerify" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "compose.pull" }, "parameters": { "$ref": "#/$defs/params/composePull" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "compose.up" }, "parameters": { "$ref": "#/$defs/params/composeUp" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "compose.down" }, "parameters": { "$ref": "#/$defs/params/composeDown" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "compose.ps" }, "parameters": { "$ref": "#/$defs/params/composePs" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "compose.logs-redacted" }, "parameters": { "$ref": "#/$defs/params/composeLogsRedacted" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "volume.backup" }, "parameters": { "$ref": "#/$defs/params/volumeBackup" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "volume.restore" }, "parameters": { "$ref": "#/$defs/params/volumeRestore" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "health.check" }, "parameters": { "$ref": "#/$defs/params/healthCheck" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "proxy.configure" }, "parameters": { "$ref": "#/$defs/params/proxyConfigure" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "proxy.remove" }, "parameters": { "$ref": "#/$defs/params/proxyRemove" } }, "required": ["capability", "parameters"] },
+        { "properties": { "capability": { "const": "secret.inject" }, "parameters": { "$ref": "#/$defs/params/secretInject" } }, "required": ["capability", "parameters"] }
+      ]
+    }
+  }
+}

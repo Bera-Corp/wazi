@@ -14,7 +14,7 @@ them; do not redefine them locally.
 
 | Schema | Contract for |
 |---|---|
-| [app-manifest.schema.json](app-manifest.schema.json) | One application release: pinned digests, ports, volumes, secret references, health check, resource/runtime requirements. Privileged containers are `const: false` |
+| [app-manifest.schema.json](app-manifest.schema.json) | One application release: pinned digests, ports, volumes, secret references, health check, resource/runtime requirements, and optional Phase 1 per-service CPU/RAM and per-volume storage ceilings. Runtime enforcement still requires the resource-bound preflight and typed adapter. Privileged containers are `const: false` |
 | [execution-context-envelope.schema.json](execution-context-envelope.schema.json) | Typed packet for one operation. All record references are digest-bound, so changing a referenced record invalidates the envelope |
 | [deployment-plan.schema.json](deployment-plan.schema.json) | Resolver/planner output. Closed per-capability parameters via `oneOf` + `capability: const` — `command`/`password` fields are rejected. Forward `steps` and `rollbackSteps` are separate sequences |
 | [host-profile.schema.json](host-profile.schema.json) | Redacted, expiring host observation. Records any observed OS/arch; compatibility filters enforce MVP support |
@@ -25,6 +25,9 @@ them; do not redefine them locally.
 | [evidence-record.schema.json](evidence-record.schema.json) | Hash-bound pointer to one verification artifact |
 | [deployment-case.schema.json](deployment-case.schema.json) | Normalized outcome record. A single success stays `observed`; it never auto-promotes |
 | [eval-fixture.schema.json](eval-fixture.schema.json) | Compatibility fixture carrying real manifest/host/policy records, replayed at an injected `evaluationTime` |
+| [contribution-budget.schema.json](contribution-budget.schema.json) | Phase 1 NODE-002 owner contribution budget: CPU in logical cores; RAM and storage in MiB; physical storage is total capacity. Physical totals, owner budget, system reserve and per-role allocations stay distinct, with nesting enforced semantically |
+| [managed-volume-qualification.schema.json](managed-volume-qualification.schema.json) | Phase 1 daemon-managed storage qualification, kept separate from the host profile so `dockerRootWritable=false` is never weakened; free storage is measured in MiB and is not a quota; preflight-only records cannot qualify, and qualified storage requires an enforceable quota |
+| [execution-context-envelope-v2.schema.json](execution-context-envelope-v2.schema.json) | Version 2 requires digest-bound references to the owner contribution budget and daemon-managed volume qualification; v1 remains unchanged |
 
 Examples live in [context/examples/](../context/examples/) and form one
 complete graph (host → policy → procedures → manifest → compose

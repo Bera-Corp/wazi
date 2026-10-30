@@ -6,13 +6,14 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schemaVersion", "approvalId", "planId", "planDigest", "envelopeId", "envelopeDigest",
+    "schemaVersion", "approvalId", "caseId", "planId", "planDigest", "envelopeId", "envelopeDigest",
     "tenantScope", "hostId", "applicationId", "action", "decision",
     "approver", "approvedAt", "expiresAt"
   ],
   "properties": {
     "schemaVersion": { "const": "1.0.0" },
     "approvalId": { "type": "string", "pattern": "^appr_[A-Za-z0-9_-]+$" },
+    "caseId": { "type": "string", "pattern": "^case_[A-Za-z0-9_-]+$" },
     "planId": { "type": "string", "pattern": "^plan_[A-Za-z0-9_-]+$" },
     "planDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
     "envelopeId": { "type": "string", "pattern": "^env_[A-Za-z0-9_-]+$" },

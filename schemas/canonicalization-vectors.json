@@ -31,11 +31,11 @@
                     {
                         "name":  "non-ASCII emitted as raw UTF-8",
                         "input":  {
-                                      "name":  "Wazi â€” wazi",
-                                      "emoji":  "âœ“"
+                                      "name":  "Wazi \u2014 wazi",
+                                      "emoji":  "\u2713"
                                   },
-                        "canonical":  "{\"emoji\":\"âœ“\",\"name\":\"Wazi â€” wazi\"}",
-                        "sha256":  "sha256:ede2effb65c03465c951661c4d976131e461e480804f62393f3e8c80c5768f46"
+                        "canonical":  "{\"emoji\":\"\u2713\",\"name\":\"Wazi \u2014 wazi\"}",
+                        "sha256":  "sha256:f0263d61325fbdc75ad224fafbedaa7c9940fe4669fd1e6ac5f1d3cd0b22d1d8"
                     },
                     {
                         "name":  "numbers without trailing zeros",
@@ -46,6 +46,18 @@
                                   },
                         "canonical":  "{\"float\":1.5,\"int\":42,\"zero\":0}",
                         "sha256":  "sha256:90abd48915d21f0d2975dfc3c361a2fa297528fc0cdcf21f9254c9dce5304f62"
+                    },
+                    {
+                        "name":  "large integers and Python float exponent thresholds",
+                        "input":  {
+                                      "large":  123456789012345678901234567890,
+                                      "small":  1e-6,
+                                      "tiny":  1e-5,
+                                      "fixed":  1e15,
+                                      "scientific":  1e16
+                                  },
+                        "canonical":  "{\"fixed\":1000000000000000.0,\"large\":123456789012345678901234567890,\"scientific\":1e+16,\"small\":1e-06,\"tiny\":1e-05}",
+                        "sha256":  "sha256:a80c086ecef6857a47297b9b1ec5ff08840e67a171e07343cdbb74fc23469ac2"
                     }
                 ]
 }

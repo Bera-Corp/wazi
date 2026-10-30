@@ -4,6 +4,13 @@
 
 ## 1. Decision
 
+**Judging rubric, integrated 29 October:** prioritise and accept work against
+Impact **30%**, Use of Meta AI Tooling **25%**, Technical Depth & Execution
+**20%**, and Demo **25%**, supplied by the project owner. The
+[judging pillars and delivery rubric](JUDGING_PILLARS.md) defines feature
+evidence, readiness review and submission gates. These weights apply to
+product decisions and rehearsals as well as the pitch.
+
 **29 October scope addition:** [Worlds and S-Prints](WAZI_SPRINTS_PLAN.md)
 is a long-term feature track. Its experimental offline contracts/resolver
 are locally implemented; model execution, GPU deployment and physical
@@ -14,7 +21,7 @@ For the hackathon, demonstrate **one reproducible, safe, Meta-model-powered jour
 
 **Do not promise** arbitrary GitHub repository installation, universal native desktop support, multiple infrastructure providers, fully autonomous remediation, live marketplace revenue, a production crash SDK, or external app-store partnerships in this competition build. These belong in the master-plan phases.
 
-The master research and install-bridge reports are design documents, not a guarantee these features already ship. Wazi's repository, inspected on this date, is pre-MVP documentation-only.
+The master research and install-bridge reports are design documents, not a guarantee these features already ship. The original 21 October inspection was documentation-only; by 29 October, Phase 0 contracts and the offline Worlds prototype were shipped with green CI at `3ae8345`. The live product journey and Meta integration remain buildout work.
 
 ## 2. Hackathon framing and rules
 
@@ -30,6 +37,17 @@ Official competition entry/rules: https://cerebralvalley.ai/e/meta-ai-developer-
 
 ## 3. Success definition and live 110–130 second demo
 
+**Current film brief:** the owner's later three-minute master is developed
+in [video/](../video/README.md), starting with the gladiator/Meta AI opening.
+Its transcript supersedes the shorter timing below for this creative edit;
+check the final submission-length rules before picture lock.
+
+Use the [four-pillar demo beats](JUDGING_PILLARS.md#demo-beats)
+as the updated narrative: beneficiary/problem -> visible Meta proposal ->
+verified repair and approval -> working application -> measured benefit.
+The timing table below is an implementation breakdown; it must serve that
+story. The final contest's video limits take precedence over these targets.
+
 | Timestamp | Live evidence shown | Fallback if external services are unavailable |
 |---|---|---|
 | 0–12 s | Choose a deliberately flawed, permissively licensed sample application; explain deployment friction | Known tested fixture; no fabricated success |
@@ -44,6 +62,12 @@ Official competition entry/rules: https://cerebralvalley.ai/e/meta-ai-developer-
 **Never silently replay fake security or deployment metrics as live.** If a step is simulated, label it in UI and video. A true end-to-end green path with one reference app is more persuasive than shallow demonstrations of five platforms.
 
 ## 4. Scope control: build vs defer
+
+**Nodes addition, 30 October:** [Wazi Nodes](WAZI_NODES_PLAN.md) makes owned
+hardware the first deployment destination in the existing story. The Linux
+dev host is SSH/sudo-ready; node pairing, resource limits and the app runtime
+are still planned. Target one node/app with persistent data and reconnect
+evidence. Broader Fabric scheduling, Kubernetes and compute resale stay later.
 
 | Capability | Hackathon | Longer-term |
 |---|---|---|
@@ -196,6 +220,11 @@ This matrix explicitly checks earlier promises often lost when focusing on a sho
 
 ## 8. Objective acceptance gates
 
+**Judging:** complete the [four-pillar submission gate](JUDGING_PILLARS.md#submission-gate).
+No feature is competition-complete solely because its tests pass: record
+beneficiary, pillar contribution, evidence and demo moment. Missing real
+Meta use or a working demo cannot be compensated by extra schemas or slides.
+
 **Engineering:** One real OSV advisory; one correctly bounded model-generated patch proposal; one failing-before/passing-after relevant test and fresh scan if claiming a fixed vulnerability; one actual reviewed deployment to isolated Linux; one health status check with evidence; one reproducible clean re-run; no raw secrets/privileged shell surfaced to model.
 
 **Security:** Permission deny tests, external prompt injection test, invalid and revoked manifest checks, safe failure on stale host context, cleanup after aborted deployment. Simulated fixture-based checks must be labeled. Auth rules for every mutating endpoint.
@@ -207,6 +236,13 @@ This matrix explicitly checks earlier promises often lost when focusing on a sho
 **Release:** Signed build/release hashes, successful smoke-test receipt, deployment teardown and reproducibility guide. Public documentation defines current feature support, known limitations, license status and security reporting route.
 
 ## 9. Recommended issues in priority order
+
+Every issue carries the pillar/evidence fields in
+[JUDGING_PILLARS.md](JUDGING_PILLARS.md#build-sequence-and-acceptance).
+HACK-001/003 establish Impact and challenge fit; HACK-007/008 prove Meta value;
+HACK-002/006/009/010 establish engineering and the working outcome; HACK-011/015
+make the demo usable and compelling. Dependencies and mandatory safety
+checks still precede optional features.
 
 1. **HACK-001** Confirm final challenge rules, Meta API/model access, Indie team and existing-code requirements; record evidence.
 2. **HACK-002** Wazi schemas: app identity, package manifest, permissions, security status, deployment plan and artifact receipt.

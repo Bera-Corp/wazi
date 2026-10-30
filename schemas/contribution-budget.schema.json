@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/contribution-budget.schema.json",
+  "title": "Wazi Contribution Budget (NODE-002)",
+  "description": "Versioned owner contribution budget for one tenant on one host. CPU is measured in logical cores; RAM and storage values are mebibytes (MiB), and physical.storageMb is total capacity rather than free space. Physical totals, the owner-approved budget, the protected system reserve and per-role allocations are distinct quantities. This contract records a budget decision; it does not by itself authorise execution. Semantic rules enforced by the validator: allocations + systemReserve <= ownerBudget <= physical per resource, and validFrom < validUntil.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "budgetId", "tenantScope", "hostId", "approvalState", "approvedBy", "approvedAt", "validFrom", "validUntil", "physical", "ownerBudget", "systemReserve", "allocations"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "budgetId": { "type": "string", "pattern": "^budget_[A-Za-z0-9_-]+$" },
+    "tenantScope": { "type": "string", "minLength": 1 },
+    "hostId": { "type": "string", "pattern": "^host_[A-Za-z0-9_-]+$" },
+    "approvalState": { "enum": ["draft", "approved", "revoked"] },
+    "approvedBy": { "type": "string", "minLength": 1 },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "validFrom": { "type": "string", "format": "date-time" },
+    "validUntil": { "type": "string", "format": "date-time" },
+    "physical": { "$ref": "#/$defs/resourceSet" },
+    "ownerBudget": { "$ref": "#/$defs/resourceSet" },
+    "systemReserve": { "$ref": "#/$defs/resourceSet" },
+    "allocations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "resources"],
+        "properties": {
+          "role": { "enum": ["application", "database", "backup-helper", "restore-helper", "upgrade-temporary", "runtime-overhead"] },
+          "resources": { "$ref": "#/$defs/resourceSet" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "resourceSet": {
+      "type": "object",
+      "description": "cpuCores is a logical CPU-core count; ramMb and storageMb are integer MiB.",
+      "additionalProperties": false,
+      "required": ["cpuCores", "ramMb", "storageMb"],
+      "properties": {
+        "cpuCores": { "type": "number", "exclusiveMinimum": 0 },
+        "ramMb": { "type": "integer", "minimum": 1 },
+        "storageMb": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

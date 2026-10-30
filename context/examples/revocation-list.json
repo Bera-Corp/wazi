@@ -3,5 +3,12 @@
   "listId": "revlist_demo",
   "generatedAt": "2026-10-21T08:00:00Z",
   "expiresAt": "2026-10-22T08:00:00Z",
-  "entries": []
+  "entries": [],
+  "sequence": 1,
+  "signature": {
+    "algorithm": "sigstore-cosign",
+    "value": "phase0-demo-signature-not-cryptographic",
+    "signedBy": "wazi-demo-signer",
+    "payloadDigest": "sha256:431ed67f44940f3718b7a6bdf23a256884437f049f0712bae69f45e5df70ae06"
+  }
 }

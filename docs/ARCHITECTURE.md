@@ -22,6 +22,25 @@ The model cannot access secret values or a generic shell. The control plane cann
 - Optional pgvector: retrieval index only, never canonical truth.
 - Secret broker: credentials and generated values outside context storage.
 
+## Owner-controlled compute: Nodes and Fabric
+
+[Wazi Nodes](WAZI_NODES_PLAN.md) makes one owner-controlled Linux host a
+first-class destination. Fabric is the proposed shared view of personal
+nodes, existing VPS resources and future managed compute. Reuse the host
+agent, mutual TLS, policy, registry, approvals and evidence components.
+
+Keep physical capacity, owner contribution limits, active reservations and
+current availability distinct. Placement must respect the owner/tenant,
+fresh resource observations and supported isolation. The initial adapter
+uses Docker Compose with explicit limits; clusters, GPUs, VM hardening and
+failover are later capabilities.
+
+[Development SSH access](DEVELOPMENT_ENVIRONMENTS.md) is operational
+bootstrap access, separate from product node credentials. Existing tailnet
+networking is a private transport, not proof of Wazi pairing or an application
+public-exposure grant. Qualification, heartbeat expiry, data retention and
+reconnect behaviour require typed records and runtime evidence.
+
 ## Experimental Worlds extension
 
 The [S-Print feature plan](WAZI_SPRINTS_PLAN.md) extends registry and BYOC

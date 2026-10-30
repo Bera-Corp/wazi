@@ -2,7 +2,7 @@ name: ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
   pull_request:
 
 permissions:
@@ -26,8 +26,58 @@ jobs:
           python scripts/test_sprints.py
           python scripts/test_secret_scan.py
           python scripts/test_render_compose.py
+          python scripts/test_render_compose_v1.py
+          python scripts/test_context_engine.py
       - name: JSON syntax gate
         run: make validate
+
+  services:
+    runs-on: ubuntu-latest
+    steps:
+      # Actions are pinned to immutable commit SHAs. Tags are noted for humans.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: services/go.mod
+          cache-dependency-path: services/go.mod
+      - name: Go tests
+        working-directory: services
+        run: go test ./... -count=1
+      - name: Go race tests (native Linux)
+        working-directory: services
+        run: go test -race ./internal/controlplane/ ./internal/pairing/ ./internal/agentclient/ -count=1
+      - name: Go vet (native and cross)
+        working-directory: services
+        run: |
+          go vet ./...
+          GOOS=linux go vet ./...
+          GOOS=windows go vet ./...
+      - name: Go formatting
+        working-directory: services
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "unformatted files: $unformatted"
+            exit 1
+          fi
+      - name: Linux builds
+        working-directory: services
+        run: |
+          go build ./...
+          GOOS=linux GOARCH=amd64 go build -o /tmp/wazi-agent ./cmd/agent
+          GOOS=linux GOARCH=amd64 go build -o /tmp/wazi-controlplane ./cmd/controlplane
+      # Independent check: the Go round-trip listing must satisfy
+      # the canonical JSON schema, validated by Python rather than
+      # by Go-side stand-ins.
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.11"
+      - name: Canonical schema validation of Go round-trip output
+        run: |
+          pip install -r ../requirements-dev.txt
+          WAZI_ROUNDTRIP_OUT=/tmp/wazi-roundtrip.json go test ./internal/controlplane/ -run TestIntakeStorageListingSchemaRoundTrip -count=1
+          python ../scripts/validate_go_profile.py /tmp/wazi-roundtrip.json
+        working-directory: services
 
   secret-scan:
     runs-on: ubuntu-latest

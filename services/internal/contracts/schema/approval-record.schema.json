@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/approval-record.schema.json",
+  "title": "Wazi Approval Record",
+  "description": "Human approval bound to the canonical digest of one exact deployment plan, tenant, host, and action. Changing any plan field changes its digest and invalidates this approval. Expired approvals are invalid.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "approvalId", "caseId", "planId", "planDigest", "envelopeId", "envelopeDigest",
+    "tenantScope", "hostId", "applicationId", "action", "decision",
+    "approver", "approvedAt", "expiresAt"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "approvalId": { "type": "string", "pattern": "^appr_[A-Za-z0-9_-]+$" },
+    "caseId": { "type": "string", "pattern": "^case_[A-Za-z0-9_-]+$" },
+    "planId": { "type": "string", "pattern": "^plan_[A-Za-z0-9_-]+$" },
+    "planDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
+    "envelopeId": { "type": "string", "pattern": "^env_[A-Za-z0-9_-]+$" },
+    "envelopeDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
+    "tenantScope": { "type": "string", "minLength": 1 },
+    "hostId": { "type": "string", "pattern": "^host_[A-Za-z0-9_-]+$" },
+    "applicationId": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+    "action": { "$ref": "common.schema.json#/$defs/approvalAction" },
+    "decision": { "enum": ["approved", "denied"] },
+    "approver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approverId", "role"],
+      "properties": {
+        "approverId": { "type": "string", "minLength": 1 },
+        "role": { "enum": ["user", "maintainer"] }
+      }
+    },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" }
+  }
+}

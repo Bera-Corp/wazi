@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wazi.dev/schemas/v1/procedure.schema.json",
+  "title": "Wazi Procedure",
+  "description": "Typed, reviewed definition of one lifecycle procedure. Envelopes and plans reference procedures by recordRef (id + canonical digest); a reference to an undefined procedure is a semantic validation failure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "procedureId", "version", "operation", "applicationId",
+    "capabilitySequence", "parameterContracts", "provenance", "reviewState"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "procedureId": { "type": "string", "pattern": "^proc_[A-Za-z0-9_-]+$" },
+    "version": { "type": "string", "minLength": 1 },
+    "operation": { "enum": ["install", "upgrade", "backup", "restore", "rollback", "uninstall", "health-check"] },
+    "applicationId": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+    "capabilitySequence": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/capability" },
+      "description": "Capabilities in execution order. A plan for this procedure may only use capabilities from this sequence."
+    },
+    "parameterContracts": {
+      "type": "array", "minItems": 1,
+      "description": "Signed program surface: for each capability in the sequence, the parameters a plan step must supply and the values fixed by this procedure. Plan steps are checked against these contracts semantically; the procedure signature payload binds them.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capability", "requiredParameters"],
+        "properties": {
+          "capability": { "$ref": "common.schema.json#/$defs/capability" },
+          "requiredParameters": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } },
+          "fixedParameters": { "type": "object", "description": "Parameter values a plan step must match exactly." }
+        }
+      }
+    },
+    "requiresCheckpoint": { "type": "boolean", "default": false },
+    "rollbackProcedureId": { "type": "string", "pattern": "^proc_[A-Za-z0-9_-]+$" },
+    "provenance": { "$ref": "common.schema.json#/$defs/provenance" },
+    "reviewState": { "$ref": "common.schema.json#/$defs/reviewState" },
+    "signature": { "$ref": "common.schema.json#/$defs/signature" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "reviewState": { "enum": ["signed", "canary", "stable"] } } },
+      "then": { "required": ["signature"] }
+    }
+  ]
+}

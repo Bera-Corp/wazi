@@ -361,6 +361,90 @@ def main():
     results.append(bool(secret_errors) and all("SYNTHETIC_REVIEW_VALUE" not in e for e in secret_errors))
     print(("PASS" if results[-1] else "FAIL") + " detected secret value is suppressed in diagnostics")
 
+    # Contribution budget / managed-volume semantics (NODE-002):
+    # schema-valid records whose arithmetic or qualification
+    # claims are false must still be rejected.
+    budget = validate.load(ROOT / "context" / "examples" / "contribution-budget.json")
+    results.append(validate.contribution_budget_errors(copy.deepcopy(budget)) == [])
+    print(("PASS" if results[-1] else "FAIL") + " valid contribution budget accepted semantically")
+
+    def expect_budget_rejected(label, mutate):
+        record = copy.deepcopy(budget)
+        mutate(record)
+        errs = validate.contribution_budget_errors(record)
+        results.append(bool(errs))
+        print(("PASS" if results[-1] else "FAIL") + f" {label}" + (f" -> {errs[0]}" if errs else " (unexpectedly accepted)"))
+
+    expect_budget_rejected(
+        "allocations plus reserve exceeding owner budget",
+        lambda r: r["allocations"][0]["resources"].update(ramMb=4096))
+    expect_budget_rejected(
+        "owner budget exceeding physical totals",
+        lambda r: r["ownerBudget"].update(storageMb=99999999))
+    expect_budget_rejected(
+        "duplicate allocation role",
+        lambda r: r["allocations"].append(copy.deepcopy(r["allocations"][0])))
+    expect_budget_rejected(
+        "inverted budget validity window",
+        lambda r: r.update(validUntil=r["validFrom"]))
+    expect_budget_rejected(
+        "budget validity window inverted across UTC offsets",
+        lambda r: r.update(
+            validFrom="2026-10-30T08:00:00Z",
+            validUntil="2026-10-30T10:00:00+03:00"))
+    offset_budget = copy.deepcopy(budget)
+    offset_budget.update(
+        validFrom="2026-10-30T06:00:00Z",
+        validUntil="2026-10-30T10:00:00+03:00")
+    results.append(validate.contribution_budget_errors(offset_budget) == [])
+    print(("PASS" if results[-1] else "FAIL") + " increasing budget validity window across UTC offsets accepted")
+    expect_budget_rejected(
+        "budget validity window inverted below microsecond precision",
+        lambda r: r.update(
+            validFrom="2026-10-30T08:00:00.0000002Z",
+            validUntil="2026-10-30T08:00:00.0000001Z"))
+    precise_budget = copy.deepcopy(budget)
+    precise_budget.update(
+        validFrom="2026-10-30T08:00:00.0000001Z",
+        validUntil="2026-10-30T08:00:00.0000002Z")
+    results.append(validate.contribution_budget_errors(precise_budget) == [])
+    print(("PASS" if results[-1] else "FAIL") + " increasing sub-microsecond budget validity window accepted")
+
+    volqual = validate.load(ROOT / "context" / "examples" / "managed-volume-qualification.json")
+    results.append(validate.managed_volume_errors(copy.deepcopy(volqual)) == [])
+    print(("PASS" if results[-1] else "FAIL") + " valid preflight-only managed-volume record accepted semantically")
+    qualified_without_quota = copy.deepcopy(volqual)
+    qualified_without_quota["result"] = "qualified"
+    vol_errs = validate.managed_volume_errors(qualified_without_quota)
+    results.append(any("qualified without enforceable storage quota" in err for err in vol_errs))
+    print(("PASS" if results[-1] else "FAIL") + " qualified result rejected without enforceable storage quota")
+    offset_volqual = copy.deepcopy(volqual)
+    offset_volqual["observedAt"] = "2026-10-30T08:00:00Z"
+    offset_volqual["expiresAt"] = "2026-10-30T10:00:00+03:00"
+    vol_errs = validate.managed_volume_errors(offset_volqual)
+    results.append(bool(vol_errs))
+    print(("PASS" if results[-1] else "FAIL") + " inverted managed-volume window across UTC offsets rejected" + (f" -> {vol_errs[0]}" if vol_errs else ""))
+    offset_volqual["observedAt"] = "2026-10-30T06:00:00Z"
+    offset_volqual["expiresAt"] = "2026-10-30T10:00:00+03:00"
+    vol_errs = validate.managed_volume_errors(offset_volqual)
+    results.append(vol_errs == [])
+    print(("PASS" if results[-1] else "FAIL") + " increasing managed-volume window across UTC offsets accepted")
+    offset_volqual["observedAt"] = "2026-10-30T08:00:00.0000002Z"
+    offset_volqual["expiresAt"] = "2026-10-30T08:00:00.0000001Z"
+    vol_errs = validate.managed_volume_errors(offset_volqual)
+    results.append(bool(vol_errs))
+    print(("PASS" if results[-1] else "FAIL") + " inverted sub-microsecond managed-volume window rejected" + (f" -> {vol_errs[0]}" if vol_errs else ""))
+    offset_volqual["observedAt"] = "2026-10-30T08:00:00.0000001Z"
+    offset_volqual["expiresAt"] = "2026-10-30T08:00:00.0000002Z"
+    vol_errs = validate.managed_volume_errors(offset_volqual)
+    results.append(vol_errs == [])
+    print(("PASS" if results[-1] else "FAIL") + " increasing sub-microsecond managed-volume window accepted")
+    expired_qual = copy.deepcopy(volqual)
+    expired_qual["expiresAt"] = expired_qual["observedAt"]
+    vol_errs = validate.managed_volume_errors(expired_qual)
+    results.append(bool(vol_errs))
+    print(("PASS" if results[-1] else "FAIL") + " non-increasing qualification window rejected" + (f" -> {vol_errs[0]}" if vol_errs else ""))
+
     print("ALL PASS" if all(results) else "SOME FAILED")
     return 0 if all(results) else 1
 

@@ -1,0 +1,16 @@
+{
+  "fixtureId": "adv_volqual-remote-daemon",
+  "description": "A remote daemon endpoint must never qualify local managed-volume storage.",
+  "schema": "managed-volume-qualification.schema.json",
+  "record": {
+    "schemaVersion": "1.0.0",
+    "qualificationId": "volqual_bad_remote",
+    "tenantScope": "tenant_demo",
+    "hostId": "host_demo01",
+    "observedAt": "2026-10-21T09:00:00Z",
+    "expiresAt": "2026-10-21T09:30:00Z",
+    "daemon": { "contextName": "remote", "endpointKind": "tcp", "serverVersion": "29.1.3", "rootDir": "/var/lib/docker" },
+    "storage": { "managedVolumesCapable": true, "enforcementMethod": "preflight-only", "quotaEnforceable": false, "storageFreeMb": 1024, "filesystemType": "ext4" },
+    "result": "qualified"
+  }
+}

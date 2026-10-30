@@ -1,5 +1,22 @@
 # MVP Roadmap
 
+## Judging pillars across delivery
+
+Hackathon-facing product and build decisions use the owner-supplied weights:
+Impact **30%**, Use of Meta AI Tooling **25%**, Technical Depth & Execution
+**20%**, Demo **25%**. [The shared rubric](JUDGING_PILLARS.md) maps features to
+evidence, acceptance and demo beats. The phase sequence below remains the
+engineering dependency order; the competition track is planned alongside it.
+
+- Phase 1: prove the deterministic signed deployment, then show the running
+  app in a usable review/approval/progress flow. This establishes execution
+  evidence and a demo backbone; do not wait until the end to design the UX.
+- Competition workstream: select a beneficiary and exact challenge, measure
+  baseline friction, and add one material, bounded Meta proposal path with
+  tests and rescan. Its execution remains behind the deterministic gates.
+- Each release/rehearsal: review all four pillars using actual receipts.
+  CI alone does not establish impact, Meta use or demo readiness.
+
 ## Months 1–2: contracts and security boundaries
 
 - context, manifest, plan, host-profile, evidence, and policy schemas;
@@ -22,6 +39,13 @@
 
 **Gate:** reference app completes its lifecycle on the supported matrix without AI.
 
+The [Linux development environment](DEVELOPMENT_ENVIRONMENTS.md) is reachable
+for SSH/sudo bootstrap. Go and Docker prerequisites are pending. Integrate
+the first [Wazi Node](WAZI_NODES_PLAN.md) through this same slice: authenticated
+inventory, owner contribution limits, one signed application, enforced
+CPU/RAM limits, persistent data and unavailable/reconnected evidence.
+Apply versioned contracts before changing v1 resource/checkpoint semantics.
+
 ## Months 5–6: context retrieval
 
 - context ingestion and normalization;
@@ -32,6 +56,11 @@
 - UI context inspector.
 
 **Gate:** Wazi selects and explains the correct stable procedure.
+
+Nodes/Fabric selection adds explicit eligible/ineligible destination reasons,
+availability policy and atomic capacity reservations after the node slice
+has runtime evidence. Later lifecycle work adds durable drain/removal and
+backup semantics. Cluster, GPU, VM and migration adapters remain later work.
 
 ## Months 7–8: controlled AI packaging
 
@@ -85,5 +114,5 @@ training recipes. The application roadmap remains the core delivery path.
   needs separate design, approval and validation.
 
 The extension uses dependency gates, not unverified calendar commitments.
-See [the follow-up review](PHASE_0_REVIEW_2026-10-29.md) for remaining Phase 0
-completion blockers.
+See [the follow-up review](PHASE_0_REVIEW_2026-10-29.md) for the resolved Phase 0
+findings and the boundaries retained for Phase 1.

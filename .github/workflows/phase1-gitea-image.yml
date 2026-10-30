@@ -1,0 +1,92 @@
+name: phase1-gitea-image
+
+on:
+  push:
+    branches:
+      - codex/phase1-buildout
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITEA_TAG: v28.2.0
+      IMAGE_NAME: ghcr.io/bera-corp/wazi-gitea-phase1
+    steps:
+      - name: Checkout Wazi build policy
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Checkout the exact upstream source tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: go-gitea/gitea
+          ref: v28.2.0
+          path: upstream
+          fetch-depth: 0
+
+      - name: Verify the immutable signed upstream release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release verify "$GITEA_TAG" --repo go-gitea/gitea
+          source_commit="$(git -C upstream rev-parse HEAD)"
+          test "$source_commit" = 1dc1ecdddcdc60ab14ec14e30e7bb4d84242f21f
+          printf 'Verified %s at %s\n' "$GITEA_TAG" "$source_commit"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and publish the rootless Wazi image
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./upstream
+          file: ./upstream/Dockerfile.rootless
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ github.run_id }}-${{ github.run_attempt }}
+          build-args: |
+            GITEA_VERSION=v28.2.0
+          provenance: mode=max
+
+      - name: Sign the exact image digest with GitHub build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Record immutable image identity
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          {
+            printf 'Source tag: %s\n' "$GITEA_TAG"
+            printf 'Source commit: %s\n' 1dc1ecdddcdc60ab14ec14e30e7bb4d84242f21f
+            printf 'Image: %s@%s\n' "$IMAGE_NAME" "$IMAGE_DIGEST"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify the published image attestation
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: gh attestation verify "oci://$IMAGE_NAME@$IMAGE_DIGEST" --repo "$GITHUB_REPOSITORY"

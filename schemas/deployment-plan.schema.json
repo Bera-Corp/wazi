@@ -14,7 +14,7 @@
     "planId": { "type": "string", "pattern": "^plan_[A-Za-z0-9_-]+$" },
     "envelopeId": { "type": "string", "pattern": "^env_[A-Za-z0-9_-]+$" },
     "composeArtifactRef": { "$ref": "common.schema.json#/$defs/recordRef" },
-    "operation": { "enum": ["install", "upgrade", "backup", "restore", "rollback", "uninstall"] },
+    "operation": { "enum": ["install", "upgrade", "backup", "restore", "rollback", "uninstall", "health-check"] },
     "origin": { "enum": ["deterministic-resolver", "ai-planner"] },
     "unresolvedQuestions": {
       "type": "array", "items": { "type": "string", "minLength": 1 }, "default": [],

@@ -5,6 +5,27 @@
 
 **Research and product architecture report for Bera-Corp/Wazi**
 
+**30 October 2026 extension:** [Wazi Nodes and Fabric](WAZI_NODES_PLAN.md)
+integrates owner-controlled hardware as a first-class compute destination.
+It extends the existing agent/Phase 1 slice; SSH access to a development
+host is verified. Product pairing (mTLS enrollment, revocation, renewal,
+authenticated intake) is implemented locally in `services/` with acceptance
+  still open. Offline signature verification, full manifest/procedure schema
+  and signature checks, authenticated registry routes, signed monotonic
+  revocation updates, and a persistent agent anti-rollback cursor are
+  implemented as local development controls. The agent has read-only
+  signature/revocation checks and a separate envelope/plan binding helper that
+  returns digests for a future approval; neither is invoked by a mutating
+  executor. A standalone case-bound approval pilot has durable one-job
+  consumption and agent-side role/quorum checks. This demo pilot has one
+  configured approver and does not claim independent-human quorum; its
+  preflight is not wired into execution. Gitea is the owner-selected reference app; see the
+  [Phase 1 app record](PHASE1_REFERENCE_APP.md). A bounded numeric budget is
+  recorded from delegated owner sizing; the immutable release digest and
+  signature remain pending. Live single-approver configuration, fresh-host
+  checks, runtime isolation, journal integration, and lifecycle recovery remain open.
+  Deployment stays disabled (501) until all gates pass.
+
 **29 October 2026 extension:** [Worlds and S-Prints](WAZI_SPRINTS_PLAN.md)
 adds composable world-model capabilities to the feature catalogue.
 Experimental contracts and offline resolution are implemented locally;

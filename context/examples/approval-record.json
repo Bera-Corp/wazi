@@ -1,6 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "approvalId": "appr_demo01",
+  "caseId": "case_demo01",
   "planId": "plan_demo01",
   "planDigest": "sha256:ba161af0b8d8fb71f2542956a6fd2acf7abd368ac3cb74498a85f8b711d96cb4",
   "envelopeId": "env_demo01",
