@@ -12,10 +12,10 @@ Hard filters (validate.decide) always run before ranking: semantic
 similarity can never override incompatible architecture, insufficient
 resources, occupied ports, revoked releases, or missing facts.
 
-Everything here is offline and read-only with respect to hosts: it
-never invokes an executor, a live revocation source, or Phase 1
-runtime state. Live freshness, real deployment evidence, and any
-mutation remain gated on Phase 1.
+The fixture pipeline remains offline and read-only. The private
+context_worker reuses its ranking helpers after the Go agent verifies
+live trust and resource bindings; Python metadata checks alone never
+establish cryptographic trust or authorize execution.
 """
 
 import json

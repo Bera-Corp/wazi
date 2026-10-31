@@ -97,7 +97,11 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		if err := verify.VerifyRecord(raw, policy); err != nil {
+		verifyRecord := verify.VerifyRecord
+		if record["listId"] != nil {
+			verifyRecord = verify.VerifySignedRecord
+		}
+		if err := verifyRecord(raw, policy); err != nil {
 			return err
 		}
 		fmt.Println("schema and signature verified")

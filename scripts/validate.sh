@@ -13,3 +13,8 @@ fi
 .venv/bin/python scripts/secret_scan.py
 .venv/bin/python scripts/test_secret_scan.py
 .venv/bin/python scripts/test_render_compose.py
+.venv/bin/python scripts/test_context_engine.py
+.venv/bin/python scripts/test_context_live.py
+.venv/bin/python scripts/test_package_composition.py
+.venv/bin/python scripts/test_candidate_author.py
+.venv/bin/python scripts/test_prepare_package_build.py

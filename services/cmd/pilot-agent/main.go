@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Bera-Corp/wazi/services/internal/agentclient"
+	"github.com/Bera-Corp/wazi/services/internal/contracts"
 	"github.com/Bera-Corp/wazi/services/internal/operationjournal"
 	"github.com/Bera-Corp/wazi/services/internal/pilotqueue"
 	"github.com/Bera-Corp/wazi/services/internal/probe"
@@ -29,6 +30,7 @@ type configuration struct {
 	Identity                                                     agentclient.Identity
 	CapabilityPolicy                                             agentclient.CapabilityPolicyReference
 	Runtime                                                      agentclient.DockerPilotConfig
+	Context                                                      agentclient.ContextWorkerConfig
 }
 
 // reconcileRequest is the operator's digest-bound observation for one
@@ -115,6 +117,11 @@ func run(ctx context.Context, path string) error {
 		return err
 	}
 	defer cursor.Close()
+	if config.Context.WorkerPath != "" {
+		if err := config.Context.Validate(); err != nil {
+			return err
+		}
+	}
 	q, err := pilotqueue.New(filepath.Join(state, "queue"), func(jobCtx context.Context, job agentclient.PilotJob) (any, error) {
 		budgetValue, err := verify.ParseJSON(job.Budget)
 		if err != nil {
@@ -190,6 +197,12 @@ func run(ctx context.Context, path string) error {
 			return nil, err
 		}
 		snapshot, err := executor.Execute(jobCtx, agentclient.Request{JobID: job.JobID, CaseID: job.CaseID})
+		if config.Context.WorkerPath != "" {
+			_, importErr := config.Context.Call(jobCtx, map[string]any{"action": "record", "receipt": snapshot, "job": job})
+			if importErr != nil {
+				log.Print("context case import deferred; durable queue receipts will be retried at retrieval")
+			}
+		}
 		return snapshot, err
 	})
 	if err != nil {
@@ -199,6 +212,19 @@ func run(ctx context.Context, path string) error {
 	// stable during a job. Further snapshots are explicitly requested by the
 	// operator before constructing a new envelope and approval.
 	mux := http.NewServeMux()
+	if config.Context.WorkerPath != "" {
+		bridge := &agentclient.ContextBridge{
+			Worker: config.Context, BudgetDigest: config.BudgetDigest,
+			Runtime:        &config.Runtime,
+			QueueDirectory: filepath.Join(state, "queue"),
+			TenantScope:    config.Runtime.TenantScope, HostID: config.Runtime.HostID,
+			Probe: func() (contracts.HostProfile, error) {
+				return probe.BuildForHost(config.Runtime.TenantScope, config.Runtime.HostID)
+			},
+			Preflight: agentclient.ExecutionPreflightConfig{ControlPlaneURL: config.ControlPlaneURL, TLSConfig: tlsConfig, SigningPolicy: policy, CapabilityPolicy: config.CapabilityPolicy, RevocationState: cursor, RevocationFreshness: agentclient.RevocationFreshness{MaxAge: 5 * time.Minute}, ClockSkew: 5 * time.Second, ApprovalMaxValidity: 15 * time.Minute},
+		}
+		mux.Handle("/contexts/", bridge.Handler())
+	}
 	mux.Handle("/jobs", q.Handler())
 	mux.Handle("/jobs/", q.Handler())
 	mux.Handle("POST /reconcile", reconcileHandler(journal))

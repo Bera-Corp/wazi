@@ -129,3 +129,19 @@ Its SSH access is not a product API or evidence that Wazi exposes shell access.
 Routing changes were authorised separately by the owner. Wi-Fi remains DHCP;
 agents should use the stable tailnet endpoint in `.env.local`. Application
 public exposure still requires its own product policy and approval.
+
+## Phase 2 runtime qualification — 31 October 2026
+
+The context worker uses the distribution-managed Python 3.14 runtime,
+qualified separately from the pinned Python 3.11 development/CI environment.
+Installed python3.14-venv and its pip/setuptools wheel dependencies during
+setup; no existing packages were upgraded. The old pinned development rpds
+and PyYAML packages were not installed into the service runtime. Installed
+python3-rfc3339-validator 0.1.4 to activate mandatory timestamp validation.
+Rollback of these development dependencies is removal of those newly installed
+packages after checking that no other user depends on them.
+
+The tested runtime versions and live acceptance receipts are recorded in
+[the Phase 2 evidence matrix](PHASE2_LIVE_EVIDENCE.md). The context upgrade
+preserves the Gitea runtime allocation and application volumes; its systemd
+drop-ins and agent configuration have retained rollback copies.

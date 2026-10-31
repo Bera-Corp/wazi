@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "1.0.0",
+  "packages": {
+    "postgresql": {
+      "repository": "docker-library/postgres",
+      "commit": "dfc76bb299b057785026eb2eea39556b6fe52983",
+      "commitSignatureVerified": false,
+      "context": "17/bookworm",
+      "dockerfile": "17/bookworm/Dockerfile",
+      "dockerfileSha256": "bbd3cbb45a19023ce9d9b87ac3d965d5ff7da29ef7c2846b2cd7173a2caae3f7",
+      "upstreamVersion": "17.11",
+      "baseTag": "debian:bookworm-slim",
+      "baseImage": "debian@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3",
+      "applicationId": "org.postgresql.postgresql",
+      "license": "PostgreSQL"
+    },
+    "mysql": {
+      "repository": "docker-library/mysql",
+      "commit": "9b6c81572125a4ff828e3037c71940f3f8311978",
+      "commitSignatureVerified": false,
+      "context": "8.4",
+      "dockerfile": "8.4/Dockerfile.oracle",
+      "dockerfileSha256": "22342d45458ef2e490fe21a169060e2dc765a79931978e241092ecb902427897",
+      "upstreamVersion": "8.4.13",
+      "baseTag": "oraclelinux:9-slim",
+      "baseImage": "oraclelinux@sha256:38f3f1f40cd8f28d020f38d69fa30f8a9fe9f7e661dff78592f85d110ec4696d",
+      "applicationId": "com.mysql.mysql",
+      "license": "GPL-2.0-only"
+    },
+    "nginx": {
+      "repository": "nginx/docker-nginx",
+      "commit": "d99174e2cecfc7e5db51c05aff54c2c9dee45803",
+      "commitSignatureVerified": false,
+      "context": "stable/debian",
+      "dockerfile": "stable/debian/Dockerfile",
+      "dockerfileSha256": "4f77b5fe6bef815fab0086e5f8689b9a9fee1df7451bb337fb95885d71438a0f",
+      "upstreamVersion": "1.30.6",
+      "baseTag": "debian:trixie-slim",
+      "baseImage": "debian@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4",
+      "applicationId": "org.nginx.nginx",
+      "license": "BSD-2-Clause"
+    }
+  }
+}

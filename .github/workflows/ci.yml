@@ -28,6 +28,10 @@ jobs:
           python scripts/test_render_compose.py
           python scripts/test_render_compose_v1.py
           python scripts/test_context_engine.py
+          python scripts/test_context_live.py
+          python scripts/test_package_composition.py
+          python scripts/test_candidate_author.py
+          python scripts/test_prepare_package_build.py
       - name: JSON syntax gate
         run: make validate
 

@@ -200,7 +200,7 @@ func TestPrepareExecutionChainsPairedTrustResourceAndSingleApproval(t *testing.T
 		ContributionBudgetRaw:         budgetRaw,
 		ManagedVolumeQualificationRaw: qualificationRaw,
 	}
-	prepared, err := PrepareExecution(context.Background(), ExecutionPreflightConfig{
+	config := ExecutionPreflightConfig{
 		ControlPlaneURL: server.URL,
 		TLSConfig:       clientTLS,
 		SigningPolicy:   fixture.policy,
@@ -211,7 +211,38 @@ func TestPrepareExecutionChainsPairedTrustResourceAndSingleApproval(t *testing.T
 		RevocationFreshness: RevocationFreshness{MaxAge: 5 * time.Minute},
 		ClockSkew:           5 * time.Second,
 		ApprovalMaxValidity: 15 * time.Minute,
-	}, request, resources)
+	}
+	readOnly, err := prepareExecution(context.Background(), config, request, resources, false)
+	if err != nil {
+		t.Fatalf("read-only preflight rejected: %v", err)
+	}
+	if readOnly.Verified() || len(readOnly.ApprovalRecords()) != 0 || approvalRequests.Load() != 0 {
+		t.Fatal("retrieval consumed approval or produced executable authorization")
+	}
+	for _, change := range []struct {
+		name   string
+		mutate func() func()
+	}{
+		{"tampered-signature", func() func() {
+			old := fixture.manifest
+			fixture.manifest = mutateCanonicalObject(t, old, func(m map[string]any) { m["name"] = "tampered" })
+			return func() { fixture.manifest = old }
+		}},
+		{"stale-profile", func() func() {
+			old := hostProfileRaw
+			hostProfileRaw = mutateCanonicalObject(t, old, func(m map[string]any) { m["expiresAt"] = now.Add(-time.Hour).Format(time.RFC3339) })
+			return func() { hostProfileRaw = old }
+		}},
+	} {
+		t.Run(change.name, func(t *testing.T) {
+			restore := change.mutate()
+			defer restore()
+			if _, err := prepareExecution(context.Background(), config, request, resources, false); err == nil {
+				t.Fatal("unsafe context accepted")
+			}
+		})
+	}
+	prepared, err := PrepareExecution(context.Background(), config, request, resources)
 	if err != nil {
 		t.Fatalf("valid paired execution preflight rejected: %v", err)
 	}

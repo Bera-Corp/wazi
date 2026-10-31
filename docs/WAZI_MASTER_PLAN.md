@@ -12,6 +12,12 @@ operational limits and final CI status. It remains a single-app, single-approver
 pilot; the production quorum requirement is open. The extension notes below
 describe earlier implementation snapshots.
 
+**31 October Phase 2 update:** trusted live retrieval and the private context
+inspector now have Gitea receipts. The expanded scope includes reusable
+PostgreSQL/MySQL/Nginx packages, deferred Immich qualification and bounded AI
+candidate authoring pulled forward from the later packaging phase. Full live
+acceptance remains open; see [the evidence matrix](PHASE2_LIVE_EVIDENCE.md).
+
 **30 October 2026 extension:** [Wazi Nodes and Fabric](WAZI_NODES_PLAN.md)
 integrates owner-controlled hardware as a first-class compute destination.
 It extends the existing agent/Phase 1 slice; SSH access to a development

@@ -230,3 +230,10 @@ This file contains a growing ruleset that improves over time. **At session start
 159. [TOOL] Capture BashScriptPath SSH output through the tool result or an explicit remote evidence file — its ProcessStartInfo transport inherits stdout and bypasses PowerShell pipeline capture.
 160. [PROCESS] Store adversarial-test console logs outside the repository workspace — intentional synthetic secret fixtures in those logs are correctly flagged by the repository-wide secret scan, including under ignored artifacts.
 161. [PROCESS] Run gofmt on all staged Go sources, including modified regression tests, before pushing — tests and vet do not detect formatting failures in remote CI.
+162. [PROCESS] Include releases/phase1 in native qualification archives alongside schemas and context examples — renderer regression tests load the signed Gitea pilot manifests from that tree.
+163. [PROCESS] Check interpreter compatibility before installing pinned Python development dependencies on bera-003 — its Python 3.14 runtime can trigger unsupported source builds of older rpds and PyYAML pins; qualify and record the distribution runtime separately from Python 3.11 CI.
+164. [TOOL] Explicitly chmod shared executable parent directories after mkdir under umask 077 — a requested 0755 creation mode is masked to 0700 and prevents runtime users from traversing the installed worker tree.
+165. [CODE] Verify revocation records with VerifySignedRecord after their revocation schema check — unlike application manifests and procedures, revocation lists have no reviewState field.
+166. [PROCESS] Poll the private API for readiness after restarting a Type=simple service — systemctl is-active can succeed before its Unix listener is accepting requests.
+167. [TOOL] Pass the agentclient directory with an rg -g '*test.go' filter when locating test helpers — a services/internal/agentclient/*test.go argument remains a literal invalid path in PowerShell.
+168. [TOOL] Read workflow filenames from the completed rg --files inventory before opening one — the existing image workflows are named phase1-gitea-image, not publish-phase1-gitea.

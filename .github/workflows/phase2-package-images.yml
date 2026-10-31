@@ -1,0 +1,122 @@
+name: phase2-package-images
+
+on:
+  push:
+    branches: [codex/phase2-buildout]
+    paths:
+      - .github/workflows/phase2-package-images.yml
+      - releases/phase2/source-lock.json
+      - scripts/prepare_package_build.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-attest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [postgresql, mysql, nginx]
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PROFILE: ${{ matrix.profile }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Resolve the committed source lock
+        id: source
+        run: python3 scripts/prepare_package_build.py "$PROFILE"
+      - name: Checkout the exact official recipe
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ steps.source.outputs.repository }}
+          ref: ${{ steps.source.outputs.commit }}
+          path: upstream
+          persist-credentials: false
+      - name: Verify recipe bytes and pin its base image
+        run: python3 scripts/prepare_package_build.py "$PROFILE" --checkout upstream
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build the pinned package recipe
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ steps.source.outputs.context }}
+          file: ${{ steps.source.outputs.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.source.outputs.image }}:${{ github.run_id }}-${{ github.run_attempt }}
+          provenance: mode=max
+      - name: Attest image build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-name: ${{ steps.source.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - name: Attest the pinned recipe and base identity
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-name: ${{ steps.source.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          predicate-type: https://wazi.dev/attestations/package-source/v1
+          predicate-path: package-source-provenance.json
+          push-to-registry: true
+      - name: Verify image provenance and export exact bytes
+        env:
+          IMAGE: ${{ steps.source.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          workflow="$GITHUB_REPOSITORY/.github/workflows/phase2-package-images.yml"
+          gh attestation verify "oci://$IMAGE@$DIGEST" --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$workflow" --source-digest "$GITHUB_SHA" >/dev/null
+          docker pull "$IMAGE@$DIGEST"
+          docker save "$IMAGE@$DIGEST" --output package-image.tar
+          export CONFIG_DIGEST="$(docker image inspect "$IMAGE@$DIGEST" --format '{{.Id}}')"
+          export ARCHIVE_DIGEST="sha256:$(sha256sum package-image.tar | cut -d ' ' -f 1)"
+          python3 - <<'PY'
+          import json, os
+          value = json.load(open('package-source-provenance.json'))
+          value['profile'] = os.environ['PROFILE']
+          value['image'] = {'name': os.environ['IMAGE'], 'digest': os.environ['DIGEST'],
+                            'configDigest': os.environ['CONFIG_DIGEST'], 'platform': 'linux/amd64'}
+          value['archive'] = {'format': 'docker-archive', 'digest': os.environ['ARCHIVE_DIGEST']}
+          value['builder'] = {key: os.environ[key] for key in ('GITHUB_REPOSITORY','GITHUB_SHA','GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT')}
+          json.dump(value, open('package-export.json','w'), sort_keys=True, separators=(',',':'))
+          PY
+      - name: Attest transport archive
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-name: package-image.tar
+          subject-path: package-image.tar
+          predicate-type: https://wazi.dev/attestations/package-archive/v1
+          predicate-path: package-export.json
+      - name: Verify transport attestation
+        run: |
+          set -euo pipefail
+          gh attestation verify package-image.tar --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/phase2-package-images.yml" \
+            --source-digest "$GITHUB_SHA" --predicate-type https://wazi.dev/attestations/package-archive/v1 \
+            --format json > verified-archive-attestation.json
+      - name: Retain qualification inputs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: phase2-${{ matrix.profile }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            package-image.tar
+            package-export.json
+            verified-archive-attestation.json
+          retention-days: 1
+          if-no-files-found: error

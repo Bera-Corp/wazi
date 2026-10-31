@@ -280,8 +280,18 @@ gate passes.
   output by `scripts/build_demo_data.py` and shows one accept (`metadata-validated`) plus two
   engine-produced denials (occupied port, `metadata-validated`; revoked, `fixture-no-record`). Follow-up (live acceptance, separate from this offline close): live host freshness, real
   deployment cases, production revocation verification (Cosign plus durable persisted sequence cursor), and ranking against real deployments, and
-  any AI planner (Phase 3). This does not advance
-  the Phase 1 execution gate, which stays 501.
+  any AI planner (originally Phase 3). The approved Phase 1 Gitea pilot now
+  executes through its bounded runtime; general deployment remains disabled.
+
+- [in progress] Expanded Phase 2 live retrieval and reusable packages
+  (2026-10-31): the private Go/Python bridge, durable cases and operator
+  inspector have live Gitea receipts. PostgreSQL/MySQL/Nginx source locks,
+  composition checks and an attested-build workflow are added; runtime
+  qualification and separate-instance reuse remain open. Bounded candidate
+  authoring is pulled forward from controlled AI packaging, with provider/model
+  access and a spending cap still required before any call. Immich live
+  qualification is deferred by the owner. See PHASE2_LIVE_EVIDENCE.md for
+  the per-milestone evidence and remaining acceptance work.
 
 ## Worlds and S-Prints extension
 

@@ -68,6 +68,7 @@ except ImportError:
 REQUIRED_SCHEMAS = {
     "common.schema.json",
     "app-manifest.schema.json",
+    "package-composition.schema.json",
     "deployment-plan.schema.json",
     "execution-context-envelope.schema.json",
     "execution-context-envelope-v2.schema.json",

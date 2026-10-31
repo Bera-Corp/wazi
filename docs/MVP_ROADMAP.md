@@ -59,6 +59,13 @@ Apply versioned contracts before changing v1 resource/checkpoint semantics.
 
 **Gate:** Wazi selects and explains the correct stable procedure.
 
+**31 October implementation:** the offline slice is complete and live Gitea
+retrieval/case-inspector receipts exist. The owner expanded Phase 2 to staged
+PostgreSQL, MySQL, Nginx and Immich packages plus bounded AI candidate authoring
+and demonstrated reuse. Immich live qualification is deferred; provider access
+and spending remain setup gates. Full Phase 2 stays open; see
+[the acceptance matrix](PHASE2_LIVE_EVIDENCE.md).
+
 Nodes/Fabric selection adds explicit eligible/ineligible destination reasons,
 availability policy and atomic capacity reservations after the node slice
 has runtime evidence. Later lifecycle work adds durable drain/removal and

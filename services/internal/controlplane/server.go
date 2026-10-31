@@ -92,9 +92,10 @@ func (s *Server) beginBodyRead(w http.ResponseWriter) {
 
 // Server holds pairing and profile state.
 type Server struct {
-	cfg      Config
-	mu       sync.Mutex
-	profiles map[string]contracts.HostProfile // key: tenant + "\x00" + hostID
+	cfg             Config
+	mu              sync.Mutex
+	profiles        map[string]contracts.HostProfile // key: tenant + "\x00" + hostID
+	contextSessions map[string]contextSession
 }
 
 // New creates a Server. A nil Registry gets a fresh one.
@@ -105,7 +106,7 @@ func New(cfg Config) *Server {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
-	return &Server{cfg: cfg, profiles: map[string]contracts.HostProfile{}}
+	return &Server{cfg: cfg, profiles: map[string]contracts.HostProfile{}, contextSessions: map[string]contextSession{}}
 }
 
 // Registry exposes the pairing registry (operator actions: mint
@@ -151,6 +152,7 @@ func (s *Server) Handler() http.Handler {
 	// revocation, journal, and lifecycle gates pass.
 	mux.HandleFunc("POST /v1/deployments", s.handlePilotDeployment)
 	mux.HandleFunc("GET /v1/deployments/{jobID}", s.handlePilotDeploymentStatus)
+	s.registerContextRoutes(mux)
 	return mux
 }
 

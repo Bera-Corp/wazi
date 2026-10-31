@@ -57,6 +57,7 @@ a:focus-visible{outline:3px solid #fff;outline-offset:5px}footer{margin-top:48px
 <div class="row"><span>Application dashboard</span><strong>Upcoming</strong></div>
 </div>
 <a href="/healthz">Check service health</a>
+<a href="/context">Open live context inspector</a>
 <footer>Use HTTPS for this address. Node inventory requires a paired device certificate; operator actions require authorization. Application execution remains disabled until its verification gates pass.</footer>
 </main></body></html>
 `

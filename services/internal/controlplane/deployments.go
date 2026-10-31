@@ -49,7 +49,7 @@ func (s *Server) forwardPilot(w http.ResponseWriter, r *http.Request, method, pa
 		return (&net.Dialer{Timeout: 2 * time.Second}).DialContext(ctx, "unix", s.cfg.PilotAgentSocket)
 	}}
 	defer transport.CloseIdleConnections()
-	client := &http.Client{Transport: transport, Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return fmt.Errorf("agent redirects forbidden") }}
+	client := &http.Client{Transport: transport, Timeout: 25 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return fmt.Errorf("agent redirects forbidden") }}
 	request, err := http.NewRequestWithContext(r.Context(), method, "http://pilot"+path, bytes.NewReader(body))
 	if err != nil {
 		writeJSON(w, 503, map[string]string{"error": "agent_request_unavailable"})

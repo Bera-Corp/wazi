@@ -261,7 +261,14 @@ func RenderPilotCompose(manifestRaw []byte, imageConfigs map[string]string) ([]b
 }
 
 func (b *DockerPilotBoundary) boundCompose(p PreparedExecution) ([]byte, error) {
-	if !p.Verified() || p.TenantScope() != b.config.TenantScope || p.HostID() != b.config.HostID || !b.config.AllowedManifests[p.Binding().Release.ManifestDigest] {
+	if !p.Verified() {
+		return nil, fmt.Errorf("execution requires consumed approvals")
+	}
+	return b.renderBoundCompose(p)
+}
+
+func (b *DockerPilotBoundary) renderBoundCompose(p PreparedExecution) ([]byte, error) {
+	if p.TenantScope() != b.config.TenantScope || p.HostID() != b.config.HostID || !b.config.AllowedManifests[p.Binding().Release.ManifestDigest] {
 		return nil, fmt.Errorf("execution is outside the approved pilot identity or release")
 	}
 	a, err := parseCanonicalObject(b.artifact, "compose artifact")
@@ -299,6 +306,19 @@ func (b *DockerPilotBoundary) ValidatePrepared(p PreparedExecution) error {
 	if _, err := b.boundCompose(p); err != nil {
 		return err
 	}
+	return b.validatePilotPlan(p)
+}
+
+// ValidateContext checks runtime support without converting a read-only
+// preflight into executable authorization.
+func (b *DockerPilotBoundary) ValidateContext(p PreparedExecution) error {
+	if _, err := b.renderBoundCompose(p); err != nil {
+		return err
+	}
+	return b.validatePilotPlan(p)
+}
+
+func (b *DockerPilotBoundary) validatePilotPlan(p PreparedExecution) error {
 	plan, _, err := decodePrepared(p)
 	if err != nil {
 		return err

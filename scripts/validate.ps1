@@ -22,4 +22,12 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & ".venv\Scripts\python.exe" scripts\test_render_compose.py
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 & ".venv\Scripts\python.exe" scripts\test_context_engine.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& ".venv\Scripts\python.exe" scripts\test_context_live.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& ".venv\Scripts\python.exe" scripts\test_package_composition.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& ".venv\Scripts\python.exe" scripts\test_candidate_author.py
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& ".venv\Scripts\python.exe" scripts\test_prepare_package_build.py
 exit $LASTEXITCODE

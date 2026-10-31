@@ -121,6 +121,12 @@ func PrepareExecution(
 	request ExecutionPreflightRequest,
 	resources ExecutionResourceRecords,
 ) (PreparedExecution, error) {
+	return prepareExecution(ctx, config, request, resources, true)
+}
+
+// prepareExecution also supports read-only context inspection. That path never
+// consumes approvals and deliberately returns a non-executable value.
+func prepareExecution(ctx context.Context, config ExecutionPreflightConfig, request ExecutionPreflightRequest, resources ExecutionResourceRecords, consume bool) (PreparedExecution, error) {
 	var empty PreparedExecution
 	if request.JobID == "" || request.CaseID == "" || request.EnvelopeID == "" || request.PlanID == "" {
 		return empty, fmt.Errorf("execution preflight requires job, case, envelope, and plan identities")
@@ -206,6 +212,13 @@ func PrepareExecution(
 	)
 	if err != nil {
 		return empty, fmt.Errorf("resource-bound execution plan preflight: %w", err)
+	}
+	if !consume {
+		return PreparedExecution{
+			binding: binding, release: release, rollbackRaw: append([]byte(nil), rollbackRaw...),
+			envelopeRaw: append([]byte(nil), request.EnvelopeRaw...), planRaw: append([]byte(nil), request.PlanRaw...),
+			hostProfileRaw: append([]byte(nil), hostProfileRaw...), policy: policy, tenantScope: tenantScope, hostID: hostID,
+		}, nil
 	}
 	envelope, err := parseCanonicalObject(request.EnvelopeRaw, "execution context envelope")
 	if err != nil {
