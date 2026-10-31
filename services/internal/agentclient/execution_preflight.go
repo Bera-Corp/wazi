@@ -98,6 +98,7 @@ func (p PreparedExecution) CapabilityPolicy() VerifiedCapabilityPolicy {
 			DeniedCapabilities:  append([]string(nil), p.policy.snapshot.DeniedCapabilities...),
 		},
 		requirements: p.policy.ApprovalRequirements(),
+		raw:          p.policy.Raw(),
 	}
 }
 
@@ -179,12 +180,25 @@ func prepareExecution(ctx context.Context, config ExecutionPreflightConfig, requ
 	if err != nil {
 		return empty, fmt.Errorf("signed release and revocation preflight: %w", err)
 	}
-	rollbackRaw, err := FetchVerifiedProcedureRecord(
-		ctx, config.ControlPlaneURL, config.TLSConfig, config.SigningPolicy,
-		request.RollbackProcedure,
-	)
+	if err := policy.ValidateManifestLicense(release.Manifest()); err != nil {
+		return empty, err
+	}
+	envelopeInput, err := parseCanonicalObject(request.EnvelopeRaw, "execution context envelope")
 	if err != nil {
-		return empty, fmt.Errorf("rollback procedure preflight: %w", err)
+		return empty, err
+	}
+	strategy, _ := objectValue(envelopeInput["rollbackStrategy"])
+	var rollbackRaw []byte
+	if strategy["supported"] == true {
+		rollbackRaw, err = FetchVerifiedProcedureRecord(ctx, config.ControlPlaneURL, config.TLSConfig, config.SigningPolicy, request.RollbackProcedure)
+		if err != nil {
+			return empty, fmt.Errorf("rollback procedure preflight: %w", err)
+		}
+	} else if request.RollbackProcedure != (ProcedureExpectation{}) {
+		return empty, fmt.Errorf("unreferenced rollback expectation supplied")
+	}
+	if err := verifySourceFreshness(time.Now().UTC(), config.ClockSkew, release.Manifest(), release.Procedure(), rollbackRaw); err != nil {
+		return empty, err
 	}
 	hostProfileRaw, err := FetchHostProfile(
 		ctx, config.ControlPlaneURL, config.TLSConfig, tenantScope, hostID,

@@ -8,8 +8,8 @@ complete; the expanded live/package/AI milestone is not closed.
 | Milestone | Implemented | Verified evidence | Still required |
 |---|---|---|---|
 | Trusted live retrieval | Private Go bridge reuses paired TLS, signature/revocation cursor and resource/plan checks without consuming approvals; bounded Python worker ranks verified proposals | bera-003 accepted a fresh Gitea proposal at 09:47:58Z, with three real case citations and executionApproved=false; modified owner budget and expired envelope denied | Complete catalog discovery and package selection beyond explicitly supplied proposals |
-| Cases and inspector | SQLite transactions, tenant/case identity, immutable case/evidence records, conflict rejection, exact-operation/procedure history; private HTTPS operator sessions and actual job status | Imported 14 terminal cases; restart preserved a stored context; unauthorized reads, bootstrap replay, cross-origin requests and missing CSRF rejected at 09:49:18Z | Complete the application-choice and approval-authoring UX; the current inspector accepts typed job JSON |
-| PostgreSQL/MySQL/Nginx | Composition validation and source locks; build/attestation workflow prepared for pinned official recipes and base images | Five composition tests and two recipe-lock tests; no live lifecycle qualification claimed | Reviewed runtime profiles, secret injection, authenticated readiness, database backup/restore, signed releases, separate-instance reuse |
+| Cases and inspector | SQLite transactions, tenant/case identity, immutable case/evidence records, conflict rejection, exact-operation/procedure history; private HTTPS operator sessions; application choice, plan preparation and exact-case approval; journal observations | Imported 14 terminal cases; restart preserved a stored context; unauthorized reads, bootstrap replay, cross-origin requests and missing CSRF rejected at 09:49:18Z | Visual acceptance and a complete smaller-package browser journey |
+| PostgreSQL/MySQL/Nginx | Closed operator profile registry; instance-bound renderer 0.5; protected secret references, authenticated readiness, logical SQL checkpoints and validated Nginx configuration restore | Image build run 41191007408 passed on source 7821d296f77e416d34387e4f99de7c9f78d8c686; downloaded archive attestations verified; all three manifest/procedure bundles pass canonical schema and Cosign verification | Live lifecycle qualification and separate-instance reuse; no successful smaller-package execution claimed yet |
 | Immich | Candidate composition constraints require its specific PostgreSQL/cache/proxy dependencies and coordinated recovery | Owner deferred live qualification on 31 October | Revised capacity/budget and full media/database lifecycle receipts |
 | AI authoring and reuse | Hosted JSON-chat adapter, pinned-source/candidate validation and durable conservative cost reservations | Six tests with a fake provider; no model call or Meta integration evidence claimed | Authorized provider/model, verified pricing and spending cap; real output, qualification, review/signing, second install without inference |
 
@@ -82,3 +82,33 @@ Measure maintainer installation time and manual interventions against a
 documented baseline. The three-minute demonstration must show useful Meta
 output, review, actual progress and verified recovery. Preserve the judging
 weights: Impact 30%, Meta tooling 25%, Technical execution 20%, Demo 25%.
+
+## Smaller-package scope and budget
+
+The owner explicitly approved 4.5 CPU / 4096 MiB RAM / 49152 MiB storage,
+with an enforced aggregate runtime limit of 4 CPU / 3072 MiB RAM. Within
+that cap, application volume reservations are limited to 25 GiB, the shared
+image/checkpoint/scratch pool to 13 GiB, and the protected reserve remains
+10 GiB. The package-budget proposal records the allocation breakdown.
+
+Only the reviewed PostgreSQL, MySQL and Nginx profiles are enabled by the
+operator registry. Each has two fixed instance slots. Reuse is sequential:
+both slots use the signed private port, so one must stop before the other
+starts. Uninstall retains data. Synthetic qualification data may be removed
+only through an explicit scoped operator step; Gitea data is preserved.
+
+These package procedures support same-release install/reapply, backup,
+restore and container removal. Cross-version migrations and database
+downgrades are rejected by an instance release anchor. No automatic rollback
+or compensation is claimed. Restores retain a digest-bound pre-restore
+checkpoint. Nginx validates staged configuration before stopping its instance.
+
+Renderer inputs bind the instance project, protected secret file references
+and image mapping. Secret values remain outside contracts, model inputs,
+plans and receipts. SQL clients read protected client files rather than
+password arguments or environment values.
+
+The 12:17:52Z native qualification passed tests, race checks, vet, builds and
+the maintained Python suites. Activation at 12:19:11Z preserved all 19 journal
+files byte-for-byte and Gitea health. Later journal-observer and installer
+changes require their own final source/CI qualification before closure.

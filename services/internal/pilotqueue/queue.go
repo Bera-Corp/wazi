@@ -33,6 +33,14 @@ type Queue struct {
 	execute Execute
 	mu      sync.Mutex
 	wake    chan struct{}
+	observe func(string) (any, bool)
+}
+
+// SetObserver attaches a read-only journal view. It never changes queue state.
+func (q *Queue) SetObserver(observer func(string) (any, bool)) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.observe = observer
 }
 
 func New(root string, execute Execute) (*Queue, error) {
@@ -160,6 +168,15 @@ func (q *Queue) get(w http.ResponseWriter, r *http.Request) {
 	if _, err := os.Stat(filepath.Join(q.root, "requests", id+".json")); err != nil {
 		http.Error(w, "job not found", 404)
 		return
+	}
+	q.mu.Lock()
+	observer := q.observe
+	q.mu.Unlock()
+	if observer != nil {
+		if observation, found := observer(id); found {
+			q.write(w, 200, map[string]any{"jobId": id, "state": "pending-or-running", "operation": observation})
+			return
+		}
 	}
 	q.write(w, 200, map[string]string{"jobId": id, "state": "pending-or-running"})
 }

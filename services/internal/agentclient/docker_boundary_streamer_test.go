@@ -32,6 +32,9 @@ func TestDockerVolumeStreamerRestoreForwardsStdin(t *testing.T) {
 	if !strings.Contains(extract, "--network none") || !strings.Contains(extract, "wazi-gitea-phase1_gitea-data:/wazi-volume") {
 		t.Fatalf("restore helper escaped its boundary: %s", extract)
 	}
+	if !strings.Contains(extract, "--memory 268435456 --cpus 0.25") {
+		t.Fatal("helper exceeds the approved helper allocation")
+	}
 	if err := streamer.StreamIn(context.Background(), "foreign-volume", strings.NewReader("x")); err == nil {
 		t.Fatal("foreign volume accepted by streamer")
 	}

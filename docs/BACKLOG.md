@@ -285,9 +285,11 @@ gate passes.
 
 - [in progress] Expanded Phase 2 live retrieval and reusable packages
   (2026-10-31): the private Go/Python bridge, durable cases and operator
-  inspector have live Gitea receipts. PostgreSQL/MySQL/Nginx source locks,
-  composition checks and an attested-build workflow are added; runtime
-  qualification and separate-instance reuse remain open. Bounded candidate
+  inspector have live Gitea receipts. PostgreSQL/MySQL/Nginx signed bundles,
+  verified build attestations, closed runtime profiles and application-choice/
+  approval UI are implemented; live lifecycle qualification and separate-instance
+  reuse remain open. The owner approved the 4.5 CPU / 4 GiB / 48 GiB budget
+  (runtime cap 4 CPU / 3 GiB; Immich excluded). Bounded candidate
   authoring is pulled forward from controlled AI packaging, with provider/model
   access and a spending cap still required before any call. Immich live
   qualification is deferred by the owner. See PHASE2_LIVE_EVIDENCE.md for

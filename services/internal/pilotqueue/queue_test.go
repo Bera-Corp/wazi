@@ -38,6 +38,17 @@ func TestQueuePersistsAcknowledgementRejectsConflictsAndNeverReplaysResults(t *t
 	if calls != 0 {
 		t.Fatal("request executed before durable acknowledgement")
 	}
+	q.SetObserver(func(id string) (any, bool) {
+		if id != job.JobID {
+			t.Fatalf("observer received %s", id)
+		}
+		return map[string]any{"state": "running", "events": []string{"mutation-intent"}}, true
+	})
+	observed := httptest.NewRecorder()
+	q.Handler().ServeHTTP(observed, httptest.NewRequest("GET", "/jobs/"+job.JobID, nil))
+	if observed.Code != 200 || !bytes.Contains(observed.Body.Bytes(), []byte("mutation-intent")) || calls != 0 {
+		t.Fatal("read-only journal observation missing or caused execution")
+	}
 	if got := post(job); got != 200 {
 		t.Fatalf("idempotent status=%d", got)
 	}

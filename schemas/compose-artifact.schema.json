@@ -25,9 +25,10 @@
       "required": ["name", "version"],
       "properties": {
         "name": { "const": "wazi-compose-renderer" },
-        "version": { "type": "string", "minLength": 1 }
+        "version": { "type": "string", "minLength": 1 },
+        "inputsDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" }
       },
-      "description": "Pinned renderer identity. Same manifest + same renderer version must produce the same composeDigest."
+      "description": "Pinned renderer identity. For instance-aware renderers, inputsDigest binds the protected instance inputs; the same manifest, renderer and inputs must reproduce composeDigest."
     },
     "composeDigest": { "$ref": "common.schema.json#/$defs/sha256Digest" },
     "composeUri": { "type": "string" },

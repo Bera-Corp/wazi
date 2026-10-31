@@ -18,6 +18,7 @@ ALLOWED = {
     "wazi-gitea-phase1_gitea-data": (31001, 18432),
     "wazi-gitea-phase1_gitea-config": (31002, 2048),
 }
+PROJECTS = {name: "wazi-gitea-phase1" for name in ALLOWED}
 
 
 def execute(args, **kwargs):
@@ -54,7 +55,7 @@ def main():
     labels = record.get("Labels") or {}
     if (record.get("Driver") != "local" or record.get("Options")
             or record.get("Mountpoint") != expected
-            or labels.get("dev.wazi.project") != "wazi-gitea-phase1"
+            or labels.get("dev.wazi.project") != PROJECTS[name]
             or labels.get("dev.wazi.tenant") != "tenant_live_20261030T064834Z"):
         raise SystemExit("volume is not owned by the approved pilot")
     descriptors = []

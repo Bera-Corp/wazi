@@ -32,6 +32,26 @@ func run(args []string) error {
 		return err
 	}
 	switch args[0] {
+	case "render-package":
+		if len(args) != 4 {
+			return fmt.Errorf("render-package requires manifest, protected instance config and output")
+		}
+		configRaw, err := os.ReadFile(args[2])
+		if err != nil {
+			return err
+		}
+		if _, err := verify.ParseJSON(configRaw); err != nil {
+			return err
+		}
+		var config agentclient.PackageInstanceConfig
+		if err := json.Unmarshal(configRaw, &config); err != nil {
+			return err
+		}
+		compose, err := agentclient.RenderReviewedPackageCompose(raw, config)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(args[3], compose, 0600)
 	case "render-pilot":
 		if len(args) != 4 {
 			return fmt.Errorf("render-pilot requires manifest, image-config map and output")

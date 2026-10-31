@@ -1,6 +1,7 @@
 'use strict';
 (() => {
   let csrf = '';
+  let verifiedJobText = '';
   const el = id => document.getElementById(id);
   const status = (message, error = false) => { el('status').textContent = message; el('status').className = error ? 'error' : ''; };
   async function api(path, body) {
@@ -11,7 +12,7 @@
       body: body === undefined ? undefined : JSON.stringify(body)});
     const text = await response.text();
     let value; try { value = JSON.parse(text); } catch { throw new Error('Service did not return a context response.'); }
-    if (!response.ok) throw new Error(value.error || 'Request rejected.');
+    if (!response.ok) throw new Error((value.error || 'Request rejected.') + (value.reason ? ' · ' + value.reason : ''));
     return value;
   }
   function show(value) {
@@ -32,10 +33,44 @@
   el('login').addEventListener('submit', event => { event.preventDefault(); run(async () => {
     const code = el('code').value; el('code').value = '';
     const value = await api('/v1/context-sessions/exchange', {code}); csrf = value.csrf;
-    for (const id of ['retrieve', 'inspect', 'deploy', 'refresh']) el(id).disabled = false;
+    for (const id of ['retrieve', 'inspect', 'deploy', 'refresh', 'propose']) el(id).disabled = false;
+    const catalog = await api('/v1/context-catalog');
+    el('package').replaceChildren();
+    for (const item of catalog) {
+      const option = document.createElement('option'); option.value = item.project;
+      option.textContent = item.profile + ' · ' + item.project + ' · ' + item.releaseVersion + ' (pilot)';
+      el('package').append(option);
+    }
     status('Operator session open for 15 minutes.');
   }); });
-  el('retrieve').onclick = () => run(async () => { show(await api('/v1/contexts/retrieve', JSON.parse(el('job').value))); });
+  el('retrieve').onclick = () => run(async () => {
+    const text = el('job').value;
+    const value = await api('/v1/contexts/retrieve', JSON.parse(text)); show(value);
+    verifiedJobText = value.decision === 'accept' ? text : '';
+    el('approve-run').disabled = !verifiedJobText;
+  });
+  el('propose').onclick = () => run(async () => {
+    verifiedJobText = ''; el('approve-run').disabled = true;
+    const value = await api('/v1/context-proposals', {project: el('package').value, operation: el('operation').value, backupId: el('backup-id').value});
+    el('job').value = JSON.stringify(value.job, null, 2);
+    el('confirm').checked = false; show(value.context);
+    if (value.context.decision === 'accept') { verifiedJobText = el('job').value; el('approve-run').disabled = false; }
+  });
+  el('approve-run').onclick = () => run(async () => {
+    if (!el('confirm').checked || !verifiedJobText || verifiedJobText !== el('job').value) throw new Error('Verify and review this exact plan first.');
+    const job = JSON.parse(verifiedJobText);
+    verifiedJobText = ''; el('approve-run').disabled = true; el('confirm').checked = false;
+    const approvals = [];
+    for (const action of job.envelope.requiredApprovals) {
+      const record = await api('/v1/context-approvals', {caseId: job.caseId, plan: job.plan, envelope: job.envelope,
+        hostId: job.envelope.hostProfileRef.recordId, action, decision: 'approved', validForSeconds: 600});
+      approvals.push({approvalId: record.approvalId, action});
+    }
+    job.approvals = approvals; el('job').value = JSON.stringify(job, null, 2);
+    const value = await api('/v1/context-deployments', job);
+    el('job-id').value = job.jobId; el('progress').textContent = JSON.stringify(value, null, 2);
+    status('Approved job submitted. Refresh to observe actual execution.');
+  });
   el('inspect').onclick = () => run(async () => { show(await api('/v1/contexts/' + encodeURIComponent(el('context-id').value))); });
   el('deploy').onclick = () => run(async () => {
     if (!el('confirm').checked) throw new Error('Review and confirm the exact job first.');
@@ -45,7 +80,7 @@
     el('job-id').value = job.jobId; el('progress').textContent = JSON.stringify(value, null, 2);
     status('Job submitted. Refresh to read actual progress.');
   });
-  el('job').addEventListener('input', () => { el('confirm').checked = false; });
+  el('job').addEventListener('input', () => { el('confirm').checked = false; verifiedJobText = ''; el('approve-run').disabled = true; });
   el('refresh').onclick = () => run(async () => {
     const value = await api('/v1/context-deployments/' + encodeURIComponent(el('job-id').value));
     el('progress').textContent = JSON.stringify(value, null, 2); status('Actual job status refreshed.');

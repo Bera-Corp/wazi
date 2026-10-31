@@ -159,6 +159,39 @@ func (s *Server) registerContextRoutes(mux *http.ServeMux) {
 		}
 		s.forwardPilot(w, r, http.MethodPost, "/contexts/retrieve", raw)
 	})
+	mux.HandleFunc("GET /v1/context-catalog", func(w http.ResponseWriter, r *http.Request) {
+		if !s.contextAuthorized(w, r) {
+			return
+		}
+		s.forwardPilot(w, r, http.MethodGet, "/contexts/catalog", nil)
+	})
+	mux.HandleFunc("POST /v1/context-proposals", func(w http.ResponseWriter, r *http.Request) {
+		if !s.contextAuthorized(w, r) {
+			return
+		}
+		s.beginBodyRead(w)
+		raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4096))
+		if err != nil {
+			writeJSON(w, 400, map[string]string{"error": "invalid_proposal_request"})
+			return
+		}
+		s.forwardPilot(w, r, http.MethodPost, "/contexts/propose", raw)
+	})
+	mux.HandleFunc("POST /v1/context-approvals", func(w http.ResponseWriter, r *http.Request) {
+		if !s.contextAuthorized(w, r) {
+			return
+		}
+		if s.cfg.ApproverID == "" || len(s.cfg.ApproverCredentials) > 0 {
+			writeJSON(w, 501, map[string]string{"error": "browser_approver_not_configured"})
+			return
+		}
+		// The session was issued by this same single configured operator.
+		// Preserve the existing approval validator and principal attribution.
+		request := r.Clone(r.Context())
+		request.Header = r.Header.Clone()
+		request.Header.Set("X-Wazi-Operator-Token", s.cfg.OperatorToken)
+		s.handleIssueApproval(w, request)
+	})
 	mux.HandleFunc("GET /v1/contexts/{contextID}", func(w http.ResponseWriter, r *http.Request) {
 		if !s.contextAuthorized(w, r) {
 			return

@@ -23,6 +23,7 @@ type CapabilityPolicyReference struct {
 type VerifiedCapabilityPolicy struct {
 	snapshot     AuthenticatedCapabilityPolicy
 	requirements map[string]string
+	raw          []byte
 }
 
 func FetchCapabilityPolicyBundle(
@@ -99,6 +100,7 @@ func FetchCapabilityPolicyBundle(
 			DeniedCapabilities:  denied,
 		},
 		requirements: requirements,
+		raw:          append([]byte(nil), raw...),
 	}, nil
 }
 
@@ -119,6 +121,43 @@ func (p VerifiedCapabilityPolicy) ApprovalRequirements() map[string]string {
 		copy[action] = requirement
 	}
 	return copy
+}
+
+func (p VerifiedCapabilityPolicy) Raw() []byte { return append([]byte(nil), p.raw...) }
+
+func (p VerifiedCapabilityPolicy) ValidateManifestLicense(manifestRaw []byte) error {
+	if !p.valid() || len(p.raw) == 0 {
+		return fmt.Errorf("authenticated licensing policy required")
+	}
+	bundle, err := parseCanonicalObject(p.raw, "capability policy")
+	if err != nil {
+		return err
+	}
+	manifest, err := parseCanonicalObject(manifestRaw, "manifest")
+	if err != nil {
+		return err
+	}
+	licensing, ok := objectValue(bundle["licensing"])
+	if !ok {
+		return fmt.Errorf("licensing policy missing")
+	}
+	license, _ := manifest["license"].(string)
+	if licensing["requireExplicitLicense"] == true && license == "" {
+		return fmt.Errorf("explicit manifest license required")
+	}
+	allowed, err := stringArray(licensing["allowedLicenses"], "allowed licenses")
+	if err != nil {
+		return err
+	}
+	if len(allowed) == 0 {
+		return nil
+	}
+	for _, candidate := range allowed {
+		if candidate == license {
+			return nil
+		}
+	}
+	return fmt.Errorf("manifest license is outside the authenticated policy")
 }
 
 func (p VerifiedCapabilityPolicy) valid() bool {

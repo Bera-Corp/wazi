@@ -568,7 +568,7 @@ func (s dockerVolumeStreamer) StreamOut(ctx context.Context, volume string, w io
 	}
 	name := s.boundary.config.Project + "_" + volume
 	_, err := s.boundary.run(ctx, nil, w, "run", "--rm", "--network", "none",
-		"--memory", "1073741824", "--cpus", "2", "--pull", "never",
+		"--memory", "268435456", "--cpus", "0.25", "--pull", "never",
 		"--entrypoint", "/bin/tar", "-v", name+":/wazi-volume:ro",
 		s.imageID, "-cf", "-", "-C", "/wazi-volume", ".")
 	return err
@@ -585,13 +585,13 @@ func (s dockerVolumeStreamer) StreamIn(ctx context.Context, volume string, r io.
 	// restore. A second fixed helper call returns the volume root
 	// itself to the application identity.
 	if _, err := s.boundary.run(ctx, r, nil, "run", "--rm", "-i", "--network", "none",
-		"--memory", "1073741824", "--cpus", "2", "--pull", "never", "--user", "0",
+		"--memory", "268435456", "--cpus", "0.25", "--pull", "never", "--user", "0",
 		"--entrypoint", "/bin/sh", "-v", name+":/wazi-volume",
 		s.imageID, "-c", "find /wazi-volume -mindepth 1 -delete && tar -xf - -C /wazi-volume"); err != nil {
 		return err
 	}
 	_, err := s.boundary.run(ctx, nil, nil, "run", "--rm", "--network", "none",
-		"--memory", "1073741824", "--cpus", "2", "--pull", "never", "--user", "0",
+		"--memory", "268435456", "--cpus", "0.25", "--pull", "never", "--user", "0",
 		"--entrypoint", "/bin/chown", "-v", name+":/wazi-volume",
 		s.imageID, "1000:1000", "/wazi-volume")
 	return err

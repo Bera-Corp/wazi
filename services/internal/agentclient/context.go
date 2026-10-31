@@ -30,6 +30,7 @@ type ContextBridge struct {
 	QueueDirectory                    string
 	Preflight                         ExecutionPreflightConfig
 	Runtime                           *DockerPilotConfig
+	Packages                          *PackageRegistry
 	BudgetDigest, TenantScope, HostID string
 	Probe                             func() (contracts.HostProfile, error)
 }
@@ -129,7 +130,14 @@ func (b *ContextBridge) Retrieve(ctx context.Context, job PilotJob) (json.RawMes
 		return nil, err
 	}
 	digest, err := verify.CanonicalDigest(budget)
-	if err != nil || digest != b.BudgetDigest {
+	if b.Runtime == nil {
+		return nil, fmt.Errorf("operator runtime configuration required")
+	}
+	boundary, expectedBudget, resolveErr := ResolveRuntimeBoundary(*b.Runtime, b.BudgetDigest, b.Packages, job.Artifact)
+	if resolveErr != nil {
+		return nil, resolveErr
+	}
+	if err != nil || digest != expectedBudget {
 		return nil, fmt.Errorf("owner-pinned budget required")
 	}
 	envelope, err := parseCanonicalObject(job.Envelope, "context envelope")
@@ -153,13 +161,6 @@ func (b *ContextBridge) Retrieve(ctx context.Context, job PilotJob) (json.RawMes
 	}
 	if prepared.Verified() || prepared.TenantScope() != b.TenantScope || prepared.HostID() != b.HostID {
 		return nil, fmt.Errorf("read-only context identity mismatch")
-	}
-	if b.Runtime == nil {
-		return nil, fmt.Errorf("context requires an operator-pinned runtime profile")
-	}
-	boundary, err := NewDockerPilotBoundary(*b.Runtime, job.Artifact)
-	if err != nil {
-		return nil, err
 	}
 	if err := boundary.VerifyRootless(ctx); err != nil {
 		return nil, err
@@ -193,6 +194,9 @@ func (b *ContextBridge) Retrieve(ctx context.Context, job PilotJob) (json.RawMes
 		"envelope": prepared.Envelope(), "plan": prepared.Plan(),
 		"budget": job.Budget, "qualification": job.Qualification, "artifact": job.Artifact,
 	} {
+		if key == "rollbackProcedure" && len(raw) == 0 {
+			continue
+		}
 		value, err := verify.ParseJSON(raw)
 		if err != nil {
 			return nil, err
@@ -201,6 +205,10 @@ func (b *ContextBridge) Retrieve(ctx context.Context, job PilotJob) (json.RawMes
 	}
 	policy := prepared.CapabilityPolicy().BindingSnapshot()
 	snapshot["policyReference"] = map[string]any{"recordId": policy.BundleID, "version": policy.Version, "digest": policy.Digest, "tenantScope": policy.TenantScope}
+	snapshot["policy"], err = verify.ParseJSON(prepared.CapabilityPolicy().Raw())
+	if err != nil {
+		return nil, err
+	}
 	cursorRaw, err := json.Marshal(b.Preflight.RevocationState.Cursor())
 	if err != nil {
 		return nil, err
@@ -227,7 +235,7 @@ func (b *ContextBridge) Handler() http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		if err != nil {
 			w.WriteHeader(422)
-			_, _ = w.Write([]byte("{\"error\":\"context-verification-rejected\"}"))
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "context-verification-rejected", "reason": contextRejectionReason(err)})
 			return
 		}
 		if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
@@ -235,6 +243,42 @@ func (b *ContextBridge) Handler() http.Handler {
 		}
 		_, _ = w.Write(raw)
 	}
+	mux.HandleFunc("GET /contexts/catalog", func(w http.ResponseWriter, r *http.Request) {
+		raw, err := json.Marshal(b.Packages.Catalog())
+		respond(w, raw, err)
+	})
+	mux.HandleFunc("POST /contexts/propose", func(w http.ResponseWriter, r *http.Request) {
+		raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4096))
+		if err != nil {
+			respond(w, nil, err)
+			return
+		}
+		if _, err := verify.ParseJSON(raw); err != nil {
+			respond(w, nil, err)
+			return
+		}
+		var request struct{ Project, Operation, BackupID string }
+		decoder := json.NewDecoder(bytes.NewReader(raw))
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&request); err != nil {
+			respond(w, nil, err)
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+		defer cancel()
+		job, err := b.Propose(ctx, request.Project, request.Operation, request.BackupID)
+		if err != nil {
+			respond(w, nil, err)
+			return
+		}
+		decision, err := b.Retrieve(ctx, job)
+		if err != nil {
+			respond(w, nil, err)
+			return
+		}
+		output, err := json.Marshal(map[string]any{"job": job, "context": decision})
+		respond(w, output, err)
+	})
 	mux.HandleFunc("POST /contexts/retrieve", func(w http.ResponseWriter, r *http.Request) {
 		raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1<<20))
 		if err != nil {
@@ -304,4 +348,26 @@ func (b *ContextBridge) Handler() http.Handler {
 		respond(w, raw, err)
 	})
 	return mux
+}
+
+func contextRejectionReason(err error) string {
+	message := strings.ToLower(err.Error())
+	for _, group := range []struct {
+		code  string
+		words []string
+	}{
+		{"revocation-rejected", []string{"revocation", "revoked"}},
+		{"signature-or-trust-rejected", []string{"signature", "signer", "signed release"}},
+		{"stale-input-rejected", []string{"expired", "fresh", "future", "max age"}},
+		{"resource-budget-rejected", []string{"budget", "resource", "memory", "quota", "storage", "cpu", "ram"}},
+		{"port-unavailable", []string{"port"}},
+		{"secret-reference-rejected", []string{"secret"}},
+	} {
+		for _, word := range group.words {
+			if strings.Contains(message, word) {
+				return group.code
+			}
+		}
+	}
+	return "binding-or-runtime-rejected"
 }

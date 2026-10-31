@@ -1,0 +1,21 @@
+{
+  "kind": "owner-budget-proposal-not-an-approval",
+  "hostId": "host_bera-003",
+  "currentOwnerBudget": {"cpuCores": 4, "ramMb": 4096, "storageMb": 40960},
+  "proposedOwnerBudget": {"cpuCores": 4.5, "ramMb": 4096, "storageMb": 49152},
+  "protectedSystemReserve": {"cpuCores": 0.5, "ramMb": 512, "storageMb": 10240},
+  "allocations": [
+    {"role": "application", "resources": {"cpuCores": 3.25, "ramMb": 2240, "storageMb": 25600}},
+    {"role": "backup-helper", "resources": {"cpuCores": 0.25, "ramMb": 256, "storageMb": 5120}},
+    {"role": "restore-helper", "resources": {"cpuCores": 0.25, "ramMb": 256, "storageMb": 5120}},
+    {"role": "runtime-overhead", "resources": {"cpuCores": 0.25, "ramMb": 384, "storageMb": 3072}}
+  ],
+  "aggregateRuntimeLimit": {"cpuCores": 4, "ramMb": 3072},
+  "packages": {
+    "gitea": {"cpuCores": 2, "ramMb": 1024, "volumeMb": 20480},
+    "postgresql": {"cpuCores": 0.5, "ramMb": 384, "volumeMb": 2048},
+    "mysql": {"cpuCores": 0.5, "ramMb": 768, "volumeMb": 2048},
+    "nginx": {"cpuCores": 0.25, "ramMb": 64, "volumeMb": 128}
+  },
+  "scope": "One live instance of each smaller package alongside Gitea; second-instance reuse is qualified sequentially. Immich remains deferred. No network exposure changes."
+}

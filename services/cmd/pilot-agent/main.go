@@ -31,6 +31,7 @@ type configuration struct {
 	CapabilityPolicy                                             agentclient.CapabilityPolicyReference
 	Runtime                                                      agentclient.DockerPilotConfig
 	Context                                                      agentclient.ContextWorkerConfig
+	Packages                                                     []agentclient.PackageInstanceConfig
 }
 
 // reconcileRequest is the operator's digest-bound observation for one
@@ -122,13 +123,29 @@ func run(ctx context.Context, path string) error {
 			return err
 		}
 	}
+	packages, err := agentclient.NewPackageRegistry(config.Packages)
+	if err != nil {
+		return err
+	}
 	q, err := pilotqueue.New(filepath.Join(state, "queue"), func(jobCtx context.Context, job agentclient.PilotJob) (any, error) {
+		artifactValue, err := verify.ParseJSON(job.Artifact)
+		if err != nil {
+			return nil, err
+		}
+		artifactRaw, err := verify.CanonicalJSON(artifactValue)
+		if err != nil {
+			return nil, err
+		}
+		boundary, expectedBudget, err := agentclient.ResolveRuntimeBoundary(config.Runtime, config.BudgetDigest, packages, artifactRaw)
+		if err != nil {
+			return nil, err
+		}
 		budgetValue, err := verify.ParseJSON(job.Budget)
 		if err != nil {
 			return nil, err
 		}
 		budgetDigest, err := verify.CanonicalDigest(budgetValue)
-		if err != nil || budgetDigest != config.BudgetDigest {
+		if err != nil || budgetDigest != expectedBudget {
 			return nil, fmt.Errorf("request budget is not the owner-pinned budget")
 		}
 		envelopeValue, err := verify.ParseJSON(job.Envelope)
@@ -159,14 +176,6 @@ func run(ctx context.Context, path string) error {
 			return nil, err
 		}
 		planRaw, err := canonical(job.Plan)
-		if err != nil {
-			return nil, err
-		}
-		artifactRaw, err := canonical(job.Artifact)
-		if err != nil {
-			return nil, err
-		}
-		boundary, err := agentclient.NewDockerPilotBoundary(config.Runtime, artifactRaw)
 		if err != nil {
 			return nil, err
 		}
@@ -211,11 +220,16 @@ func run(ctx context.Context, path string) error {
 	// Publish a fresh initial profile, then keep the same bound observation
 	// stable during a job. Further snapshots are explicitly requested by the
 	// operator before constructing a new envelope and approval.
+	q.SetObserver(func(jobID string) (any, bool) {
+		observation, found := journal.GetByJob(jobID)
+		return observation, found
+	})
 	mux := http.NewServeMux()
 	if config.Context.WorkerPath != "" {
 		bridge := &agentclient.ContextBridge{
 			Worker: config.Context, BudgetDigest: config.BudgetDigest,
 			Runtime:        &config.Runtime,
+			Packages:       packages,
 			QueueDirectory: filepath.Join(state, "queue"),
 			TenantScope:    config.Runtime.TenantScope, HostID: config.Runtime.HostID,
 			Probe: func() (contracts.HostProfile, error) {

@@ -237,3 +237,13 @@ This file contains a growing ruleset that improves over time. **At session start
 166. [PROCESS] Poll the private API for readiness after restarting a Type=simple service — systemctl is-active can succeed before its Unix listener is accepting requests.
 167. [TOOL] Pass the agentclient directory with an rg -g '*test.go' filter when locating test helpers — a services/internal/agentclient/*test.go argument remains a literal invalid path in PowerShell.
 168. [TOOL] Read workflow filenames from the completed rg --files inventory before opening one — the existing image workflows are named phase1-gitea-image, not publish-phase1-gitea.
+169. [CODE] Preserve the established empty allowedLicenses semantics when enforcing licensing in Go — the Python gate treats an empty list as unrestricted explicit licences, while a non-empty list filters by exact SPDX value.
+170. [CODE] Reject leading slashes and drive separators explicitly in portable archive/configuration paths — filepath.IsAbs alone treats /absolute as relative on Windows.
+171. [TOOL] Select the named phase2 package transport artifacts when downloading image builds — Buildx also publishes dockerbuild records that gh run download may try to parse as ZIP archives.
+172. [CODE] Validate unsigned package shapes against the canonical schema before signing — the manifest port contract has no protocol property, and an unsupported field otherwise wastes a signing pass.
+173. [CODE] Put optional procedure source expiry in provenance.expiresAt — the canonical procedure schema rejects a top-level expiresAt property.
+174. [CODE] Preserve the manifest minimum host RAM of 128 MiB even for a smaller container limit — host eligibility requirements and container memory ceilings are different contract fields.
+175. [TOOL] Enumerate resource-validation filenames before inspecting them — resource contracts need not live in a file named resources.go.
+176. [TOOL] Enumerate policy regression test filenames before opening them — authenticated policy tests may live in execution_preflight_test.go rather than policy_test.go.
+177. [CODE] Convert typed Go slices through canonicalPayload before canonical hashing — the strict canonical JSON helper accepts parsed JSON arrays, not native []string values.
+178. [TOOL] Split the NOPASSWD sudoers literal when generating a fixed helper rule — the scanner otherwise interprets its PASSWD suffix as a secret assignment; preserve the scanner unchanged.

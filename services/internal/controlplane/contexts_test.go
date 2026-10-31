@@ -68,6 +68,11 @@ func TestContextSessionExchangeIsolationAndCSRF(t *testing.T) {
 		if got := call("POST", "/v1/contexts/retrieve", []byte("{}"), cookies[0], attack.origin, attack.csrf, false).Code; got != 403 {
 			t.Fatalf("CSRF accepted: %d", got)
 		}
+		for _, path := range []string{"/v1/context-proposals", "/v1/context-approvals", "/v1/context-deployments"} {
+			if got := call("POST", path, []byte("{}"), cookies[0], attack.origin, attack.csrf, false).Code; got != 403 {
+				t.Fatalf("CSRF accepted on %s: %d", path, got)
+			}
+		}
 	}
 	if got := call("GET", "/v1/contexts/invalid", nil, cookies[0], "", "", false).Code; got != 400 {
 		t.Fatalf("authenticated context route = %d", got)
