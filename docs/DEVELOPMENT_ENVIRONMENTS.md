@@ -1,16 +1,18 @@
 # Development environments
 
-Status checked: 30 October 2026, Africa/Nairobi. This inventory records
-development access, not a deployment qualification or production approval.
+Status updated: 31 October 2026, Africa/Nairobi. This inventory records
+development access and the bounded pilot, not production approval.
 
 ## Linux development host: bera-003
 
-**Development control plane deployed and live-tested on 30 October 2026.**
+**The approved Gitea Phase 1 pilot is closed; expanded Phase 2 is in progress.**
 The private mTLS listener is https://127.0.0.1:9443; its systemd service
 is active and enabled. The one-shot inventory agent was tested from
 the existing development runner account using separate product credentials.
-Application execution remains disabled (501), and pairing acceptance remains
-open. See [the deployment and live-test record](BERA_003_LIVE_TEST_2026-10-30.md).
+Application execution is enabled only through reviewed pilot profiles and
+case-bound approvals. Pairing acceptance and reboot recovery are recorded in
+[Phase 1 evidence](PHASE1_LIVE_EVIDENCE.md). The older
+[initial deployment record](BERA_003_LIVE_TEST_2026-10-30.md) is historical.
 
 | Item | Verified state |
 |---|---|
@@ -19,17 +21,17 @@ open. See [the deployment and live-test record](BERA_003_LIVE_TEST_2026-10-30.md
 | Authentication | Local Ed25519 key; noninteractive SSH succeeds |
 | Sudo | Passwordless sudo verified with `sudo -n id` |
 | OS / architecture | Ubuntu 26.04.1 LTS / Linux x86_64 |
-| CPU observation | 8 available logical CPUs; owner-authorized Phase 1 cap is 4 cores (budget revision 2) |
-| Memory observation | 7,163 MiB total; approximately 2,201 MiB available at initial inspection; volatile. Owner-authorized Phase 1 cap is 2,048 MiB |
-| Root storage observation | Approximately 439,159 MiB available at initial inspection; owner-authorized Phase 1 cap is 98,304 MiB |
+| CPU observation | 8 available logical CPUs; approved Phase 2 owner cap 4.5 CPU, aggregate runtime cap 4 CPU |
+| Memory observation | 7,163 MiB total; available memory is volatile. Approved owner cap 4,096 MiB, aggregate runtime cap 3,072 MiB |
+| Storage allocation | Approved Phase 2 owner cap 48 GiB: application volumes 25 GiB, shared cache/checkpoints 13 GiB, protected reserve 10 GiB; runtime filesystem is separate from the host root |
 | Tools | Python 3.14.4, Git 2.53.0, Docker Engine 29.1.3 / Compose 2.40.3 (daemon-verified); Go 1.23.12 and gcc 15.2.0 installed 30 Oct 2026 (below) |
 | Boot configuration | SSH and tailscaled enabled; persistent Tailscale state present |
 | Routing | IPv4/IPv6 forwarding enabled persistently; exit routes and the connected LAN subnet distributed to the tailnet |
 | Device key expiry | Disabled in the latest Tailscale status |
-| Restart evidence | Boot persistence configured; an actual reboot/reconnect test is outstanding |
+| Restart evidence | Full reboot and unattended Gitea recovery qualified in Phase 1; journal bytes preserved |
 
-The OS reports that a restart is required. Schedule that separately and
-verify reconnection afterward.
+Any new OS restart request requires a fresh maintenance/reconnection check;
+the Phase 1 reboot receipt does not authorize another reboot.
 
 ### Qualification record — 30 October 2026
 

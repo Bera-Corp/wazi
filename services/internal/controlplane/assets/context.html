@@ -15,12 +15,12 @@ select{font:inherit;padding:10px;border-radius:6px;background:#17291e;color:inhe
 <label>Checkpoint ID (backup or restore) <input id="backup-id" placeholder="bak_my_checkpoint"></label>
 <button id="propose" disabled>Check host and prepare plan</button>
 <p class="note">Pilot packages use private ports. Cross-version migrations and Immich are outside the current qualification.</p></section>
-<section><h2>Advanced: inspect a typed proposal</h2><p>Generated plans appear here. You can also load a current typed job; edits require a fresh verification before approval.</p>
+<section><details><summary>Advanced: inspect a typed proposal</summary><p>Generated plans appear here. You can also load a current typed job; edits require a fresh verification before approval.</p>
 <label>Job JSON <textarea id="job" spellcheck="false" autocomplete="off"></textarea></label><button id="retrieve" disabled>Verify live context</button>
 <label>Stored context ID <input id="context-id" size="72"></label><button id="inspect" disabled>Inspect stored snapshot</button>
-<p class="note">Stored snapshots show their original observation time. Execution always repeats current verification.</p></section>
+<p class="note">Stored snapshots show their original observation time. Execution always repeats current verification.</p></details></section>
 <p id="status" role="status" aria-live="polite"></p>
-<section id="result" hidden><h2>3. Selection and evidence</h2><dl id="facts"></dl><h3>Selection explanation</h3><ul id="explanation"></ul><details><summary>Exact input digests, signed records and case citations</summary><pre id="records"></pre></details></section>
+<section id="result" hidden><h2>3. Selection and evidence</h2><dl id="facts"></dl><h3>Steps to approve</h3><ol id="steps"></ol><h3>Selection explanation</h3><ul id="explanation"></ul><details><summary>Exact input digests, signed records and case citations</summary><pre id="records"></pre></details></section>
 <section><h2>4. Approve and observe execution</h2><p>Review the plan and its evidence, then approve the exact case. The agent checks current trust, resources and approval bindings again before each mutation.</p>
 <label><input id="confirm" type="checkbox"> I reviewed this exact plan and intend to run it.</label><button id="approve-run" disabled>Approve and run this plan</button><button id="deploy" disabled>Submit a job with existing approvals</button>
 <label>Job ID <input id="job-id"></label><button id="refresh" disabled>Refresh actual job status</button><pre id="progress"></pre></section>

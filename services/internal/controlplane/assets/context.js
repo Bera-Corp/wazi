@@ -24,6 +24,23 @@
       const dt = document.createElement('dt'), dd = document.createElement('dd');
       dt.textContent = label; dd.textContent = value[key] || 'Unavailable'; el('facts').append(dt, dd);
     }
+
+    const snapshot = value.snapshot || {};
+    const resources = (snapshot.localHostObservation || {}).resources;
+    const owner = (snapshot.budget || {}).ownerBudget;
+    for (const [label, item] of [['Current host', resources], ['Owner cap', owner]]) {
+      if (!item) continue;
+      const dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = label;
+      dd.textContent = item.cpuCores + ' CPU · ' + item.ramMb + ' MiB RAM · ' + (item.storageMb ?? item.storageFreeMb) + ' MiB storage';
+      el('facts').append(dt, dd);
+    }
+    el('steps').replaceChildren();
+    for (const step of (snapshot.plan || {}).steps || []) {
+      const li = document.createElement('li');
+      li.textContent = step.capability + ' · ' + JSON.stringify(step.parameters);
+      el('steps').append(li);
+    }
     el('explanation').replaceChildren();
     for (const line of value.explanation || []) { const li = document.createElement('li'); li.textContent = line; el('explanation').append(li); }
     el('records').textContent = JSON.stringify(value, null, 2);

@@ -247,3 +247,5 @@ This file contains a growing ruleset that improves over time. **At session start
 176. [TOOL] Enumerate policy regression test filenames before opening them — authenticated policy tests may live in execution_preflight_test.go rather than policy_test.go.
 177. [CODE] Convert typed Go slices through canonicalPayload before canonical hashing — the strict canonical JSON helper accepts parsed JSON arrays, not native []string values.
 178. [TOOL] Split the NOPASSWD sudoers literal when generating a fixed helper rule — the scanner otherwise interprets its PASSWD suffix as a secret assignment; preserve the scanner unchanged.
+179. [TOOL] Resolve the npm cache with npm config get cache before inspecting transient CLI packages — this Windows installation does not use the default LocalAppData npm-cache path.
+180. [TOOL] Read the protected development server certificate with sudo before deriving its public-key fingerprint, and reject pipeline errors — hashing empty input after a permission failure produces a valid-looking but wrong pin.

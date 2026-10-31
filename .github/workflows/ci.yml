@@ -32,6 +32,7 @@ jobs:
           python scripts/test_package_composition.py
           python scripts/test_candidate_author.py
           python scripts/test_prepare_package_build.py
+          python scripts/test_prepare_phase2_release.py
       - name: JSON syntax gate
         run: make validate
 
