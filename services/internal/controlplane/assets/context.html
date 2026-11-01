@@ -23,5 +23,5 @@ select{font:inherit;padding:10px;border-radius:6px;background:#17291e;color:inhe
 <section id="result" hidden><h2>3. Selection and evidence</h2><dl id="facts"></dl><h3>Steps to approve</h3><ol id="steps"></ol><h3>Selection explanation</h3><ul id="explanation"></ul><details><summary>Exact input digests, signed records and case citations</summary><pre id="records"></pre></details></section>
 <section><h2>4. Approve and observe execution</h2><p>Review the plan and its evidence, then approve the exact case. The agent checks current trust, resources and approval bindings again before each mutation.</p>
 <label><input id="confirm" type="checkbox"> I reviewed this exact plan and intend to run it.</label><button id="approve-run" disabled>Approve and run this plan</button><button id="deploy" disabled>Submit a job with existing approvals</button>
-<label>Job ID <input id="job-id"></label><button id="refresh" disabled>Refresh actual job status</button><pre id="progress"></pre></section>
+<label>Job ID <input id="job-id"></label><button id="refresh" disabled>Refresh actual job status</button><p id="progress-summary" role="status" aria-live="polite"></p><ol id="progress-events"></ol><details><summary>Exact journal receipt</summary><pre id="progress"></pre></details></section>
 </body></html>

@@ -35,6 +35,10 @@
       dd.textContent = item.cpuCores + ' CPU · ' + item.ramMb + ' MiB RAM · ' + (item.storageMb ?? item.storageFreeMb) + ' MiB storage';
       el('facts').append(dt, dd);
     }
+    for (const [label, text] of [['Selected procedure', value.selected ? value.selected.procedureId + ' @ ' + value.selected.version : 'Unavailable'], ['Relevant successes', String((value.successCaseRefs || []).length)], ['Relevant failures', String((value.failureCaseRefs || []).length)]]) {
+      const dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = label; dd.textContent = text; el('facts').append(dt, dd);
+    }
     el('steps').replaceChildren();
     for (const step of (snapshot.plan || {}).steps || []) {
       const li = document.createElement('li');
@@ -45,6 +49,17 @@
     for (const line of value.explanation || []) { const li = document.createElement('li'); li.textContent = line; el('explanation').append(li); }
     el('records').textContent = JSON.stringify(value, null, 2);
     status('Context loaded. This is not execution approval.');
+  }
+  function showProgress(value) {
+    const operation = (value.operation || {}).Operation || {};
+    el('progress-summary').textContent = 'State: ' + (operation.state || value.state || 'Unavailable') + ' · ' + (value.jobId || '');
+    el('progress-events').replaceChildren();
+    for (const event of operation.events || []) {
+      const li = document.createElement('li');
+      li.textContent = [event.kind, event.capability || event.stepId, event.result, event.at].filter(Boolean).join(' · ');
+      el('progress-events').append(li);
+    }
+    el('progress').textContent = JSON.stringify(value, null, 2);
   }
   async function run(action) { try { status('Checking…'); await action(); } catch (error) { status(error.message, true); } }
   el('login').addEventListener('submit', event => { event.preventDefault(); run(async () => {
@@ -86,7 +101,7 @@
     }
     job.approvals = approvals; el('job').value = JSON.stringify(job, null, 2);
     const value = await api('/v1/context-deployments', job);
-    el('job-id').value = job.jobId; el('progress').textContent = JSON.stringify(value, null, 2);
+    el('job-id').value = job.jobId; showProgress(value);
     status('Approved job submitted. Refresh to observe actual execution.');
   });
   el('inspect').onclick = () => run(async () => { show(await api('/v1/contexts/' + encodeURIComponent(el('context-id').value))); });
@@ -95,12 +110,12 @@
     const job = JSON.parse(el('job').value);
     el('confirm').checked = false;
     const value = await api('/v1/context-deployments', job);
-    el('job-id').value = job.jobId; el('progress').textContent = JSON.stringify(value, null, 2);
+    el('job-id').value = job.jobId; showProgress(value);
     status('Job submitted. Refresh to read actual progress.');
   });
   el('job').addEventListener('input', () => { el('confirm').checked = false; verifiedJobText = ''; el('approve-run').disabled = true; });
   el('refresh').onclick = () => run(async () => {
     const value = await api('/v1/context-deployments/' + encodeURIComponent(el('job-id').value));
-    el('progress').textContent = JSON.stringify(value, null, 2); status('Actual job status refreshed.');
+    showProgress(value); status('Actual job status refreshed.');
   });
 })();
