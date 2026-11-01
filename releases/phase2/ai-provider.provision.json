@@ -1,0 +1,17 @@
+{
+  "enabled": false,
+  "status": "deferred-by-owner-until-provider-is-connected",
+  "endpoint": null,
+  "allowedHost": null,
+  "model": null,
+  "credentialEnvironment": "WAZI_MODEL_CREDENTIAL",
+  "capUsd": null,
+  "pricing": {
+    "verified": false,
+    "sourceUrl": null,
+    "verifiedAt": null,
+    "inputUsdPerMillion": null,
+    "outputUsdPerMillion": null
+  },
+  "maxOutputTokens": 1024
+}

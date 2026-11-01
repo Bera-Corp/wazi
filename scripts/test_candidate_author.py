@@ -5,10 +5,16 @@ import unittest
 from pathlib import Path
 
 import candidate_author as author
+from author_package_candidate import checked_setup
 import context_engine as engine
 
 
 class CandidateAuthorTests(unittest.TestCase):
+    def test_deferred_provision_never_enables_a_call(self):
+        for setup,authorized in (({'enabled':False},True),({'enabled':True},False)):
+            with self.assertRaisesRegex(ValueError,'deferred-or-spending'):
+                checked_setup(setup,authorized)
+
     def setUp(self):
         self.manifest = engine.load_example_graph()["manifest"]
         self.manifest.pop("signature", None)

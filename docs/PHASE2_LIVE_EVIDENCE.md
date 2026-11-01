@@ -1,17 +1,17 @@
 # Phase 2 implementation and acceptance evidence
 
-Updated 31 October 2026. Phase 2 remains in progress. The offline prototype is
+Updated 1 November 2026. Phase 2 remains in progress. The offline prototype is
 complete; the expanded live/package/AI milestone is not closed.
 
 ## Acceptance matrix
 
 | Milestone | Implemented | Verified evidence | Still required |
 |---|---|---|---|
-| Trusted live retrieval | Private Go bridge reuses paired TLS, signature/revocation cursor and resource/plan checks without consuming approvals; bounded Python worker ranks verified proposals | bera-003 accepted a fresh Gitea proposal at 09:47:58Z, with three real case citations and executionApproved=false; modified owner budget and expired envelope denied | Complete catalog discovery and package selection beyond explicitly supplied proposals |
-| Cases and inspector | SQLite transactions, tenant/case identity, immutable case/evidence records, conflict rejection, exact-operation/procedure history; private HTTPS operator sessions; application choice, plan preparation and exact-case approval; journal observations | Imported 14 terminal cases; restart preserved a stored context; unauthorized reads, bootstrap replay, cross-origin requests and missing CSRF rejected at 09:49:18Z | Visual acceptance and a complete smaller-package browser journey |
-| PostgreSQL/MySQL/Nginx | Closed operator profile registry; instance-bound renderer 0.5; protected secret references, authenticated readiness, logical SQL checkpoints and validated Nginx configuration restore | Image build run 41191007408 passed on source 7821d296f77e416d34387e4f99de7c9f78d8c686; downloaded archive attestations verified; all three manifest/procedure bundles pass canonical schema and Cosign verification | Live lifecycle qualification and separate-instance reuse; no successful smaller-package execution claimed yet |
+| Trusted live retrieval | Paired Go bridge, signature verification, durable revocation cursor and resource/plan gates; bounded Python ranking without approval consumption | Live revoked release, invalid signature, modified budget and expired context denied without journal changes on 1 Nov | Selection is bounded to reviewed catalog profiles; arbitrary repository discovery is not implemented |
+| Cases and inspector | SQLite transactions, immutable scoped case/evidence records; operation/procedure/release/host history; authenticated app choice, exact-case approval and real journal observations | 34 cases and 40 evidence records at 09:07Z; stored context and all 40 journals survived agent restart; new install cases carry passing health evidence | Final browser walkthrough and beneficiary measurement; historical receipt formats remain immutable |
+| PostgreSQL/MySQL/Nginx | Closed profiles, instance-bound renderer 0.5, protected runtime secret references, authenticated SQL readiness, logical checkpoints and validated Nginx restore | All three completed install/recovery and separate-instance reuse. PG 17.11.0+wazi.1, MySQL 8.4.13+wazi.1, Nginx 1.30.6+wazi.2. Build 41191007408 and archive attestations verified; signed bundles retained | Final exact-source CI/evidence linkage and demo capture; no cross-version database migration is qualified |
 | Immich | Candidate composition constraints require its specific PostgreSQL/cache/proxy dependencies and coordinated recovery | Owner deferred live qualification on 31 October | Revised capacity/budget and full media/database lifecycle receipts |
-| AI authoring and reuse | Hosted JSON-chat adapter, pinned-source/candidate validation and durable conservative cost reservations | Six tests with a fake provider; no model call or Meta integration evidence claimed | Authorized provider/model, verified pricing and spending cap; real output, qualification, review/signing, second install without inference |
+| AI authoring and reuse | Disabled provider provision, explicit opt-in runner, candidate validation and durable cost reservations | Seven fake-provider/setup tests; zero real calls. Owner deferred connection on 1 Nov | Later provider authorization; actual Meta output, model-generated promotion, cost/latency and inference-free reuse remain unproven |
 
 The browser entry is /context on the existing private HTTPS listener.
 An authenticated operator issues a one-minute bootstrap code through
@@ -100,7 +100,8 @@ only through an explicit scoped operator step; Gitea data is preserved.
 These package procedures support same-release install/reapply, backup,
 restore and container removal. Cross-version migrations and database
 downgrades are rejected by an instance release anchor. No automatic rollback
-or compensation is claimed. Restores retain a digest-bound pre-restore
+is claimed. Signed operation compensation declarations remain mandatory;
+they do not automatically execute. Restores retain a digest-bound pre-restore
 checkpoint. Nginx validates staged configuration before stopping its instance.
 
 Renderer inputs bind the instance project, protected secret file references
@@ -112,3 +113,58 @@ The 12:17:52Z native qualification passed tests, race checks, vet, builds and
 the maintained Python suites. Activation at 12:19:11Z preserved all 19 journal
 files byte-for-byte and Gitea health. Later journal-observer and installer
 changes require their own final source/CI qualification before closure.
+
+## Live smaller-package qualification — 1 November
+
+PostgreSQL completed install at 08:28:26Z, backup, deliberate row/table
+mutation and restore at 08:29:30Z. The original proof returned and the
+post-backup table was absent. A separate instance installed at 08:31:05Z.
+MySQL repeated the same lifecycle, restoring at 08:38:30Z and installing
+its second instance at 08:38:59Z. Both proof checks hashed to
+f57ce7e53d8958188d270d92ae597c9bbf52405db9e79d2926eeb5272ddbb2a4.
+
+Nginx restored the original configuration and HTTP response at 08:51:34Z
+after a deliberate configuration mutation/reload. Its response hash was
+5cdad38ccc660777700e25756f82f976c549de1f91a8ef633d5a9f0315b03a69;
+configuration hash d0dde686126b7a61711ffc6c2a76552f906ce734675809d36673da8cf8db8683.
+Clean first- and second-instance installs completed at 08:54:20Z and 08:54:41Z.
+Uninstall retained data; explicit operator cleanup removed only the verified
+synthetic first-instance volumes, retaining backups and pre-restore checkpoints.
+
+Failures are retained: an initial PostgreSQL install never started because
+RootlessKit could not see new /etc bind sources. Its empty volume was inspected
+and removed, and the operation reconciled to blocked with observation digest
+sha256:e02ccbd3fe37c499d25cbff80d2eec9ee1139c266c0471dfc8bcda623a888948.
+Protected secret sources now reside under /srv/wazi-runtime/secrets.
+Nginx's first runtime attempt failed readiness because its reviewed profile
+needed CHOWN for cache initialization. A newly approved reapply recovered it;
+both subsequent clean installations passed. Nginx revision 2 uses 128 MiB.
+The 64 MiB allocation adjustment stayed within the approved owner/runtime caps.
+
+A deliberately stopped MySQL instance caused an approved backup to fail
+readiness after 93 seconds, before any mutation intent or checkpoint write.
+A fresh approved reapply recovered it at 08:57:45Z. Live revocation sequence
+52 temporarily denied the qualified Nginx release; sequence 53 removed only
+that test entry and restored eligibility. All 40 journals were unchanged
+during revoked, tampered-budget, expired-context and invalid-signature probes.
+
+The 09:07:42Z report found four healthy running applications, 2304 MiB of
+container RAM limits and 3.25 CPU in total, below the enforced 3072 MiB / 4 CPU
+runtime cap. Both databases passed authenticated SELECT 1. The agent restart
+preserved all journals, case/evidence counts and a stored inspector context,
+with zero pending reconciliation. Gitea's original repository proof remained
+728836b371192e623885770f40710bbe833d0f76d6cdbadfd9495621c25dc3e6.
+
+The expired node certificate was replaced through a fresh operator pairing
+code at 08:26:55Z, with the server anchor unchanged and all 20 then-existing
+journals byte-identical. The replacement expires 2 Nov at 08:26:55Z.
+The pilot still needs deliberate credential maintenance and fresh signed
+revocation publication before mutations; acceptance does not imply unattended
+production operation or an independent-human approval quorum.
+
+Raw lifecycle receipts are under package-evidence/ in staging directories
+20261031T132057Z (PostgreSQL), 20261101T083459Z (MySQL) and
+20261101T084810Z (Nginx, negative tests and restart report). The final
+committed-source qualification and CI receipt supersede intermediate builds.
+The measurement protocol and video walkthrough remain capture plans;
+no human-time savings, beneficiary outcome or actual Meta inference is claimed.

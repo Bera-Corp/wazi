@@ -22,6 +22,7 @@ import (
 type PackageInstanceConfig struct {
 	Profile, BudgetDigest                         string
 	ReleaseVersion, BudgetFile, QualificationFile string
+	ProcedureVersion                              string
 	ApplicationStorageBudgetMb                    int64
 	Runtime                                       DockerPilotConfig
 	SecretFiles                                   map[string]string
@@ -45,7 +46,7 @@ func shapeFor(profile string, second bool) (packageShape, error) {
 	case "mysql":
 		return packageShape{"com.mysql.mysql", "mysql", "ghcr.io/bera-corp/wazi-phase2-mysql", "data", "/var/lib/mysql", "mysql://local/wazi", 768, 2048, 13306 + offset, 3306, "0.5", []any{"CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"}}, nil
 	case "nginx":
-		return packageShape{"org.nginx.nginx", "nginx", "ghcr.io/bera-corp/wazi-phase2-nginx", "config", "/etc/nginx", "http://127.0.0.1:" + strconv.Itoa(18080+offset) + "/", 64, 128, 18080 + offset, 80, "0.25", []any{"SETUID", "SETGID", "NET_BIND_SERVICE"}}, nil
+		return packageShape{"org.nginx.nginx", "nginx", "ghcr.io/bera-corp/wazi-phase2-nginx", "config", "/etc/nginx", "http://127.0.0.1:" + strconv.Itoa(18080+offset) + "/", 128, 128, 18080 + offset, 80, "0.25", []any{"CHOWN", "SETUID", "SETGID", "NET_BIND_SERVICE"}}, nil
 	}
 	return packageShape{}, fmt.Errorf("package profile is not reviewed")
 }
@@ -67,7 +68,7 @@ func RenderReviewedPackageCompose(manifest []byte, config PackageInstanceConfig)
 }
 
 func (b *DockerPackageBoundary) rendererInputsDigest() (string, error) {
-	raw, err := canonicalPayload(map[string]any{"profile": b.config.Profile, "project": b.config.Runtime.Project, "images": b.config.Runtime.ImageConfigDigests, "secretFiles": b.config.SecretFiles})
+	raw, err := canonicalPayload(map[string]any{"profile": b.config.Profile, "project": b.config.Runtime.Project, "images": b.config.Runtime.ImageConfigDigests, "secretFiles": b.config.SecretFiles, "policy": map[string]any{"service": b.shape.Service, "ramMb": b.shape.RAM, "cpu": b.shape.CPU, "storageMb": b.shape.Storage, "mount": b.shape.Mount, "capabilities": b.shape.Caps}})
 	if err != nil {
 		return "", err
 	}
@@ -103,7 +104,7 @@ func NewDockerPackageBoundary(config PackageInstanceConfig, artifact []byte) (*D
 		return nil, fmt.Errorf("package state directory mismatch")
 	}
 	for _, path := range config.SecretFiles {
-		if filepath.Clean(path) != path || !strings.HasPrefix(path, "/etc/wazi-phase2/secrets/"+project+"/") || strings.ContainsAny(filepath.Base(path), "/\\") {
+		if filepath.Clean(path) != path || !strings.HasPrefix(path, "/srv/wazi-runtime/secrets/"+project+"/") || strings.ContainsAny(filepath.Base(path), "/\\") {
 			return nil, fmt.Errorf("secret file is outside its operator-owned instance")
 		}
 		info, err := os.Lstat(path)
@@ -348,6 +349,28 @@ func (b *DockerPackageBoundary) ValidatePrepared(p PreparedExecution) error {
 	return b.ValidateContext(p)
 }
 
+// ValidateProposal rejects an already initialized fresh-install target before
+// approval. Execution repeats the absence check at compose.up to close races.
+func (b *DockerPackageBoundary) ValidateProposal(ctx context.Context, p PreparedExecution) error {
+	plan, err := parseCanonicalObject(p.Plan(), "proposal plan")
+	if err != nil {
+		return err
+	}
+	if plan["operation"] != "install" {
+		return nil
+	}
+	raw, err := b.core.run(ctx, nil, nil, "volume", "ls", "--format", "{{.Name}}")
+	if err != nil {
+		return err
+	}
+	for _, name := range strings.Fields(string(raw)) {
+		if name == b.config.Runtime.Project+"_"+b.shape.Volume {
+			return fmt.Errorf("package instance is already initialized; choose a lifecycle operation")
+		}
+	}
+	return nil
+}
+
 func (b *DockerPackageBoundary) container(ctx context.Context) (string, error) {
 	raw, err := b.core.run(ctx, nil, nil, "ps", "--all", "--filter", "label=com.docker.compose.project="+b.config.Runtime.Project, "--filter", "label=com.docker.compose.service="+b.shape.Service, "--format", "{{.ID}}")
 	values := strings.Fields(string(raw))
@@ -489,7 +512,11 @@ func (b *DockerPackageBoundary) Execute(ctx context.Context, p PreparedExecution
 		if step.Parameters.VolumeBackup.Volume != b.shape.Volume {
 			return Outcome{}, fmt.Errorf("package backup volume mismatch")
 		}
-		return success, b.backup(ctx, p, step.Parameters.VolumeBackup.BackupID, "backups")
+		kind := "backups"
+		if strings.HasPrefix(step.Parameters.VolumeBackup.BackupID, "bak_pre_") {
+			kind = "pre-restore"
+		}
+		return success, b.backup(ctx, p, step.Parameters.VolumeBackup.BackupID, kind)
 	case "volume.restore":
 		if step.Parameters.VolumeRestore.Volume != b.shape.Volume {
 			return Outcome{}, fmt.Errorf("package restore volume mismatch")

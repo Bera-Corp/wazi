@@ -287,11 +287,13 @@ gate passes.
   (2026-10-31): the private Go/Python bridge, durable cases and operator
   inspector have live Gitea receipts. PostgreSQL/MySQL/Nginx signed bundles,
   verified build attestations, closed runtime profiles and application-choice/
-  approval UI are implemented; live lifecycle qualification and separate-instance
-  reuse remain open. The owner approved the 4.5 CPU / 4 GiB / 48 GiB budget
+  approval UI are implemented; all three smaller packages passed live recovery
+  and separate-instance reuse on 1 Nov. Exact-source CI, the final browser
+  walkthrough and beneficiary measurement remain closure gates. The owner approved the 4.5 CPU / 4 GiB / 48 GiB budget
   (runtime cap 4 CPU / 3 GiB; Immich excluded). Bounded candidate
   authoring is pulled forward from controlled AI packaging, with provider/model
-  access and a spending cap still required before any call. Immich live
+  connection deferred by the owner on 1 Nov; a disabled provision and opt-in
+  runner are available, with no real call or spending. Immich live
   qualification is deferred by the owner. See PHASE2_LIVE_EVIDENCE.md for
   the per-milestone evidence and remaining acceptance work.
 

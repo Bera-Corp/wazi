@@ -95,6 +95,12 @@ class ContextStore:
                                 (tenant, case["caseId"], binding_digest))
         return found is None
 
+    def case(self, tenant, case_id):
+        if not tenant or not case_id:
+            raise ValueError('case-scope-required')
+        row=self.db.execute('SELECT document FROM cases WHERE tenant=? AND id=?',(tenant,case_id)).fetchone()
+        return json.loads(row[0]) if row else None
+
     def cases(self, tenant, application, operation, procedure_ref=None):
         if not tenant or not application or not operation:
             raise ValueError("case-scope-required")

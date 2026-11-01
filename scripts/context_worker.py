@@ -29,13 +29,16 @@ def retrieve(store, payload):
     cases = store.cases(tenant, application, operation)
     # Success history is useful only for the exact signed release/procedure.
     comparable = store.cases(tenant, application, operation, procedure_ref=envelope["procedureRef"])
-    successes = [c for c in comparable if c["outcome"] == "success"
-                 and c["manifestDigest"] == envelope["manifestDigest"]]
-    failures = [c for c in cases if c["outcome"] == "failure"]
+    relevant=[c for c in comparable if c['manifestDigest']==envelope['manifestDigest'] and c.get('hostId')==envelope['hostProfileRef']['recordId']]
+    successes = [c for c in relevant if c["outcome"] == "success"]
+    failures = [c for c in relevant if c["outcome"] == "failure"]
     score, breakdown = engine._score_procedure(procedure, manifest)
     history = min(10, len(successes) * 2)
     if history:
         breakdown["verified-release-successes"] = history
+    penalty=min(10,len(failures)*2)
+    if penalty:
+        breakdown['verified-release-failures']=-penalty
     result = {
         "mode": "live-agent-verified", "decision": "accept",
         "executionApproved": False, "evaluatedAt": payload["evaluatedAt"],
@@ -45,7 +48,7 @@ def retrieve(store, payload):
         "inputDigests": {key: validate.canonical_digest(value)
                          for key, value in snapshot.items()},
         "selected": {"procedureId": procedure["procedureId"],
-                     "version": procedure["version"], "score": score + history,
+                     "version": procedure["version"], "score": score + history - penalty,
                      "scoreBreakdown": breakdown},
         "successCaseRefs": [{"recordId": c["caseId"], "digest": validate.canonical_digest(c)}
                             for c in successes[:3]],
@@ -106,7 +109,19 @@ def record_terminal(store, payload):
                 "commitOrReleaseDigest": identity["manifestDigest"],
                 "createdAt": operation["updatedAt"],
                 "redaction": {"applied": True, "secretValuesPresent": False}}
-    return {"imported": store.import_case(case, [evidence], procedure_ref=envelope["procedureRef"]), "classification": outcome}
+    records=[evidence]
+    if state=='completed' and identity['operation']=='install':
+        if not any(step['capability']=='health.check' for step in plan['steps']):
+            return {'imported':False,'classification':'install-without-health-evidence'}
+        health_id=evidence_id+'_health'
+        previous=store.case(identity['tenantScope'],identity['caseId'])
+        # Existing canonical cases are immutable; preserve their historical
+        # receipt format. New install cases carry explicit health evidence.
+        if previous is None or health_id in previous['evidenceRefs']:
+            health=dict(evidence,evidenceId=health_id,type='health-check')
+            case['evidenceRefs'].append(health_id)
+            records.append(health)
+    return {"imported": store.import_case(case, records, procedure_ref=envelope["procedureRef"]), "classification": outcome}
 
 
 def dispatch(store, payload):

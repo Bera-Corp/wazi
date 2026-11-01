@@ -32,6 +32,22 @@ anchor=pathlib.Path(identity['CAFile'])
 before=cert.read_bytes()
 anchor_digest=hashlib.sha256(anchor.read_bytes()).hexdigest()
 old_fingerprint=hashlib.sha256(ssl.PEM_cert_to_DER_cert(before.decode())).hexdigest()
+expired=subprocess.run(['openssl','x509','-in',str(cert),'-noout','-checkend','0'],capture_output=True).returncode!=0
+arguments=['-renew']
+if expired:
+    operator=None
+    for line in pathlib.Path('/etc/wazi-controlplane-dev/operator.env').read_text().splitlines():
+        if line.startswith('WAZI_OPERATOR_TOKEN='): operator=line.split('=',1)[1].strip().strip('"').strip("'")
+    assert operator
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self,*args,**kwargs): return None
+    opener=urllib.request.build_opener(NoRedirect,urllib.request.HTTPSHandler(context=ssl.create_default_context(cafile=str(anchor))))
+    body=json.dumps({'tenantScope':config['Runtime']['TenantScope'],'hostId':config['Runtime']['HostID']}).encode()
+    request=urllib.request.Request(config['ControlPlaneURL']+'/v1/pairing/codes',body,headers={'Content-Type':'application/json','X-Wazi-Operator-Token':operator},method='POST')
+    with opener.open(request,timeout=15) as response:
+        assert response.status==201
+        fresh=json.load(response)['pairingCode']
+    arguments=['-pairing-code',fresh]
 run(['systemctl','stop','wazi-pilot-agent.service'])
 try:
     run(['sudo','-n','-u','wazi-runtime','env','HOME=/srv/wazi-runtime/home',
@@ -39,7 +55,7 @@ try:
          '-tenant',config['Runtime']['TenantScope'],'-host-id',config['Runtime']['HostID'],
          '-state-dir',str(cert.parent),'-cert',str(cert),'-key',identity['KeyFile'],
          '-ca',str(anchor),'-issuer-ca',identity['IssuerCAFile'],
-         '-controlplane',config['ControlPlaneURL'],'-server-name',config['ServerName'],'-renew'])
+         '-controlplane',config['ControlPlaneURL'],'-server-name',config['ServerName']]+arguments)
 finally:
     run(['systemctl','start','wazi-pilot-agent.service'])
 run(['systemctl','is-active','--quiet','wazi-pilot-agent.service'])
@@ -54,7 +70,7 @@ with urllib.request.urlopen('http://127.0.0.1:13000/api/healthz',timeout=5) as r
 if health.get('status')!='pass':
     raise SystemExit('application health did not remain passing')
 record={
-    'operation':'paired-node-renewal','tenantScope':config['Runtime']['TenantScope'],
+    'operation':'expired-node-repair' if expired else 'paired-node-renewal','tenantScope':config['Runtime']['TenantScope'],
     'hostId':config['Runtime']['HostID'],'previousCertificateFingerprint':'sha256:'+old_fingerprint,
     'newCertificateFingerprint':'sha256:'+hashlib.sha256(ssl.PEM_cert_to_DER_cert(after.decode())).hexdigest(),
     'newCertificatePemSha256':'sha256:'+hashlib.sha256(after).hexdigest(),

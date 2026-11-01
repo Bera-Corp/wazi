@@ -5,7 +5,7 @@ umask 077
 test "$(hostname)" = bera-003
 test "$(id -u)" -eq 0
 python3 - "$1" <<'PY'
-import concurrent.futures, copy, datetime, hashlib, json, os, pathlib, secrets, shutil, subprocess, sys, time, urllib.request, zipfile
+import concurrent.futures, copy, datetime, hashlib, json, os, pathlib, secrets, shutil, ssl, subprocess, sys, time, urllib.request, zipfile
 
 source = pathlib.Path(sys.argv[1])
 assert source.parent == pathlib.Path('/home/wazi-dev/wazi-phase2') and source.is_dir()
@@ -32,12 +32,12 @@ def canonical(value):
 def digest(value):
     return 'sha256:'+hashlib.sha256(canonical(value)).hexdigest()
 
-def protected(path, raw, mode=0o640, group=uid):
+def protected(path, raw, mode=0o640, group=uid, owner=0):
     path = pathlib.Path(path)
     temporary = path.with_name('.'+path.name+'.phase2-tmp')
     with temporary.open('xb') as handle:
         handle.write(raw); handle.flush(); os.fsync(handle.fileno())
-    os.chown(temporary,0,group); os.chmod(temporary,mode)
+    os.chown(temporary,owner,group); os.chmod(temporary,mode)
     os.replace(temporary,path)
     descriptor = os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
     try: os.fsync(descriptor)
@@ -90,23 +90,30 @@ run(['systemctl','set-property','--runtime','user-1002.slice','MemoryMax=3072M',
 
 # Authenticate bytes again on the host before loading any image.
 packages=[]
-secret_root=root/'secrets'; secret_root.mkdir(mode=0o750,exist_ok=True); os.chown(secret_root,0,uid); os.chmod(secret_root,0o750)
-for profile,version in [('postgresql','17.11.0+wazi.1'),('mysql','8.4.13+wazi.1'),('nginx','1.30.6+wazi.1')]:
+secret_root=pathlib.Path('/srv/wazi-runtime/secrets'); secret_root.mkdir(mode=0o750,exist_ok=True); os.chown(secret_root,0,uid); os.chmod(secret_root,0o750)
+run(['chattr','-p','30000','+P',str(secret_root)])
+for profile,version in [('postgresql','17.11.0+wazi.1'),('mysql','8.4.13+wazi.1'),('nginx','1.30.6+wazi.2')]:
     release=source/'releases/phase2'/profile
     metadata=json.loads((release/'image-export.json').read_bytes())
-    for name in ('manifest','procedure-install','procedure-upgrade','procedure-backup','procedure-restore','procedure-uninstall'):
+    for name in ['manifest']+[path.stem for path in sorted(release.glob('procedure-*.json'))]:
         run([str(source/'bin/wazi-recordtool'),'verify',str(release/(name+'.json')),config['SigningPolicyFile']])
     image=metadata['image']
     manifest=json.loads((release/'manifest.json').read_bytes())
     declared,=manifest['release']['images']
     assert declared['image']==image['name'] and declared['digest']==image['digest']
+    prior=[entry for entry in config.get('Packages',[]) if entry['Profile']==profile]
+    already_loaded=False
+    if prior:
+        assert all(entry['Runtime']['ImageConfigDigests'].get(image['digest'])==image['configDigest'] for entry in prior)
+        loaded=subprocess.run(docker+['image','inspect',image['configDigest'],'--format','{{.Id}}'],capture_output=True,timeout=30)
+        already_loaded=loaded.returncode==0 and loaded.stdout.decode().strip()==image['configDigest']
     archive=source/'packages'/profile/'package-image.tar'
     archive.parent.mkdir(parents=True,exist_ok=True)
     def archive_valid():
         if not archive.is_file(): return False
         with archive.open('rb') as handle:
             return 'sha256:'+hashlib.file_digest(handle,'sha256').hexdigest()==metadata['archive']['digest']
-    if not archive_valid():
+    if not already_loaded and not archive_valid():
         urls=json.loads((source/'artifact-transports.private.json').read_bytes())
         request=urllib.request.Request(urls[profile])
         # No credential is sent to this short-lived storage URL. Never log it.
@@ -140,8 +147,9 @@ for profile,version in [('postgresql','17.11.0+wazi.1'),('mysql','8.4.13+wazi.1'
                 shutil.copyfileobj(input_bytes,output)
         transport.unlink()
         assert archive_valid(), 'archive digest mismatch'
-    with archive.open('rb') as image_bytes:
-        run(docker+['load'],stdin=image_bytes,timeout=180)
+    if not already_loaded:
+        with archive.open('rb') as image_bytes:
+            run(docker+['load'],stdin=image_bytes,timeout=180)
     assert run(docker+['image','inspect',image['configDigest'],'--format','{{.Id}}']).stdout.decode().strip()==image['configDigest']
     assert manifest['version']==version
     for index in ('01','02'):
@@ -161,7 +169,7 @@ for profile,version in [('postgresql','17.11.0+wazi.1'),('mysql','8.4.13+wazi.1'
         directory=new_state/project; directory.mkdir(mode=0o700,exist_ok=True); os.chown(directory,uid,uid); os.chmod(directory,0o700)
         instance=copy.deepcopy(runtime)
         instance.update(Project=project,StateDirectory=str(directory),QuotaHelper='/usr/local/libexec/wazi-phase2-quota',AllowedManifests={digest(manifest):True},ImageConfigDigests={image['digest']:image['configDigest']})
-        packages.append({'Profile':profile,'ReleaseVersion':version,'BudgetDigest':digest(budget),'BudgetFile':str(root/'budget.json'),'QualificationFile':str(root/'qualification.json'),'ApplicationStorageBudgetMb':25600,'Runtime':instance,'SecretFiles':secret_files})
+        packages.append({'Profile':profile,'ReleaseVersion':version,'ProcedureVersion':'1.2.0' if profile=='nginx' else '1.1.0','BudgetDigest':digest(budget),'BudgetFile':str(root/'budget.json'),'QualificationFile':str(root/'qualification.json'),'ApplicationStorageBudgetMb':25600,'Runtime':instance,'SecretFiles':secret_files})
 
 # Protected qualification is produced only after an actual kernel quota probe.
 volume='wz-phase2-enable-quota'
@@ -184,11 +192,12 @@ assert 'prjquota' in run(['findmnt','-T',runtime['DataRoot'],'-n','-o','OPTIONS'
 now=datetime.datetime.now(datetime.timezone.utc)
 qualification=copy.deepcopy(old_job['qualification'])
 qualification.update(qualificationId='volqual_phase2_packages',observedAt=date(now),expiresAt=date(now+datetime.timedelta(minutes=30)),volumes=[{'name':'data','purpose':'application-data'},{'name':'config','purpose':'application-config'}])
-qualification['storage']['storageFreeMb']=shutil.disk_usage(runtime['DataRoot']).free//1048576
+qualification['storage']['storageFreeMb']=shutil.disk_usage('/srv/wazi-runtime').free//1048576
 qualification['daemon'].update(serverVersion=daemon['ServerVersion'],rootDir=daemon['DockerRootDir'])
 protected(root/'qualification.json',canonical(qualification))
 
 policy_path=pathlib.Path('/etc/wazi-controlplane-dev/policy-bundle.json')
+policy_owner=policy_path.stat()
 policy_raw=policy_path.read_bytes()
 policy=json.loads(policy_raw)
 policy.update(version='1.1.0')
@@ -200,20 +209,33 @@ try:
     run(['systemctl','stop','wazi-pilot-agent.service'])
     config.update(Packages=packages)
     config['CapabilityPolicy'].update(Version='1.1.0',Digest=digest(policy))
-    protected(policy_path,canonical(policy),0o640,policy_path.stat().st_gid)
+    protected(policy_path,canonical(policy),0o640,policy_owner.st_gid,policy_owner.st_uid)
     protected(config_path,canonical(config),0o640,config_path.stat().st_gid)
     run(['systemctl','restart','wazi-controlplane-dev.service'])
     run(['systemctl','start','wazi-pilot-agent.service'])
     time.sleep(1)
     run(['systemctl','is-active','--quiet','wazi-controlplane-dev.service','wazi-pilot-agent.service'])
+    tls=ssl.create_default_context(cafile=config['Identity']['CAFile'])
+    deadline=time.monotonic()+15
+    while True:
+        try:
+            with urllib.request.urlopen('https://localhost:9443/healthz',context=tls,timeout=2) as response: assert response.status==200
+            catalog=json.loads(run(['sudo','-n','-u','wazi-runtime','curl','--fail','--silent','--unix-socket','/run/wazi-phase1/agent.sock','http://localhost/contexts/catalog']).stdout)
+            assert len(catalog)==6
+            break
+        except Exception:
+            if time.monotonic()>=deadline: raise
+            time.sleep(0.2)
     health()
     assert before=={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (state/'journal').glob('*.json')}
 except Exception:
-    protected(policy_path,policy_raw,0o640,policy_path.stat().st_gid)
+    protected(policy_path,policy_raw,0o640,policy_owner.st_gid,policy_owner.st_uid)
     protected(config_path,config_raw,0o640,config_path.stat().st_gid)
     run(['systemctl','restart','wazi-controlplane-dev.service','wazi-pilot-agent.service'])
     raise
 record={'operation':'enable-reviewed-phase2-packages','budgetDigest':digest(budget),'runtimeLimit':proposal['aggregateRuntimeLimit'],'applicationStorageMb':25600,'sharedStorageMb':13312,'protectedReserveMb':10240,'instances':[entry['Runtime']['Project'] for entry in packages],'journalFilesUnchanged':len(before),'quotaOverflowDenied':True,'giteaHealth':'pass','completedAt':date(datetime.datetime.now(datetime.timezone.utc))}
-(source/'packages-enabled.json').write_bytes(canonical(record))
+receipt=source/'packages-enabled.json'
+if receipt.exists(): receipt=source/('packages-enabled-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'.json')
+receipt.write_bytes(canonical(record))
 print(json.dumps(record))
 PY

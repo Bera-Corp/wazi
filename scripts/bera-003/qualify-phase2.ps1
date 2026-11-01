@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param()
+param([switch]$CommittedSource)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Set-Location $root
@@ -13,7 +13,11 @@ $stamp = (Get-Date).ToUniversalTime().ToString('yyyyMMddTHHmmssZ')
 $local = Join-Path $root ('artifacts/phase2/' + $stamp)
 New-Item -ItemType Directory -Path $local -Force | Out-Null
 $archive = Join-Path $local 'source.tar.gz'
-& tar --exclude=phase1record-temp.go --exclude=__pycache__ -czf $archive services scripts schemas context evals releases requirements-dev.txt
+if($CommittedSource){
+    & git archive --format=tar.gz -o $archive HEAD services scripts schemas context evals releases requirements-dev.txt
+}else{
+    & tar --exclude=phase1record-temp.go --exclude=__pycache__ -czf $archive services scripts schemas context evals releases requirements-dev.txt
+}
 if ($LASTEXITCODE -ne 0) { throw 'Qualification archive failed' }
 $digest = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
 $remote = '/home/wazi-dev/wazi-phase2/' + $stamp
@@ -25,7 +29,10 @@ $destination = '{0}@{1}' -f $connection.WAZI_DEV_SSH_USER,$connection.WAZI_DEV_H
 $options = @('-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','StrictHostKeyChecking=yes','-o','ForwardAgent=no','-o','ConnectTimeout=10','-i',$connection.WAZI_DEV_SSH_KEY_PATH,'-P',$port)
 & scp @options $archive ('{0}:{1}/source.tar.gz' -f $destination,$remote)
 if ($LASTEXITCODE -ne 0) { throw 'Qualification upload failed' }
-[ordered]@{remote=$remote;sourceSha256=$digest;recordedAt=(Get-Date).ToUniversalTime().ToString('o')} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $local 'staging.json') -Encoding utf8
+$receipt=Join-Path $local 'staging.json'
+[ordered]@{remote=$remote;sourceSha256=$digest;sourceCommit=(& git rev-parse HEAD);committedSource=[bool]$CommittedSource;recordedAt=(Get-Date).ToUniversalTime().ToString('o')} | ConvertTo-Json | Set-Content -LiteralPath $receipt -Encoding utf8
+& scp @options $receipt ('{0}:{1}/source-identity.json' -f $destination,$remote)
+if($LASTEXITCODE -ne 0){throw 'Source identity upload failed'}
 & ./scripts/ssh-dev.ps1 -BashScriptPath scripts/bera-003/qualify-phase2.sh -BashArguments @($remote,$digest)
 if ($LASTEXITCODE -ne 0) { throw 'Native qualification failed; retain the staging receipt' }
 Write-Output ('QUALIFIED_REMOTE=' + $remote)

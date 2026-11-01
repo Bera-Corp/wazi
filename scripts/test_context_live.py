@@ -101,6 +101,21 @@ class LiveContextTests(unittest.TestCase):
                 "snapshot": {"envelope": self.graph["envelope"], "manifest": self.graph["manifest"],
                              "procedure": procedure, "host": self.graph["host"]}}
 
+    def test_instance_renderer_binds_artifact_record_in_plan(self):
+        graph=copy.deepcopy(self.graph)
+        artifact=graph['artifact']
+        artifact['renderer']={'name':'wazi-compose-renderer','version':'0.5.0','inputsDigest':'sha256:'+'a'*64}
+        bound=validate.canonical_digest(artifact)
+        graph['envelope']['composeArtifactRef']['digest']=bound
+        graph['plan']['composeArtifactRef']['digest']=bound
+        for step in graph['plan']['steps']+graph['plan']['rollbackSteps']:
+            if step['capability']=='compose.up': step['parameters']['composeArtifactDigest']=bound
+        def errors():
+            return validate.plan_binding_errors(graph['plan'],graph['envelope'],graph['manifest'],graph['host'],graph['policy'],artifact,graph['procedures'],eval_time=engine.EVAL_TIME)
+        self.assertEqual(errors(),[])
+        next(step for step in graph['plan']['steps'] if step['capability']=='compose.up')['parameters']['composeArtifactDigest']=artifact['composeDigest']
+        self.assertTrue(any('composeArtifactDigest' in item for item in errors()))
+
     def test_retrieval_case_score_and_durable_inspection(self):
         empty = worker.retrieve(self.store, self.payload())
         case, evidence = self.records()
@@ -118,6 +133,20 @@ class LiveContextTests(unittest.TestCase):
         evidence["result"] = "inconclusive"
         self.store.import_case(case, [evidence])
         self.assertEqual(worker.retrieve(self.store, self.payload())["successCaseRefs"], [])
+
+    def test_failure_penalty_and_other_host_history(self):
+        base=worker.retrieve(self.store,self.payload())['selected']['score']
+        case,evidence=self.records()
+        case['outcome']='failure'; evidence['result']='fail'
+        self.store.import_case(case,[evidence],procedure_ref=self.graph['envelope']['procedureRef'])
+        result=worker.retrieve(self.store,self.payload())
+        self.assertEqual(result['selected']['score'],base-2)
+        self.assertEqual(len(result['failureCaseRefs']),1)
+        case,evidence=self.records(case_id='case_other_host')
+        case['hostId']='host_other'
+        case['evidenceRefs']=['ev_other_host']; evidence['evidenceId']='ev_other_host'
+        self.store.import_case(case,[evidence],procedure_ref=self.graph['envelope']['procedureRef'])
+        self.assertEqual(worker.retrieve(self.store,self.payload())['selected']['score'],base-2)
 
     def test_other_procedure_cannot_claim_success(self):
         case, evidence = self.records()
@@ -154,6 +183,11 @@ class LiveContextTests(unittest.TestCase):
     def test_receipt_binding_and_terminal_requirements(self):
         payload = self.receipt_payload()
         self.assertTrue(worker.record_terminal(self.store, payload)["imported"])
+        stored=self.store.case(payload['job']['envelope']['tenantScope'],'case_test')
+        self.assertEqual(len(stored['evidenceRefs']),2)
+        self.assertFalse(worker.record_terminal(self.store,payload)['imported'])
+        kinds=[json.loads(row[0])['type'] for row in self.store.db.execute('SELECT document FROM evidence').fetchall()]
+        self.assertIn('health-check',kinds)
         payload["receipt"]["Operation"]["identity"]["manifestDigest"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(ValueError, "binding-mismatch"):
             worker.record_terminal(self.store, payload)

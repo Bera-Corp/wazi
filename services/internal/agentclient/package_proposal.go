@@ -11,6 +11,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/Bera-Corp/wazi/services/internal/contracts"
 	"github.com/Bera-Corp/wazi/services/internal/verify"
 )
 
@@ -93,7 +94,11 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 		return empty, fmt.Errorf("explicit immutable checkpoint identity required")
 	}
 	shape, _ := shapeFor(config.Profile, false)
-	releaseExpected := ReleaseExpectation{ApplicationID: shape.App, ReleaseVersion: config.ReleaseVersion, ProcedureID: "proc_" + operation + "_" + config.Profile, ProcedureVersion: "1.0.0", Operation: operation}
+	procedureVersion := config.ProcedureVersion
+	if procedureVersion == "" {
+		procedureVersion = "1.1.0"
+	}
+	releaseExpected := ReleaseExpectation{ApplicationID: shape.App, ReleaseVersion: config.ReleaseVersion, ProcedureID: "proc_" + operation + "_" + config.Profile, ProcedureVersion: procedureVersion, Operation: operation}
 	policy, err := FetchCapabilityPolicyBundle(ctx, b.Preflight.ControlPlaneURL, b.Preflight.TLSConfig, b.Preflight.CapabilityPolicy)
 	if err != nil {
 		return empty, err
@@ -115,6 +120,20 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 	procedure, err := parseCanonicalObject(release.Procedure(), "procedure")
 	if err != nil {
 		return empty, err
+	}
+	var rollbackExpected ProcedureExpectation
+	var rollbackRaw []byte
+	var rollbackProcedure map[string]any
+	if identity, ok := procedure["rollbackProcedureId"].(string); ok {
+		rollbackExpected = ProcedureExpectation{ProcedureID: identity, Version: procedureVersion, ApplicationID: shape.App, Operation: "rollback"}
+		rollbackRaw, err = FetchVerifiedProcedureRecord(ctx, b.Preflight.ControlPlaneURL, b.Preflight.TLSConfig, b.Preflight.SigningPolicy, rollbackExpected)
+		if err != nil {
+			return empty, err
+		}
+		rollbackProcedure, err = parseCanonicalObject(rollbackRaw, "compensation procedure")
+		if err != nil {
+			return empty, err
+		}
 	}
 	budget, err := protectedContextRecord(config.BudgetFile)
 	if err != nil {
@@ -191,20 +210,26 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 	}
 	releaseValue, _ := objectValue(manifest["release"])
 	environment, _ := optionalObjects(releaseValue["environment"], "environment")
-	secretRefs := []string{}
+	secretRefs := []any{}
 	for _, entry := range environment {
 		if ref, ok := entry["secretRef"].(string); ok {
-			secretRefs = append(secretRefs, ref)
+			secretRefs = append(secretRefs, map[string]any{"secretRef": ref, "injectionPoint": shape.Service + " environment " + entry["name"].(string)})
 		}
 	}
-	sort.Strings(secretRefs)
 	caps, err := stringArray(procedure["capabilitySequence"], "capabilities")
 	if err != nil {
 		return empty, err
 	}
+	rollbackCaps := []string{}
+	if rollbackProcedure != nil {
+		rollbackCaps, err = stringArray(rollbackProcedure["capabilitySequence"], "compensation capabilities")
+		if err != nil {
+			return empty, err
+		}
+	}
 	unique := []string{}
 	seen := map[string]bool{}
-	for _, capability := range caps {
+	for _, capability := range append(append([]string{}, caps...), rollbackCaps...) {
 		if !seen[capability] {
 			unique = append(unique, capability)
 			seen[capability] = true
@@ -212,13 +237,27 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 	}
 	provenance, _ := objectValue(manifest["provenance"])
 	envelopeValue := map[string]any{"schemaVersion": "2.0.0", "envelopeId": "env_" + id, "tenantScope": b.TenantScope, "operation": operation,
-		"contextMode": "deterministic", "applicationId": shape.App, "releaseVersion": config.ReleaseVersion, "manifestDigest": release.Release.ManifestDigest, "manifestReviewState": manifest["reviewState"],
+		"deploymentMode": "deterministic", "applicationId": shape.App, "releaseVersion": config.ReleaseVersion, "manifestDigest": release.Release.ManifestDigest, "manifestReviewState": manifest["reviewState"],
 		"hostProfileRef": hostRef, "policyBundleRef": policyRef, "procedureRef": procedureRef, "composeArtifactRef": artifactRef,
 		"contributionBudgetRef": budgetRef, "managedVolumeQualificationRef": qualificationRef, "secretReferences": secretRefs,
 		"allowedCapabilities": unique, "forbiddenOperations": []string{"shell.exec", "volume.delete-without-checkpoint"},
 		"requiredApprovals": []string{action}, "verificationChecks": []any{map[string]any{"id": "package-readiness", "type": "health", "target": shape.Health}},
 		"rollbackStrategy": map[string]any{"supported": false, "checkpointRequired": operation == "restore"},
 		"citedSources":     []any{map[string]any{"recordId": provenance["sourceId"], "contentHash": provenance["contentHash"]}}, "createdAt": created, "expiresAt": expires}
+	if rollbackProcedure != nil {
+		ref, err := contextRecordRef(rollbackRaw, "procedureId")
+		if err != nil {
+			return empty, err
+		}
+		strategy := envelopeValue["rollbackStrategy"].(map[string]any)
+		strategy["supported"] = true
+		strategy["procedureRef"] = ref
+	}
+	checkpointID := backupID
+	if operation == "restore" {
+		checkpointID = "bak_pre_" + id
+		envelopeValue["rollbackStrategy"].(map[string]any)["checkpoint"] = map[string]any{"backupId": checkpointID, "volume": shape.Volume}
+	}
 	envelope, err := canonicalPayload(envelopeValue)
 	if err != nil {
 		return empty, err
@@ -231,10 +270,21 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 		"compose.up":      map[string]any{"service": shape.Service, "projectName": project, "composeArtifactDigest": artifactDigest},
 		"compose.down":    map[string]any{"service": shape.Service, "projectName": project, "removeVolumes": false},
 		"health.check":    map[string]any{"target": shape.Health},
-		"volume.backup":   map[string]any{"volume": shape.Volume, "backupId": backupID},
+		"volume.backup":   map[string]any{"volume": shape.Volume, "backupId": checkpointID},
 		"volume.restore":  map[string]any{"volume": shape.Volume, "backupId": backupID},
 	}
 	steps := []any{}
+	rollbackSteps := []any{}
+	compensationIDs := map[string]string{}
+	for index, capability := range rollbackCaps {
+		params := parameters[capability]
+		if capability == "volume.backup" {
+			params = map[string]any{"volume": shape.Volume, "backupId": "bak_compensate_" + id}
+		}
+		stepID := fmt.Sprintf("step_compensation_%d", index+1)
+		compensationIDs[capability] = stepID
+		rollbackSteps = append(rollbackSteps, map[string]any{"stepId": stepID, "capability": capability, "parameters": params, "citations": []any{provenance["sourceId"]}, "requiresApproval": isMutating(capability), "verification": map[string]any{"type": "exit-state"}})
+	}
 	for index, capability := range caps {
 		params, exists := parameters[capability]
 		if !exists {
@@ -244,13 +294,23 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 		if capability == "health.check" {
 			verification = "health"
 		}
-		steps = append(steps, map[string]any{"stepId": fmt.Sprintf("step_%d", index+1), "capability": capability, "parameters": params,
-			"citations": []any{provenance["sourceId"]}, "requiresApproval": isMutating(capability), "verification": map[string]any{"type": verification}})
+		step := map[string]any{"stepId": fmt.Sprintf("step_%d", index+1), "capability": capability, "parameters": params,
+			"citations": []any{provenance["sourceId"]}, "requiresApproval": isMutating(capability), "verification": map[string]any{"type": verification}}
+		if compensation := map[string]string{"compose.up": "compose.down", "compose.down": "compose.up", "volume.restore": "volume.backup"}[capability]; compensation != "" {
+			step["rollbackStepId"] = compensationIDs[compensation]
+		}
+		steps = append(steps, step)
 	}
 	plan, err := canonicalPayload(map[string]any{"schemaVersion": "1.0.0", "planId": "plan_" + id, "envelopeId": "env_" + id, "operation": operation,
-		"origin": "deterministic-resolver", "unresolvedQuestions": []any{}, "composeArtifactRef": artifactRef, "steps": steps, "rollbackSteps": []any{}, "requiredApprovals": []string{action}, "createdAt": created, "expiresAt": expires})
+		"origin": "deterministic-resolver", "unresolvedQuestions": []any{}, "composeArtifactRef": artifactRef, "steps": steps, "rollbackSteps": rollbackSteps, "requiredApprovals": []string{action}, "createdAt": created, "expiresAt": expires})
 	if err != nil {
 		return empty, err
 	}
-	return PilotJob{JobID: "job_" + id, CaseID: "case_" + id, Release: releaseExpected, Envelope: envelope, Plan: plan, Artifact: artifact, Budget: budget, Qualification: qualification, Approvals: []ApprovalReference{}}, nil
+	if err := contracts.ValidateExecutionContextEnvelopeV2(envelope); err != nil {
+		return empty, fmt.Errorf("generated envelope rejected: %w", err)
+	}
+	if err := contracts.ValidateDeploymentPlan(plan); err != nil {
+		return empty, fmt.Errorf("generated plan rejected: %w", err)
+	}
+	return PilotJob{JobID: "job_" + id, CaseID: "case_" + id, Release: releaseExpected, RollbackProcedure: rollbackExpected, Envelope: envelope, Plan: plan, Artifact: artifact, Budget: budget, Qualification: qualification, Approvals: []ApprovalReference{}}, nil
 }

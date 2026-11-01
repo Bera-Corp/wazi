@@ -209,7 +209,11 @@ func run(ctx context.Context) error {
 	}
 	if mtlsEnabled {
 		httpServer.TLSConfig = server.TLSConfig(serverCert)
-		log.Printf("wazi control plane listening on %s (mTLS, deployment disabled)", *addr)
+		execution := "deployment disabled"
+		if *pilotSocket != "" {
+			execution = "approval-gated pilot dispatch enabled"
+		}
+		log.Printf("wazi control plane listening on %s (mTLS, %s)", *addr, execution)
 	} else {
 		log.Printf("wazi control plane listening on %s (plain HTTP, loopback dev mode, deployment disabled)", *addr)
 	}

@@ -61,6 +61,31 @@ os.chmod(database_dir,0o700)
 worker = str(context_root/'scripts/context_worker.py')
 database = str(database_dir/'context.sqlite')
 config['Context'] = {'PythonExecutable':'/usr/bin/python3','WorkerPath':worker,'DatabasePath':database}
+# RootlessKit copies up /etc at daemon startup. Put new bind sources on the
+# same mounted runtime filesystem already visible to the daemon. Preserve the
+# original config until the binary/config switch below can be rolled back.
+for package in config.get('Packages',[]):
+    project=package['Runtime']['Project']
+    assert re.fullmatch(r'wazi-(postgresql|mysql|nginx)-0[12]',project)
+    for name,old in list(package['SecretFiles'].items()):
+        if not old.startswith('/etc/wazi-phase2/secrets/'+project+'/'): continue
+        assert name in ('password','root-password','client')
+        original_file=pathlib.Path(old)
+        assert original_file.is_file() and not original_file.is_symlink()
+        assert original_file.stat().st_uid==0 and original_file.stat().st_mode & 0o027==0
+        secret_root=pathlib.Path('/srv/wazi-runtime/secrets')
+        secret_root.mkdir(mode=0o750,exist_ok=True); os.chown(secret_root,0,config['Runtime']['RuntimeUID']); os.chmod(secret_root,0o750)
+        run(['chattr','-p','30000','+P',str(secret_root)])
+        folder=secret_root/project
+        folder.mkdir(mode=0o750,exist_ok=True); os.chown(folder,0,config['Runtime']['RuntimeUID']); os.chmod(folder,0o750)
+        destination=folder/name
+        if destination.exists():
+            assert not destination.is_symlink() and destination.read_bytes()==original_file.read_bytes()
+        else:
+            with destination.open('xb') as handle:
+                handle.write(original_file.read_bytes()); handle.flush(); os.fsync(handle.fileno())
+        os.chown(destination,0,config['Runtime']['RuntimeUID']); os.chmod(destination,0o640)
+        package['SecretFiles'][name]=str(destination)
 config_backup = config_path.with_name(config_path.name+'.before-phase2-'+stamp)
 shutil.copy2(config_path,config_backup)
 dropins = []
@@ -102,6 +127,18 @@ try:
     run(['systemctl','restart','wazi-controlplane-dev.service'])
     run(['systemctl','start','wazi-pilot-agent.service'])
     run(['systemctl','is-active','--quiet','wazi-controlplane-dev.service','wazi-pilot-agent.service'])
+    import time
+    tls=ssl.create_default_context(cafile=config['Identity']['CAFile'])
+    deadline=time.monotonic()+15
+    while True:
+        try:
+            with urllib.request.urlopen('https://localhost:9443/healthz',context=tls,timeout=2) as response: assert response.status==200
+            catalog=json.loads(run(['sudo','-n','-u','wazi-runtime','curl','--fail','--silent','--unix-socket','/run/wazi-phase1/agent.sock','http://localhost/contexts/catalog']).stdout)
+            assert len(catalog)==len(config.get('Packages',[]))
+            break
+        except Exception:
+            if time.monotonic()>=deadline: raise
+            time.sleep(0.2)
     health()
     assert before == journal_hashes(), 'journal changed during inspection-only upgrade'
 except Exception:

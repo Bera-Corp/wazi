@@ -168,6 +168,13 @@ func (b *ContextBridge) Retrieve(ctx context.Context, job PilotJob) (json.RawMes
 	if err := boundary.ValidateContext(prepared); err != nil {
 		return nil, err
 	}
+	if proposal, ok := boundary.(interface {
+		ValidateProposal(context.Context, PreparedExecution) error
+	}); ok {
+		if err := proposal.ValidateProposal(ctx, prepared); err != nil {
+			return nil, err
+		}
+	}
 	local, err := b.Probe()
 	if err != nil {
 		return nil, err
@@ -230,6 +237,18 @@ func (b *ContextBridge) Retrieve(ctx context.Context, job PilotJob) (json.RawMes
 
 func (b *ContextBridge) Handler() http.Handler {
 	mux := http.NewServeMux()
+	proposalRejected := func(w http.ResponseWriter, err error) {
+		// This path handles only operator-generated plans and protected public
+		// facts. Secret file contents are never read by proposal preparation.
+		detail := err.Error()
+		if len(detail) > 512 {
+			detail = detail[:512]
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(422)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "context-verification-rejected", "reason": contextRejectionReason(err), "detail": detail})
+	}
 	respond := func(w http.ResponseWriter, raw []byte, err error) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
@@ -268,12 +287,12 @@ func (b *ContextBridge) Handler() http.Handler {
 		defer cancel()
 		job, err := b.Propose(ctx, request.Project, request.Operation, request.BackupID)
 		if err != nil {
-			respond(w, nil, err)
+			proposalRejected(w, err)
 			return
 		}
 		decision, err := b.Retrieve(ctx, job)
 		if err != nil {
-			respond(w, nil, err)
+			proposalRejected(w, err)
 			return
 		}
 		output, err := json.Marshal(map[string]any{"job": job, "context": decision})
@@ -359,7 +378,7 @@ func contextRejectionReason(err error) string {
 		{"revocation-rejected", []string{"revocation", "revoked"}},
 		{"signature-or-trust-rejected", []string{"signature", "signer", "signed release"}},
 		{"stale-input-rejected", []string{"expired", "fresh", "future", "max age"}},
-		{"resource-budget-rejected", []string{"budget", "resource", "memory", "quota", "storage", "cpu", "ram"}},
+		{"resource-budget-rejected", []string{"budget", "resource", "memory", "quota", "storage", "cpu", " ram", "rammb"}},
 		{"port-unavailable", []string{"port"}},
 		{"secret-reference-rejected", []string{"secret"}},
 	} {

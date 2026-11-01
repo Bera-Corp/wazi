@@ -5,6 +5,7 @@ package probe
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -54,11 +55,57 @@ func totalRAMMb() int64 {
 }
 
 func storageFreeMb(path string) int64 {
-	var stat syscall.Statfs_t
-	if err := syscall.Statfs(path, &stat); err != nil {
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
 		return 0
 	}
+	info, err := os.ReadFile("/proc/self/mountinfo")
+	if err != nil {
+		return 0
+	}
+	mount, err := mountpointForPath(resolved, info)
+	if err != nil {
+		return 0
+	}
+	var stat, directory syscall.Statfs_t
+	if err := syscall.Statfs(mount, &stat); err != nil {
+		return 0
+	}
+	if err := syscall.Statfs(resolved, &directory); err != nil || stat.Fsid != directory.Fsid || stat.Type != directory.Type {
+		return 0
+	}
+	// Host inventory reports backing-filesystem capacity. An inode's project
+	// quota is a different allocation: package admission independently verifies
+	// the cache/checkpoint pool and every application volume's hard quota.
 	return int64(stat.Bavail) * int64(stat.Bsize) / (1024 * 1024)
+}
+
+func mountpointForPath(path string, info []byte) (string, error) {
+	path = filepath.Clean(path)
+	if !filepath.IsAbs(path) {
+		return "", fmt.Errorf("storage path must be absolute")
+	}
+	best := ""
+	decode := strings.NewReplacer("\\040", " ", "\\011", "\t", "\\012", "\n", "\\134", "\\")
+	for _, line := range strings.Split(string(info), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) < 7 {
+			continue
+		}
+		target := decode.Replace(fields[4])
+		if !filepath.IsAbs(target) || filepath.Clean(target) != target {
+			continue
+		}
+		if path == target || target == "/" || strings.HasPrefix(path, target+"/") {
+			if len(target) > len(best) {
+				best = target
+			}
+		}
+	}
+	if best == "" {
+		return "", fmt.Errorf("storage filesystem mount unavailable")
+	}
+	return best, nil
 }
 
 // occupiedPorts reads the kernel socket tables. The IPv4 tables

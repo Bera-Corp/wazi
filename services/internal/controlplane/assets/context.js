@@ -50,7 +50,7 @@
   el('login').addEventListener('submit', event => { event.preventDefault(); run(async () => {
     const code = el('code').value; el('code').value = '';
     const value = await api('/v1/context-sessions/exchange', {code}); csrf = value.csrf;
-    for (const id of ['retrieve', 'inspect', 'deploy', 'refresh', 'propose']) el(id).disabled = false;
+    for (const id of ['retrieve', 'inspect', 'deploy', 'refresh']) el(id).disabled = false;
     const catalog = await api('/v1/context-catalog');
     el('package').replaceChildren();
     for (const item of catalog) {
@@ -58,7 +58,8 @@
       option.textContent = item.profile + ' · ' + item.project + ' · ' + item.releaseVersion + ' (pilot)';
       el('package').append(option);
     }
-    status('Operator session open for 15 minutes.');
+    el('propose').disabled = catalog.length === 0;
+    status(catalog.length ? 'Operator session open for 15 minutes.' : 'Session open. No package instances are enabled yet; the operator must finish catalog setup.');
   }); });
   el('retrieve').onclick = () => run(async () => {
     const text = el('job').value;

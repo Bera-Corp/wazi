@@ -43,11 +43,11 @@ func packageRenderFixture(t *testing.T, profile string) (*DockerPackageBoundary,
 			entries = append(entries, map[string]any{"service": shape.Service, "name": name, "default": item.value})
 		}
 		entries = append(entries, map[string]any{"service": shape.Service, "name": prefix + "_PASSWORD_FILE", "secretRef": "secret://" + profile + "/password"})
-		secrets["password"] = "/etc/wazi-phase2/secrets/" + project + "/password"
-		secrets["client"] = "/etc/wazi-phase2/secrets/" + project + "/client"
+		secrets["password"] = "/srv/wazi-runtime/secrets/" + project + "/password"
+		secrets["client"] = "/srv/wazi-runtime/secrets/" + project + "/client"
 		if profile == "mysql" {
 			entries = append(entries, map[string]any{"service": shape.Service, "name": "MYSQL_ROOT_PASSWORD_FILE", "secretRef": "secret://" + profile + "/root-password"})
-			secrets["root-password"] = "/etc/wazi-phase2/secrets/" + project + "/root-password"
+			secrets["root-password"] = "/srv/wazi-runtime/secrets/" + project + "/root-password"
 		}
 	}
 	release["environment"] = entries
@@ -198,9 +198,88 @@ func TestPackageRendererBindsInstanceInputs(t *testing.T) {
 	if err != nil || first == second {
 		t.Fatal("instance inputs were not bound")
 	}
-	b.config.SecretFiles["client"] = "/etc/wazi-phase2/secrets/wazi-postgresql-02/client"
+	b.config.SecretFiles["client"] = "/srv/wazi-runtime/secrets/wazi-postgresql-02/client"
 	third, err := b.rendererInputsDigest()
 	if err != nil || second == third {
 		t.Fatal("secret reference path was not bound")
+	}
+}
+
+func TestFailedDatabaseRestoreRetainsPreRestoreCheckpoint(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX checkpoint durability is qualified on Linux")
+	}
+	b, _ := packageRenderFixture(t, "postgresql")
+	b.config.Runtime.StateDirectory = t.TempDir()
+	b.core = &DockerPilotBoundary{config: b.config.Runtime}
+	mutations := 0
+	b.core.run = func(_ context.Context, input io.Reader, output io.Writer, args ...string) ([]byte, error) {
+		if args[0] == "ps" {
+			return []byte("container-id"), nil
+		}
+		command := strings.Join(args, " ")
+		if output != nil {
+			_, err := io.WriteString(output, "known-database-checkpoint")
+			return nil, err
+		}
+		if input != nil {
+			if _, err := io.Copy(io.Discard, input); err != nil {
+				return nil, err
+			}
+		}
+		if strings.Contains(command, "dropdb") {
+			mutations++
+		}
+		if strings.Contains(command, "--exit-on-error") {
+			return nil, fmt.Errorf("injected database restore failure")
+		}
+		return nil, nil
+	}
+	p := executorPrepared(t, "health.check", "{\"target\":\"http://localhost:3000/api/healthz\"}")
+	if err := b.backup(context.Background(), p, "bak_restore_failure", "backups"); err != nil {
+		t.Fatal(err)
+	}
+	envelope := parseReleaseObject(t, p.Envelope())
+	envelope["rollbackStrategy"] = map[string]any{"supported": false, "checkpointRequired": true, "checkpoint": map[string]any{"backupId": "bak_pre_declared", "volume": b.shape.Volume}}
+	p.envelopeRaw = canonical(t, envelope)
+	if err := b.restore(context.Background(), p, "bak_restore_failure", nil); err == nil || mutations != 0 {
+		t.Fatal("restore mutated data without its declared checkpoint")
+	}
+	if err := b.backup(context.Background(), p, "bak_pre_declared", "pre-restore"); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.restore(context.Background(), p, "bak_restore_failure", nil); err == nil {
+		t.Fatal("failed restore reported success")
+	}
+	if mutations != 1 {
+		t.Fatalf("database mutations=%d", mutations)
+	}
+	files, err := filepath.Glob(filepath.Join(b.config.Runtime.StateDirectory, "pre-restore", "*.dump"))
+	if err != nil || len(files) != 1 {
+		t.Fatal("pre-restore checkpoint missing")
+	}
+	id := strings.TrimSuffix(filepath.Base(files[0]), ".dump")
+	file, record, err := b.verifiedCheckpoint(p, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file.Close()
+	if record.PayloadDigest == "" || record.Bytes == 0 {
+		t.Fatal("pre-restore checkpoint lacks bound evidence")
+	}
+}
+
+func TestExistingInstanceDeniedBeforeInstallApproval(t *testing.T) {
+	b, _ := packageRenderFixture(t, "mysql")
+	b.core = &DockerPilotBoundary{}
+	b.core.run = func(_ context.Context, _ io.Reader, _ io.Writer, args ...string) ([]byte, error) {
+		if strings.Join(args, " ") != "volume ls --format {{.Name}}" {
+			t.Fatal("proposal attempted mutation")
+		}
+		return []byte("wazi-mysql-01_data\n"), nil
+	}
+	p := PreparedExecution{planRaw: []byte("{\"operation\":\"install\"}")}
+	if err := b.ValidateProposal(context.Background(), p); err == nil {
+		t.Fatal("initialized instance accepted for fresh installation")
 	}
 }

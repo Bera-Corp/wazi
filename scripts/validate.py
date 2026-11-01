@@ -523,7 +523,11 @@ def plan_binding_errors(plan, envelope, manifest, host, policy, artifact,
         if manifest and step.get("capability") == "compose.pull" and params.get("imageDigest") != image_digests.get(params.get("service")):
             errors.append(f"step {step['stepId']}: compose.pull imageDigest does not match manifest image digest")
         if step.get("capability") == "compose.up":
-            if artifact and params.get("composeArtifactDigest") != artifact.get("composeDigest"):
+            # Renderer 0.5 binds protected instance inputs as well as bytes.
+            # Its plan parameter matches the Go executor's artifact-record
+            # binding; older renderers retain their existing byte-digest form.
+            expected_compose = (canonical_digest(artifact) if (artifact or {}).get('renderer',{}).get('version')=='0.5.0' else (artifact or {}).get('composeDigest'))
+            if artifact and params.get("composeArtifactDigest") != expected_compose:
                 errors.append(f"step {step['stepId']}: compose.up composeArtifactDigest does not match artifact")
             if artifact and params.get("projectName") != artifact.get("projectName"):
                 errors.append(f"step {step['stepId']}: compose.up projectName does not match artifact")

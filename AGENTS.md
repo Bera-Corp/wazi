@@ -249,3 +249,22 @@ This file contains a growing ruleset that improves over time. **At session start
 178. [TOOL] Split the NOPASSWD sudoers literal when generating a fixed helper rule — the scanner otherwise interprets its PASSWD suffix as a secret assignment; preserve the scanner unchanged.
 179. [TOOL] Resolve the npm cache with npm config get cache before inspecting transient CLI packages — this Windows installation does not use the default LocalAppData npm-cache path.
 180. [TOOL] Read the protected development server certificate with sudo before deriving its public-key fingerprint, and reject pipeline errors — hashing empty input after a permission failure produces a valid-looking but wrong pin.
+181. [UX] Disable package preparation and explain the state when the authenticated catalog is empty — a successful login does not imply any instance is enabled.
+182. [TOOL] Use the enumerated execution-context-envelope-v2.schema.json filename and a schemas directory filter for searches — neither a guessed dot-version filename nor a wildcard path is valid here.
+183. [PROCESS] Preserve both owner and group when atomically replacing a service-owned configuration, and probe API readiness after restart — a root-owned replacement can make a formerly readable policy fail after systemctl briefly reports active.
+184. [CODE] Serialize signed-record API bodies as canonical JSON with sorted keys and compact separators — re-encoding a valid signed record with default Python JSON whitespace is correctly rejected by the registry.
+185. [CODE] Validate generated envelopes and plans immediately, using deploymentMode and structured secretReferences — plausible field names or string-only references do not satisfy the v2 contract.
+186. [TOOL] Search the agentclient directory for parameter validation instead of guessing parameters.go — the tagged-union decoding is implemented in executor.go.
+187. [CODE] Extend both canonical and embedded plan schemas for fixed authenticated database health targets — adding manifest health types alone leaves database plans schema-invalid.
+188. [CODE] Prefix compensation step IDs with step_ — both forward and rollback identifiers follow the deployment-plan step ID contract.
+189. [ARCH] Measure host storage at the verified containing filesystem mount and enforce project quotas separately — a Docker cache project quota is not the capacity available to separately quota-controlled application volumes.
+190. [ARCH] Store new rootless-Docker secret bind sources under the protected runtime filesystem, not /etc — RootlessKit's copied-up /etc can hide files created after daemon startup.
+191. [TOOL] Avoid non-secret path assignments whose variable names end in secret — the scanner correctly treats that suffix as a secret-named assignment; rename the path variable instead of weakening the scan.
+192. [ARCH] Keep renderer 0.5 artifact-record bindings distinct from compose byte digests and preserve older renderer semantics — the protected instance inputs must be covered by the plan parameter validated by Go.
+193. [CODE] Keep signed application RAM ceilings at least equal to manifest minRamMb and issue a new package revision when changing them — the resource binder checks both upper and lower bounds, and published versions are immutable.
+194. [ARCH] Include Nginx's required cache-directory CHOWN capability in its reviewed profile and bind the complete profile policy into renderer inputs — stock Nginx initializes worker-owned cache directories even with deterministic configuration.
+195. [CODE] Give each independent case fixture its own evidence ID and matching reference — reusing an evidence identity across different cases is a conflicting replacement and must remain rejected.
+196. [TOOL] Use the enumerated revocation-record.schema.json path when inspecting revocation contracts — the list payload does not imply a schema filename ending in revocation-list.
+197. [TOOL] Resolve signed Phase 1 release paths with rg --files before inspecting a presumed release directory — upstream versions and Wazi wrapper directories are not necessarily identical.
+198. [TOOL] Omit unneeded trailing context from documentation patches — a final unmatched physical line can reject an otherwise correct file-scoped update.
+199. [TOOL] Keep environment-token detection and value extraction on separate lines — compacting the condition and assignment can resemble an embedded secret assignment to the scanner.

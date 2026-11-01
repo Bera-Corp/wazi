@@ -18,6 +18,13 @@ class PackageReleaseShapeTests(unittest.TestCase):
             self.assertFalse(records['manifest']['release']['rollback']['supported'])
             self.assertNotIn('rollback', records)
             self.assertEqual(records['procedure-restore']['requiresCheckpoint'], True)
+            for operation in ('install','upgrade','uninstall','restore'):
+                forward=records['procedure-'+operation]
+                compensation=records['procedure-compensate-'+operation]
+                self.assertEqual(forward['rollbackProcedureId'],compensation['procedureId'])
+                self.assertEqual(compensation['operation'],'rollback')
+            restore=records['procedure-restore']['capabilitySequence']
+            self.assertLess(restore.index('volume.backup'),restore.index('volume.restore'))
 
 
 if __name__ == '__main__':

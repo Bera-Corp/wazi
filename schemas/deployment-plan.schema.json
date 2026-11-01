@@ -89,7 +89,7 @@
       },
       "healthCheck": {
         "type": "object", "additionalProperties": false, "required": ["target"],
-        "properties": { "target": { "type": "string", "pattern": "^https?://[^\\s]+$" },
+        "properties": { "target": { "type": "string", "pattern": "^(https?://[^\\s]+|postgresql://local/wazi|mysql://local/wazi)$" },
           "expectedStatus": { "type": "integer", "minimum": 100, "maximum": 599 },
           "timeoutSeconds": { "type": "integer", "minimum": 1, "maximum": 120 } }
       },

@@ -226,10 +226,30 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 			return err
 		}
 	}
-	beforeID := fmt.Sprintf("bak_pre_%x", sha256.Sum256([]byte(p.Binding().PlanDigest+id)))
-	beforeID = beforeID[:48]
-	if err := b.backup(ctx, p, beforeID, "pre-restore"); err != nil {
-		return fmt.Errorf("pre-restore checkpoint required: %w", err)
+	envelope, parseErr := parseCanonicalObject(p.Envelope(), "restore envelope")
+	if parseErr != nil {
+		return parseErr
+	}
+	strategy, _ := objectValue(envelope["rollbackStrategy"])
+	checkpoint, declared := objectValue(strategy["checkpoint"])
+	if declared {
+		beforeID, _ := checkpoint["backupId"].(string)
+		if !strings.HasPrefix(beforeID, "bak_pre_") || beforeID == id || checkpoint["volume"] != b.shape.Volume {
+			return fmt.Errorf("pre-restore checkpoint reference invalid")
+		}
+		before, _, err := b.verifiedCheckpoint(p, beforeID)
+		if err != nil {
+			return fmt.Errorf("declared pre-restore checkpoint required: %w", err)
+		}
+		before.Close()
+	} else {
+		// Retain the adapter's defensive checkpoint for older internal callers.
+		// New package plans always declare and create it as an approved step.
+		beforeID := fmt.Sprintf("bak_pre_%x", sha256.Sum256([]byte(p.Binding().PlanDigest+id)))
+		beforeID = beforeID[:48]
+		if err := b.backup(ctx, p, beforeID, "pre-restore"); err != nil {
+			return fmt.Errorf("pre-restore checkpoint required: %w", err)
+		}
 	}
 	switch b.config.Profile {
 	case "postgresql":
@@ -274,7 +294,7 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 		if resolveErr != nil {
 			return resolveErr
 		}
-		_, err = b.core.run(ctx, nil, nil, "run", "--rm", "--network", "none", "--memory", "134217728", "--cpus", "0.25", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--pull", "never",
+		_, err = b.core.run(ctx, nil, nil, "run", "--rm", "--network", "none", "--memory", "134217728", "--cpus", "0.25", "--cap-drop", "ALL", "--cap-add", "CHOWN", "--security-opt", "no-new-privileges:true", "--pull", "never",
 			"--mount", "type=bind,source="+staged+",target=/etc/nginx,readonly", "--entrypoint", "nginx", image, "-t")
 		if err != nil {
 			return fmt.Errorf("restored nginx configuration does not validate")
