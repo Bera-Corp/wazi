@@ -1,0 +1,520 @@
+{
+  "aggregateMemoryBytes": 2415919104,
+  "aggregateNanoCpus": 3250000000,
+  "aiCalls": 0,
+  "aiProvider": "deferred by owner",
+  "caseStoreCounts": {
+    "cases": 35,
+    "contexts": 28,
+    "evidence": 41
+  },
+  "caseStoreCountsUnchangedAcrossAgentRestart": true,
+  "containers": [
+    {
+      "capAdd": [
+        "CAP_CHOWN",
+        "CAP_NET_BIND_SERVICE",
+        "CAP_SETGID",
+        "CAP_SETUID"
+      ],
+      "capDrop": [
+        "ALL"
+      ],
+      "imageConfig": "sha256:08b02acd178cc8be6be62c78db56676c129b0fa28dc580030e9bc464c30c1d7e",
+      "memoryBytes": 134217728,
+      "nanoCpus": 250000000,
+      "portBindings": {
+        "80/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "18080"
+          }
+        ]
+      },
+      "project": "wazi-nginx-02"
+    },
+    {
+      "capAdd": [
+        "CAP_CHOWN",
+        "CAP_DAC_OVERRIDE",
+        "CAP_FOWNER",
+        "CAP_SETGID",
+        "CAP_SETUID"
+      ],
+      "capDrop": [
+        "ALL"
+      ],
+      "imageConfig": "sha256:e97ecbf22fcd506581072391a1a9da09a2de5f2b89543ca783368e74f80db324",
+      "memoryBytes": 805306368,
+      "nanoCpus": 500000000,
+      "portBindings": {
+        "3306/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "13306"
+          }
+        ]
+      },
+      "project": "wazi-mysql-02"
+    },
+    {
+      "capAdd": [
+        "CAP_CHOWN",
+        "CAP_DAC_OVERRIDE",
+        "CAP_FOWNER",
+        "CAP_SETGID",
+        "CAP_SETUID"
+      ],
+      "capDrop": [
+        "ALL"
+      ],
+      "imageConfig": "sha256:f7d2ac4305d0b236f37e2f70e8eff12a1fa88333cdc7fd1f0eb2fe22cc1ac687",
+      "memoryBytes": 402653184,
+      "nanoCpus": 500000000,
+      "portBindings": {
+        "5432/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "15432"
+          }
+        ]
+      },
+      "project": "wazi-postgresql-02"
+    },
+    {
+      "capAdd": null,
+      "capDrop": [
+        "ALL"
+      ],
+      "imageConfig": "sha256:07a1cbdc452fe6ba4984b8733874c4ff729a29a5c318c073911c0fc5a39e2bae",
+      "memoryBytes": 1073741824,
+      "nanoCpus": 2000000000,
+      "portBindings": {
+        "3000/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "13000"
+          }
+        ]
+      },
+      "project": "wazi-gitea-phase1"
+    }
+  ],
+  "databaseReadiness": "authenticated SELECT 1 passed",
+  "giteaHealth": "pass",
+  "giteaProofSha256": "728836b371192e623885770f40710bbe833d0f76d6cdbadfd9495621c25dc3e6",
+  "immich": "live qualification deferred by owner",
+  "journalFilesUnchangedAcrossAgentRestart": 41,
+  "kind": "phase2-live-package-report",
+  "packageOperations": [
+    {
+      "applicationId": "org.postgresql.postgresql",
+      "caseId": "case_31c536c1eba60b4366e4324e",
+      "createdAt": "2026-10-31T13:05:15.992068657Z",
+      "envelopeDigest": "sha256:17a5066062ddf2a5b20f929e5cb33d751c6e9307d3114d85179d3b7f7d4d01ca",
+      "envelopeId": "env_31c536c1eba60b4366e4324e",
+      "hostId": "host_bera-003",
+      "jobId": "job_31c536c1eba60b4366e4324e",
+      "journalSha256": "1f28b7f8ced1baea92e32c8388758958b624a04aaa06972cd11ba7ee5f09a8b3",
+      "manifestDigest": "sha256:7698ba620b353c6efe847c5e23cc63a8e8ee42592bef0eb9c860624434bfc1f6",
+      "operation": "install",
+      "operationId": "op_31c536c1eba60b4366e4324e",
+      "planDigest": "sha256:d4e289c172bbed4926781327e4aacff7bc91cfd2fc039a6b4719cd62a29cedd4",
+      "planId": "plan_31c536c1eba60b4366e4324e",
+      "state": "blocked",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-10-31T13:08:25.771208354Z"
+    },
+    {
+      "applicationId": "org.postgresql.postgresql",
+      "caseId": "case_bb4e8503a360deb550c55a0d",
+      "createdAt": "2026-11-01T08:28:19.061877009Z",
+      "envelopeDigest": "sha256:7a0369513bdef17e0a988136d59f57ae914ab51484edecaaea3afac5b3cdd26f",
+      "envelopeId": "env_bb4e8503a360deb550c55a0d",
+      "hostId": "host_bera-003",
+      "jobId": "job_bb4e8503a360deb550c55a0d",
+      "journalSha256": "d281411469db17ef65eedb82d1ee7ae3f8ea59b2c561a545ae239ada342e4f1b",
+      "manifestDigest": "sha256:7698ba620b353c6efe847c5e23cc63a8e8ee42592bef0eb9c860624434bfc1f6",
+      "operation": "install",
+      "operationId": "op_bb4e8503a360deb550c55a0d",
+      "planDigest": "sha256:6ac0f6b9c0dad8244b1fd4b0d669ab4e7fc93c8734d3e5c5f5616436a22b5755",
+      "planId": "plan_bb4e8503a360deb550c55a0d",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:28:25.075697976Z"
+    },
+    {
+      "applicationId": "org.postgresql.postgresql",
+      "caseId": "case_88d57e2801c5fc821a7f864f",
+      "createdAt": "2026-11-01T08:29:14.273701481Z",
+      "envelopeDigest": "sha256:27255256ce42139e062868634c959c4f145f91f054e1ac67e30c7c3448c91092",
+      "envelopeId": "env_88d57e2801c5fc821a7f864f",
+      "hostId": "host_bera-003",
+      "jobId": "job_88d57e2801c5fc821a7f864f",
+      "journalSha256": "a8e81b4fe1dce27af16be0d536509ec25e47556c0b62b3a49f53b53c29e771cd",
+      "manifestDigest": "sha256:7698ba620b353c6efe847c5e23cc63a8e8ee42592bef0eb9c860624434bfc1f6",
+      "operation": "backup",
+      "operationId": "op_88d57e2801c5fc821a7f864f",
+      "planDigest": "sha256:9b0ae66c8c8b19be45c5d0bc773847bb62201a03eee771243b0b0c5796fe918f",
+      "planId": "plan_88d57e2801c5fc821a7f864f",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:29:18.014364908Z"
+    },
+    {
+      "applicationId": "org.postgresql.postgresql",
+      "caseId": "case_bff56c9cd0195c9a3663014b",
+      "createdAt": "2026-11-01T08:29:23.661780674Z",
+      "envelopeDigest": "sha256:9007678705fa92d8fb3c0c6fb1275c7ba5e948ceca0a1397f042d54e5956268b",
+      "envelopeId": "env_bff56c9cd0195c9a3663014b",
+      "hostId": "host_bera-003",
+      "jobId": "job_bff56c9cd0195c9a3663014b",
+      "journalSha256": "d861db01504cac485c455af094536cfc27410fe288befd3d62f2d19aaac0d069",
+      "manifestDigest": "sha256:7698ba620b353c6efe847c5e23cc63a8e8ee42592bef0eb9c860624434bfc1f6",
+      "operation": "restore",
+      "operationId": "op_bff56c9cd0195c9a3663014b",
+      "planDigest": "sha256:46254575b18667d8ceba607e31fae04c191693ef6f644117a4d45348bc1db24c",
+      "planId": "plan_bff56c9cd0195c9a3663014b",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:29:29.419160575Z"
+    },
+    {
+      "applicationId": "org.postgresql.postgresql",
+      "caseId": "case_521f283389538e714014cd4d",
+      "createdAt": "2026-11-01T08:30:50.677124545Z",
+      "envelopeDigest": "sha256:3244b42655df7bfdfff424e512d4bc83dbe68303bd8004b27a8ca1c6d17caffd",
+      "envelopeId": "env_521f283389538e714014cd4d",
+      "hostId": "host_bera-003",
+      "jobId": "job_521f283389538e714014cd4d",
+      "journalSha256": "f6a26e0c85f36df236374c0e945c145b9d6b2f24d7e1e3273aa6a2996d114fa6",
+      "manifestDigest": "sha256:7698ba620b353c6efe847c5e23cc63a8e8ee42592bef0eb9c860624434bfc1f6",
+      "operation": "uninstall",
+      "operationId": "op_521f283389538e714014cd4d",
+      "planDigest": "sha256:81581772d99e8db16e2efebaaab9d7138218bcb3a0d4b9b9f39329bc4bf69caf",
+      "planId": "plan_521f283389538e714014cd4d",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:30:53.550751499Z"
+    },
+    {
+      "applicationId": "org.postgresql.postgresql",
+      "caseId": "case_66ae1c61bc75ea86bf544abf",
+      "createdAt": "2026-11-01T08:30:58.27335342Z",
+      "envelopeDigest": "sha256:db52b6091bed7065c127f0fcd75efa2f305eb241a713c1a70d29165e1b1ad8a0",
+      "envelopeId": "env_66ae1c61bc75ea86bf544abf",
+      "hostId": "host_bera-003",
+      "jobId": "job_66ae1c61bc75ea86bf544abf",
+      "journalSha256": "58a39e529342f7164c1488c9a4f7efd19e1f188fce01fdfa715a36db1e624494",
+      "manifestDigest": "sha256:7698ba620b353c6efe847c5e23cc63a8e8ee42592bef0eb9c860624434bfc1f6",
+      "operation": "install",
+      "operationId": "op_66ae1c61bc75ea86bf544abf",
+      "planDigest": "sha256:20634795971bde3f375d33f9329cc50567443615bc8f1bbbeeec07125f21b492",
+      "planId": "plan_66ae1c61bc75ea86bf544abf",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:31:04.247722043Z"
+    },
+    {
+      "applicationId": "com.mysql.mysql",
+      "caseId": "case_29d3cc839794f84a7971e9f7",
+      "createdAt": "2026-11-01T08:37:13.007353305Z",
+      "envelopeDigest": "sha256:42df3a38bd0081554a7749ce46c5ce42921224dee077ddeb2c3f53968781c53a",
+      "envelopeId": "env_29d3cc839794f84a7971e9f7",
+      "hostId": "host_bera-003",
+      "jobId": "job_29d3cc839794f84a7971e9f7",
+      "journalSha256": "a2e80e736e0fb87e3db9c7795bae98f02abdc30d4eab837027d72dc5e3c5e487",
+      "manifestDigest": "sha256:2742d1c3cd93ae54d4f9ab3737e3a660c8bfb6a5eeb35c5b536f2bd976af462b",
+      "operation": "install",
+      "operationId": "op_29d3cc839794f84a7971e9f7",
+      "planDigest": "sha256:95ef59fa6ba253904d28ed0070d2b5dcfd9b37b03a55ef7b6f4a330a6a104db9",
+      "planId": "plan_29d3cc839794f84a7971e9f7",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:37:27.65504543Z"
+    },
+    {
+      "applicationId": "com.mysql.mysql",
+      "caseId": "case_9be766f85ef5c92c7ca6d874",
+      "createdAt": "2026-11-01T08:38:13.616045779Z",
+      "envelopeDigest": "sha256:21a3e074dff7f6b6583959f01df04d4fcab83f4f1362eacc5896488f660559d0",
+      "envelopeId": "env_9be766f85ef5c92c7ca6d874",
+      "hostId": "host_bera-003",
+      "jobId": "job_9be766f85ef5c92c7ca6d874",
+      "journalSha256": "4c254d9f5dd10f18be146d3759d3529223967ef83d06d6b62539503fdf223db9",
+      "manifestDigest": "sha256:2742d1c3cd93ae54d4f9ab3737e3a660c8bfb6a5eeb35c5b536f2bd976af462b",
+      "operation": "backup",
+      "operationId": "op_9be766f85ef5c92c7ca6d874",
+      "planDigest": "sha256:6587d7031a935b61782204f1c56049f235b607aa29e180b90882853f940f9878",
+      "planId": "plan_9be766f85ef5c92c7ca6d874",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:38:17.54929791Z"
+    },
+    {
+      "applicationId": "com.mysql.mysql",
+      "caseId": "case_c59d72e067ba6c709ee50690",
+      "createdAt": "2026-11-01T08:38:23.022783755Z",
+      "envelopeDigest": "sha256:d9b9ccf0e755f152a34764411584f4388fd12eb65f6d6b0c43e3ed2628edd16e",
+      "envelopeId": "env_c59d72e067ba6c709ee50690",
+      "hostId": "host_bera-003",
+      "jobId": "job_c59d72e067ba6c709ee50690",
+      "journalSha256": "24444a73867676aa1908f368182006d2d2ae921f99a7db8b68d1066c553d1b1d",
+      "manifestDigest": "sha256:2742d1c3cd93ae54d4f9ab3737e3a660c8bfb6a5eeb35c5b536f2bd976af462b",
+      "operation": "restore",
+      "operationId": "op_c59d72e067ba6c709ee50690",
+      "planDigest": "sha256:a2f0742b35efd640a1f92e85918cdcc5b515b901873328582fd82fa05f240734",
+      "planId": "plan_c59d72e067ba6c709ee50690",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:38:28.955107018Z"
+    },
+    {
+      "applicationId": "com.mysql.mysql",
+      "caseId": "case_2a53ac906eae72b01de46e34",
+      "createdAt": "2026-11-01T08:38:34.516591296Z",
+      "envelopeDigest": "sha256:52e363fd5c4cb4d952157f62d31b0a2389b54b63ecda5a131105cb35abe881e2",
+      "envelopeId": "env_2a53ac906eae72b01de46e34",
+      "hostId": "host_bera-003",
+      "jobId": "job_2a53ac906eae72b01de46e34",
+      "journalSha256": "0a23e14df0485744654019cd9124cc1d181cf8c262317ec8553e3bee3264da3c",
+      "manifestDigest": "sha256:2742d1c3cd93ae54d4f9ab3737e3a660c8bfb6a5eeb35c5b536f2bd976af462b",
+      "operation": "uninstall",
+      "operationId": "op_2a53ac906eae72b01de46e34",
+      "planDigest": "sha256:90f1f6886074d44a79883080657d64efbd38b3e410f39114d863632b5aadf706",
+      "planId": "plan_2a53ac906eae72b01de46e34",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:38:38.308192026Z"
+    },
+    {
+      "applicationId": "com.mysql.mysql",
+      "caseId": "case_e4bf7e5dbdf11fd54206b285",
+      "createdAt": "2026-11-01T08:38:43.616171934Z",
+      "envelopeDigest": "sha256:d93245dcd4d00591496fc3a52609fd4d8dd54ced235f875eb07f8c650a7cf0ec",
+      "envelopeId": "env_e4bf7e5dbdf11fd54206b285",
+      "hostId": "host_bera-003",
+      "jobId": "job_e4bf7e5dbdf11fd54206b285",
+      "journalSha256": "f2e1d44142b81c529f47e2f467227c99eab19a7f1b1129d164d4f6f192bb28cb",
+      "manifestDigest": "sha256:2742d1c3cd93ae54d4f9ab3737e3a660c8bfb6a5eeb35c5b536f2bd976af462b",
+      "operation": "install",
+      "operationId": "op_e4bf7e5dbdf11fd54206b285",
+      "planDigest": "sha256:a0bdf739d438391aac680789f9aa69c9c0f863e0b85d436d00de3433b7dd2dac",
+      "planId": "plan_e4bf7e5dbdf11fd54206b285",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:38:59.275000963Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_03eead0bbfcb126c4f6bfdb9",
+      "createdAt": "2026-11-01T08:45:41.130550337Z",
+      "envelopeDigest": "sha256:479e99bd4372a046c12e677d9b0b79afca94ceaca5643277f1b59dd460e32d2f",
+      "envelopeId": "env_03eead0bbfcb126c4f6bfdb9",
+      "hostId": "host_bera-003",
+      "jobId": "job_03eead0bbfcb126c4f6bfdb9",
+      "journalSha256": "d78a1f4a10fde69f5106a4878d7c4ccdad1511ba85850c49c4069215a3f5ef45",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "install",
+      "operationId": "op_03eead0bbfcb126c4f6bfdb9",
+      "planDigest": "sha256:0953378fbf46ed93754e2c84a2579eef58c4ae3988ba0806f3d3521dcea961b5",
+      "planId": "plan_03eead0bbfcb126c4f6bfdb9",
+      "state": "failed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:47:16.244091713Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_2541fdadcda8195074de6bf1",
+      "createdAt": "2026-11-01T08:49:21.488342333Z",
+      "envelopeDigest": "sha256:151750df8039d665b8d08b09deb421bc8771d260ca0d998e06a2dcae63bc2c4c",
+      "envelopeId": "env_2541fdadcda8195074de6bf1",
+      "hostId": "host_bera-003",
+      "jobId": "job_2541fdadcda8195074de6bf1",
+      "journalSha256": "12697580c6df98e6401d858a6c3b477fec8278a7035ec507c869cb23a548c019",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "upgrade",
+      "operationId": "op_2541fdadcda8195074de6bf1",
+      "planDigest": "sha256:f0080ac38f6030793f8d92bc6c2c7bd158a1d7eaf93a135796f347856c02f23e",
+      "planId": "plan_2541fdadcda8195074de6bf1",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:49:26.81438815Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_5c53303fb68d7b2676b88e7a",
+      "createdAt": "2026-11-01T08:51:12.898783632Z",
+      "envelopeDigest": "sha256:3de31e66eabe25323b162a3ce96a7a7bcbd9166d07a31523bbce9962070d7443",
+      "envelopeId": "env_5c53303fb68d7b2676b88e7a",
+      "hostId": "host_bera-003",
+      "jobId": "job_5c53303fb68d7b2676b88e7a",
+      "journalSha256": "88a2e1779f9ad10acbf86c77c88322838614354a84140c021c0bb63da87d92ad",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "backup",
+      "operationId": "op_5c53303fb68d7b2676b88e7a",
+      "planDigest": "sha256:4ac686f9d4a9df0285973e40dfb9623fcbc2b3c62dd065cd347a4bc7a060b4ff",
+      "planId": "plan_5c53303fb68d7b2676b88e7a",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:51:17.015394718Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_76e48b266f848326a91ed826",
+      "createdAt": "2026-11-01T08:51:24.495211196Z",
+      "envelopeDigest": "sha256:20e04d5c3dc26e29a9ff129e847879397898ce4e86cddbfb50f3ffd6e0082c6e",
+      "envelopeId": "env_76e48b266f848326a91ed826",
+      "hostId": "host_bera-003",
+      "jobId": "job_76e48b266f848326a91ed826",
+      "journalSha256": "2e91d79f738c7e5e42e87666bc84b6de0c7f49bd54497cdbf803c2d45f3d34a9",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "restore",
+      "operationId": "op_76e48b266f848326a91ed826",
+      "planDigest": "sha256:9884c0c6e0f9536b2482350371f0277db4c6db89eaf8415a0c6c9742e1a242ce",
+      "planId": "plan_76e48b266f848326a91ed826",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:51:32.522489699Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_6c0ce0acc352882b7d5a84b7",
+      "createdAt": "2026-11-01T08:54:05.187972547Z",
+      "envelopeDigest": "sha256:32435f72cce36cdc4fcba6f81f7a67c955f31bdb6b6025de60e7a649aed3bb95",
+      "envelopeId": "env_6c0ce0acc352882b7d5a84b7",
+      "hostId": "host_bera-003",
+      "jobId": "job_6c0ce0acc352882b7d5a84b7",
+      "journalSha256": "e430061561512fc81215234aa20b8238b86f1feba95c7a9f4e9257afcbe35551",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "uninstall",
+      "operationId": "op_6c0ce0acc352882b7d5a84b7",
+      "planDigest": "sha256:ca5ce2f1aa5e1af2396627db7976a5b2ccfa9f64cebf21765bda4497b5d0250c",
+      "planId": "plan_6c0ce0acc352882b7d5a84b7",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:54:08.276173058Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_b05cf8bbaa2a937e90bc180d",
+      "createdAt": "2026-11-01T08:54:14.70580285Z",
+      "envelopeDigest": "sha256:a6cb404ccb4db6b8af13e0a0a56ba24f399a5a26655f26e958a328715d90c08d",
+      "envelopeId": "env_b05cf8bbaa2a937e90bc180d",
+      "hostId": "host_bera-003",
+      "jobId": "job_b05cf8bbaa2a937e90bc180d",
+      "journalSha256": "4207697cebec5705175c3104efa3c87b86e7d648ef7e786ea9a5189148e29360",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "install",
+      "operationId": "op_b05cf8bbaa2a937e90bc180d",
+      "planDigest": "sha256:7f22f4b531742c41c788f742a53b91c985755940c5867b9bce50c06d49a145fc",
+      "planId": "plan_b05cf8bbaa2a937e90bc180d",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:54:20.185974647Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_7ae15bb26b4c7d12f363f991",
+      "createdAt": "2026-11-01T08:54:24.995073771Z",
+      "envelopeDigest": "sha256:d581ed72864b0a51224bcffad22494094b9b812d84e3c0771a86fa90485dbaba",
+      "envelopeId": "env_7ae15bb26b4c7d12f363f991",
+      "hostId": "host_bera-003",
+      "jobId": "job_7ae15bb26b4c7d12f363f991",
+      "journalSha256": "bac4139ad1f988632f6567dd10cfbc8c9b83e158defc9dcee4833a6184b985e2",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "uninstall",
+      "operationId": "op_7ae15bb26b4c7d12f363f991",
+      "planDigest": "sha256:a7b152ba37e26aeaf0fd38cfdae3666912cf6b0d32fbe26d36ab46d7ca8a2ab0",
+      "planId": "plan_7ae15bb26b4c7d12f363f991",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:54:28.072344853Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_69cc87f4bc497718ef775b69",
+      "createdAt": "2026-11-01T08:54:35.294196033Z",
+      "envelopeDigest": "sha256:995b1c22a7909f8ffe5665794d031cab64e8ed03ac5b066e87de19962053e6a6",
+      "envelopeId": "env_69cc87f4bc497718ef775b69",
+      "hostId": "host_bera-003",
+      "jobId": "job_69cc87f4bc497718ef775b69",
+      "journalSha256": "bf3197ecc8d00936fb08e84768a9d6e7961e89d1fadb64318c6c3f75c2c1b7d9",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "install",
+      "operationId": "op_69cc87f4bc497718ef775b69",
+      "planDigest": "sha256:d61dd47ef5e5ff8ab88b351c7e28d4671ef449b55da0da0834e5e7d6d56bed3c",
+      "planId": "plan_69cc87f4bc497718ef775b69",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:54:40.716861942Z"
+    },
+    {
+      "applicationId": "com.mysql.mysql",
+      "caseId": "case_ee7d70dc17f0b31d41eca6dd",
+      "createdAt": "2026-11-01T08:55:58.784838628Z",
+      "envelopeDigest": "sha256:a686d13b278cebad37a305f5d22c3b0f13ec59f60bd709453e49df394d59f0a7",
+      "envelopeId": "env_ee7d70dc17f0b31d41eca6dd",
+      "hostId": "host_bera-003",
+      "jobId": "job_ee7d70dc17f0b31d41eca6dd",
+      "journalSha256": "f121065947787f5b5aeec8673fb0e5aa5b9c94939e8e3391d3ef64fce0969410",
+      "manifestDigest": "sha256:2742d1c3cd93ae54d4f9ab3737e3a660c8bfb6a5eeb35c5b536f2bd976af462b",
+      "operation": "backup",
+      "operationId": "op_ee7d70dc17f0b31d41eca6dd",
+      "planDigest": "sha256:141f439ce094b04ab2b461222176e297ae0525f2e38a67ff21d40be136b3b0c5",
+      "planId": "plan_ee7d70dc17f0b31d41eca6dd",
+      "state": "failed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:57:29.798982704Z"
+    },
+    {
+      "applicationId": "com.mysql.mysql",
+      "caseId": "case_fcaa9069da89517705892953",
+      "createdAt": "2026-11-01T08:57:38.599555382Z",
+      "envelopeDigest": "sha256:206f69f18a47d1a0ed9e0ab307b3a236c6867d304017ecd79cbb510550956973",
+      "envelopeId": "env_fcaa9069da89517705892953",
+      "hostId": "host_bera-003",
+      "jobId": "job_fcaa9069da89517705892953",
+      "journalSha256": "097362249bd5cef7b12b89acf6c79eeb3b54abcc931df22fd19928f808e934fe",
+      "manifestDigest": "sha256:2742d1c3cd93ae54d4f9ab3737e3a660c8bfb6a5eeb35c5b536f2bd976af462b",
+      "operation": "upgrade",
+      "operationId": "op_fcaa9069da89517705892953",
+      "planDigest": "sha256:6aabf5e261b79622f312b4958edf283b649fed82705809d1183fdc6ea411541a",
+      "planId": "plan_fcaa9069da89517705892953",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T08:57:45.0379179Z"
+    },
+    {
+      "applicationId": "org.nginx.nginx",
+      "caseId": "case_fc7795c988a122ef39db99e5",
+      "createdAt": "2026-11-01T09:58:33.436615774Z",
+      "envelopeDigest": "sha256:46c2dd25db97afec7ff7a5f8b89038a9d5df2f862a91d68da2c5134e54a5777b",
+      "envelopeId": "env_fc7795c988a122ef39db99e5",
+      "hostId": "host_bera-003",
+      "jobId": "job_fc7795c988a122ef39db99e5",
+      "journalSha256": "42edd4723d09e403a4bd10d42bc6e7090350efef1f85aa92cce9223e62f63619",
+      "manifestDigest": "sha256:bc7e2182ec679f22304582340834f63b6531b454d9fb6111045765a7f3ffee37",
+      "operation": "backup",
+      "operationId": "op_fc7795c988a122ef39db99e5",
+      "planDigest": "sha256:8e3eab36618a28c851e0ce4362684b24fb3d4eb7b037c1cf62972022e6d96796",
+      "planId": "plan_fc7795c988a122ef39db99e5",
+      "state": "completed",
+      "tenantScope": "tenant_live_20261030T064834Z",
+      "updatedAt": "2026-11-01T09:58:37.548167266Z"
+    }
+  ],
+  "pendingReconciliation": 0,
+  "sourceIdentity": {
+    "committedSource": true,
+    "recordedAt": "2026-11-01T10:00:46.2220734Z",
+    "remote": "/home/wazi-dev/wazi-phase2/20261101T100044Z",
+    "sourceCommit": "2547e84127b23398f68b2d0b3ffab75ccdc876c0",
+    "sourceSha256": "462b4e401142abcc8a28f2595a3ceadd6e14ec836a4683606267d5e1421eaa97"
+  },
+  "storedContextSurvivedRestart": {
+    "id": "ctx_d91031356ba01591452f1955191f4aeff5db981a15b0999949d839e59253dc54",
+    "sha256": "e815070290b7b298b308dce16e95cb215b2bda945e7d757c13f92001012ba6f1"
+  },
+  "verifiedAt": "2026-11-01T10:12:40.514126+00:00"
+}

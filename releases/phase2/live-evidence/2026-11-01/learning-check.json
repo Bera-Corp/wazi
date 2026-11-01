@@ -1,0 +1,25 @@
+{
+  "contextId": "ctx_d91031356ba01591452f1955191f4aeff5db981a15b0999949d839e59253dc54",
+  "executionApproved": false,
+  "scoreBreakdown": {
+    "exact-release-scope": 50,
+    "review-state-signed": 15,
+    "verified-release-failures": -2,
+    "verified-release-successes": 2,
+    "verify-first-health-last": 10
+  },
+  "successCaseRefs": [
+    {
+      "digest": "sha256:b9f773963d502e033686b01c6e6e903f378c513ec6b41f45983fe2e0dcb505e8",
+      "recordId": "case_9be766f85ef5c92c7ca6d874"
+    }
+  ],
+  "failureCaseRefs": [
+    {
+      "digest": "sha256:d6628d1d67ff49fe6d9a21a1ad66264ff78f9371485ea331f9d780fc3df91e3b",
+      "recordId": "case_ee7d70dc17f0b31d41eca6dd"
+    }
+  ],
+  "sourceCommit": "2547e84127b23398f68b2d0b3ffab75ccdc876c0",
+  "observedAt": "2026-11-01T10:08:41.273528717Z"
+}

@@ -1,0 +1,7 @@
+{
+  "action": "nginx-verify",
+  "configSha256": "d0dde686126b7a61711ffc6c2a76552f906ce734675809d36673da8cf8db8683",
+  "project": "wazi-nginx-01",
+  "responseSha256": "5cdad38ccc660777700e25756f82f976c549de1f91a8ef633d5a9f0315b03a69",
+  "verifiedAt": "2026-11-01T08:51:34.206068+00:00"
+}

@@ -288,8 +288,10 @@ gate passes.
   inspector have live Gitea receipts. PostgreSQL/MySQL/Nginx signed bundles,
   verified build attestations, closed runtime profiles and application-choice/
   approval UI are implemented; all three smaller packages passed live recovery
-  and separate-instance reuse on 1 Nov. Exact-source CI, the final browser
-  walkthrough and beneficiary measurement remain closure gates. The owner approved the 4.5 CPU / 4 GiB / 48 GiB budget
+  and separate-instance reuse on 1 Nov. Exact-source native qualification/CI
+  and the live browser approval-to-completion walkthrough passed; real case
+  outcomes affected fresh retrieval. Beneficiary measurement, actual model
+  evidence and the final film remain closure gates. The owner approved the 4.5 CPU / 4 GiB / 48 GiB budget
   (runtime cap 4 CPU / 3 GiB; Immich excluded). Bounded candidate
   authoring is pulled forward from controlled AI packaging, with provider/model
   connection deferred by the owner on 1 Nov; a disabled provision and opt-in

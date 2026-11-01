@@ -1,0 +1,7 @@
+{
+  "action": "verify",
+  "profile": "postgresql",
+  "project": "wazi-postgresql-01",
+  "proofSha256": "f57ce7e53d8958188d270d92ae597c9bbf52405db9e79d2926eeb5272ddbb2a4",
+  "verifiedAt": "2026-11-01T08:29:31.154830+00:00"
+}

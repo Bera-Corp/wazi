@@ -8,8 +8,8 @@ complete; the expanded live/package/AI milestone is not closed.
 | Milestone | Implemented | Verified evidence | Still required |
 |---|---|---|---|
 | Trusted live retrieval | Paired Go bridge, signature verification, durable revocation cursor and resource/plan gates; bounded Python ranking without approval consumption | Live revoked release, invalid signature, modified budget and expired context denied without journal changes on 1 Nov | Selection is bounded to reviewed catalog profiles; arbitrary repository discovery is not implemented |
-| Cases and inspector | SQLite transactions, immutable scoped case/evidence records; operation/procedure/release/host history; authenticated app choice, exact-case approval and real journal observations | 34 cases and 40 evidence records at 09:07Z; stored context and all 40 journals survived agent restart; new install cases carry passing health evidence | Final browser walkthrough and beneficiary measurement; historical receipt formats remain immutable |
-| PostgreSQL/MySQL/Nginx | Closed profiles, instance-bound renderer 0.5, protected runtime secret references, authenticated SQL readiness, logical checkpoints and validated Nginx restore | All three completed install/recovery and separate-instance reuse. PG 17.11.0+wazi.1, MySQL 8.4.13+wazi.1, Nginx 1.30.6+wazi.2. Build 41191007408 and archive attestations verified; signed bundles retained | Final exact-source CI/evidence linkage and demo capture; no cross-version database migration is qualified |
+| Cases and inspector | SQLite transactions, immutable scoped case/evidence records; operation/procedure/release/host history; authenticated app choice, exact-case approval and real journal observations | Browser approval-to-completion passed; 35 cases, 41 evidence records and 28 contexts at 10:12Z survived agent restart. Relevant MySQL success/failure cases affected fresh retrieval | Beneficiary measurement and final film; historical receipt formats remain immutable |
+| PostgreSQL/MySQL/Nginx | Closed profiles, instance-bound renderer 0.5, protected runtime secret references, authenticated SQL readiness, logical checkpoints and validated Nginx restore | All three completed install/recovery and separate-instance reuse. PG 17.11.0+wazi.1, MySQL 8.4.13+wazi.1, Nginx 1.30.6+wazi.2. Signed bundles, build attestations, native qualification and exact-source CI linked below | Final demonstration; no cross-version database migration is qualified |
 | Immich | Candidate composition constraints require its specific PostgreSQL/cache/proxy dependencies and coordinated recovery | Owner deferred live qualification on 31 October | Revised capacity/budget and full media/database lifecycle receipts |
 | AI authoring and reuse | Disabled provider provision, explicit opt-in runner, candidate validation and durable cost reservations | Seven fake-provider/setup tests; zero real calls. Owner deferred connection on 1 Nov | Later provider authorization; actual Meta output, model-generated promotion, cost/latency and inference-free reuse remain unproven |
 
@@ -63,7 +63,8 @@ Validation refuses to proceed without active date-time checking.
 The 87 offline context checks and fixture metrics retain their original
 offline interpretation. Native qualification now also includes live-store,
 composition, candidate-authoring and package-recipe tests. Real model results,
-database recovery and a second application installation remain separate gates.
+database recovery and a second application installation now have the bounded
+live receipts below. Real model results remain deferred.
 
 ## Package provenance and next acceptance
 
@@ -73,7 +74,7 @@ not have verified commit signatures. The Wazi build workflow records that
 limitation and attests its own source-to-image and image-to-archive bindings;
 it must never label these as signed upstream releases.
 
-Complete PostgreSQL, MySQL and Nginx qualification in that order, preserving
+PostgreSQL, MySQL and Nginx qualification completed in that order, preserving
 the Gitea pilot. Admission requires the signed package, reviewed runtime
 profile and aggregate authorized resource headroom. A successful standalone
 Docker command is not acceptance through the Wazi execution journey.
@@ -168,3 +169,32 @@ Raw lifecycle receipts are under package-evidence/ in staging directories
 committed-source qualification and CI receipt supersede intermediate builds.
 The measurement protocol and video walkthrough remain capture plans;
 no human-time savings, beneficiary outcome or actual Meta inference is claimed.
+
+## Final committed-source snapshot
+
+The [public evidence bundle](../releases/phase2/live-evidence/2026-11-01/README.md)
+links lifecycle proofs, denied requests, real case ranking and the inspector
+capture. Deployed source is 2547e84127b23398f68b2d0b3ffab75ccdc876c0;
+its [CI run 41295560077](https://github.com/Bera-Corp/wazi/actions/runs/41295560077)
+passed. The committed-source archive SHA-256 is
+462b4e401142abcc8a28f2595a3ceadd6e14ec836a4683606267d5e1421eaa97.
+Native tests, race checks, vet, formatting, builds and maintained Python suites
+passed before activation at 10:03:04Z.
+
+The visual browser journey selected Nginx, prepared a live proposal, reviewed
+and approved its backup, and observed job_fc7795c988a122ef39db99e5 complete
+at 09:58:37Z. The final source presents readable journal events with the raw
+receipt collapsed. Its screenshot preserves the historical proposal time;
+it is not a fresh execution authorization.
+
+At 10:08:41Z a fresh MySQL backup retrieval cited both the completed backup
+and the deliberate database-not-ready failure, applying +2 and -2 ranking
+contributions respectively. It did not approve or queue execution. At
+10:12:40Z all four applications remained healthy, all 41 journals were
+unchanged across restart, pending reconciliation was zero, and the store
+retained 35 cases, 41 evidence records and 28 contexts. Gitea proof was exact.
+
+Phase 2 remains open for beneficiary/manual-baseline measurements, actual
+authorized model authoring/promotion/reuse and the final three-minute film.
+Provider connection and live Immich qualification are explicitly owner-deferred.
+The single-approver pilot and same-release recovery limits remain in force.
