@@ -14,7 +14,7 @@ $local = Join-Path $root ('artifacts/phase2/' + $stamp)
 New-Item -ItemType Directory -Path $local -Force | Out-Null
 $archive = Join-Path $local 'source.tar.gz'
 if($CommittedSource){
-    & git archive --format=tar.gz -o $archive HEAD services scripts schemas context evals releases requirements-dev.txt
+    & git -c core.autocrlf=false -c core.eol=lf archive --format=tar.gz -o $archive HEAD services scripts schemas context evals releases requirements-dev.txt
 }else{
     & tar --exclude=phase1record-temp.go --exclude=__pycache__ -czf $archive services scripts schemas context evals releases requirements-dev.txt
 }

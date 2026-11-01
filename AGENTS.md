@@ -268,3 +268,4 @@ This file contains a growing ruleset that improves over time. **At session start
 197. [TOOL] Resolve signed Phase 1 release paths with rg --files before inspecting a presumed release directory — upstream versions and Wazi wrapper directories are not necessarily identical.
 198. [TOOL] Omit unneeded trailing context from documentation patches — a final unmatched physical line can reject an otherwise correct file-scoped update.
 199. [TOOL] Keep environment-token detection and value extraction on separate lines — compacting the condition and assignment can resemble an embedded secret assignment to the scanner.
+200. [TOOL] Override core.autocrlf=false and core.eol=lf for committed-source Git archives — Windows archive checkout conversion can otherwise introduce CRLF into every Go file and fail native gofmt despite green Linux CI.
