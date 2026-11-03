@@ -20,7 +20,7 @@ def evidence(application):
         operations = sorted({row["operation"] for row in report["packageOperations"]
                              if row["applicationId"] == application and row["state"] == "completed"})
     return {"kind": "historical-pilot-evidence", "releaseVersion": RELEASES[application],
-            "environment": "Linux Docker Engine / amd64 / bera-003 pilot",
+            "environment": "Linux Docker Engine / amd64 / historical pilot",
             "operations": operations, "verifiedAt": report["verifiedAt"],
             "sourceCommit": report["sourceIdentity"]["sourceCommit"],
             "evidenceDigest": "sha256:" + hashlib.sha256(raw).hexdigest(),

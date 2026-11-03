@@ -316,3 +316,4 @@ This file contains a growing ruleset that improves over time. **At session start
 242. [TOOL] Run schema-dependent community tests with the repository validation virtual environment — the global Python installation does not include the pinned jsonschema dependencies.
 243. [CODE] Set runtime CSRF headers through indexed header assignments — token-named object literals can make runtime expressions resemble embedded secrets to the repository scanner.
 244. [CODE] Update the actual HTML response CSP when moving workbench styles into external files — style-src unsafe-inline alone blocks same-origin stylesheets even when a static preview looks correct.
+245. [TOOL] Read qualification receipts from the exact returned timestamp directory — sorting all artifact directories can select a signing directory without a staging receipt.
