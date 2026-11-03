@@ -1,0 +1,46 @@
+{
+  "kind": "community-preview-and-native-qualification",
+  "recordedAt": "2026-11-03T13:21:11.9727674Z",
+  "sourceCommit": "a8d712002d5f9146d2a6c33c733201e146f675e1",
+  "sourceArchiveSha256": "a881eba1dba44acf24b7218bb6900176bb88cbeece0bf668d2b8ca0cc1a9df25",
+  "ci": {
+    "url": "https://github.com/Bera-Corp/wazi/actions/runs/41642641316",
+    "conclusion": "success"
+  },
+  "nativeLinux": {
+    "host": "bera-003",
+    "completedAt": "2026-11-03T13:18:31Z",
+    "communityTests": 23,
+    "goTests": "passed",
+    "racePackages": ["internal/controlplane", "internal/agentclient", "internal/pilotqueue"],
+    "nativeAndWindowsVet": "passed",
+    "gofmt": "passed",
+    "serviceBuilds": "passed",
+    "maintainedPythonSuites": "passed",
+    "secretScan": "passed",
+    "serviceDeploymentPerformed": false
+  },
+  "browser": {
+    "url": "http://127.0.0.1:3690/apps",
+    "scope": "read-only loopback preview; unauthenticated catalog and detail views",
+    "projectCount": 10,
+    "pilotEvidenceSummaries": 4,
+    "functionalChecks": "search, URL filters, exact coverage labels, pilot evidence, focus return, inert starters, empty workspace, no horizontal overflow at 320/375/768/1440/1920 pixels",
+    "hallmark": "rendered catalog and Nginx detail: zero FAIL, zero REFLEX, zero WARN",
+    "freshReview": "four findings fixed: environment coverage labels, detail focus return, application-specific accessible button names, current navigation state",
+    "realOAuthLoginVerified": false,
+    "authenticatedViewsVisuallyQualified": false
+  },
+  "publicDeployment": false,
+  "phase2Closed": false,
+  "phase3Closed": false,
+  "phase4Closed": false,
+  "limitations": [
+    "GitHub OAuth setup and real contributor login remain pending",
+    "Private host/application/job dashboard connection is not implemented",
+    "Generic new-app adapter, isolated runner, independent qualification and signed community reuse remain pending",
+    "Desktop probe observations do not qualify Windows or macOS; Mac access will be supplied later",
+    "Live encrypted recovery, upgrades/migrations, canary and supply-chain acceptance remain pending",
+    "Beneficiary measurement and final demo remain open; Immich and automated model authoring remain deferred"
+  ]
+}

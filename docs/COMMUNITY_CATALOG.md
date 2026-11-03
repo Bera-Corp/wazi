@@ -181,6 +181,14 @@ and committed-source native Linux qualification at 13:02:17Z. It included
 secret scan. Subsequent TLS handshake isolation adds a real certificate-based
 regression; its final source qualification is recorded separately.
 
+The final implementation checkpoint a8d712002d5f9146d2a6c33c733201e146f675e1
+passed [CI 41642641316](https://github.com/Bera-Corp/wazi/actions/runs/41642641316)
+and committed-source native Linux qualification at 13:18:31Z, including all
+23 community regressions. [The evidence bundle](../releases/community/live-evidence/2026-11-03/README.md)
+contains the source archive identity, browser captures and explicit limitations.
+The running local preview is read-only; no new Wazi service or app was deployed
+to bera-003 during this catalog build.
+
 Public ingress and the Wazi software distribution license are separate release
 gates. Only original recipe contributions are designated Apache-2.0; upstream
 licenses and attribution remain in force. This change does not license the
