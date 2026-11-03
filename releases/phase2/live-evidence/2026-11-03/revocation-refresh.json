@@ -1,0 +1,14 @@
+{
+  "state": "published",
+  "sequence": 57,
+  "entries": 0,
+  "generatedAt": "2026-11-03T07:43:53Z",
+  "expiresAt": "2026-11-03T08:08:55Z",
+  "signedBy": "wazi-phase1-demo-pilot-20261030",
+  "payloadDigest": "sha256:8d3211137bc7bd785b415aba6cd400880ca05d1295cf75165341250549442419",
+  "cosignVerifiedLocally": true,
+  "controlPlaneAcceptedSequence": 57,
+  "nextSequenceObserved": 58,
+  "manifestRefresh": "not-completed: source package tree was absent; publish mode posts revocation first, then attempted to read a package manifest",
+  "observedAt": "2026-11-03T07:45:08Z"
+}

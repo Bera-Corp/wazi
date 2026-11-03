@@ -147,13 +147,18 @@ elif mode=='bootstrap':
     write('browser-session.private.json',value)
     print('One-use browser session code issued; expires in 60 seconds')
 elif mode=='publish':
-    status,value=api('POST','/v1/revocations',json.loads((source/'revocation-list.json').read_bytes()))
-    assert_ok(status,value)
+    revocation=json.loads((source/'revocation-list.json').read_bytes())
+    publications=[]
     for profile in ('postgresql','mysql','nginx'):
         folder=source/'releases/phase2'/profile
         for name in ['manifest']+[path.stem for path in sorted(folder.glob('procedure-*.json'))]:
-            status,value=api('POST','/v1/manifests' if name=='manifest' else '/v1/procedures',json.loads((folder/(name+'.json')).read_bytes()))
-            assert_ok(status,value)
+            record=json.loads((folder/(name+'.json')).read_bytes())
+            publications.append(('/v1/manifests' if name=='manifest' else '/v1/procedures',record))
+    for endpoint,record in publications:
+        status,value=api('POST',endpoint,record)
+        assert_ok(status,value)
+    status,value=api('POST','/v1/revocations',revocation)
+    assert_ok(status,value)
     print('Published verified smaller-package contracts and fresh signed revocation list')
 elif mode=='pause-mysql-for-readiness-test':
     prefix=['sudo','-n','-u','wazi-runtime','env','HOME='+runtime['Home'],'XDG_RUNTIME_DIR=/run/user/1002','PATH=/usr/bin:/bin','docker','--host',runtime['Endpoint']]

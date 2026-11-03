@@ -3,6 +3,7 @@ package agentclient
 import (
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,6 +27,7 @@ type PackageInstanceConfig struct {
 	ApplicationStorageBudgetMb                    int64
 	Runtime                                       DockerPilotConfig
 	SecretFiles                                   map[string]string
+	BackupEncryption                              PackageBackupEncryptionConfig
 }
 
 type packageShape struct {
@@ -35,20 +37,30 @@ type packageShape struct {
 	Caps                                       []any
 }
 
+//go:embed reviewed-profiles.v1.json
+var reviewedProfilesJSON []byte
+
+// These profiles are release-owned policy, not records supplied by a download,
+// community report, model, or execution request. Adding an adapter remains a
+// reviewed source change until its capability and recovery matrix is qualified.
 func shapeFor(profile string, second bool) (packageShape, error) {
-	offset := 0
-	// Reuse preserves the signed port contract. A second instance is admitted
-	// only after the first has stopped and released that same private port.
-	_ = second
-	switch profile {
-	case "postgresql":
-		return packageShape{"org.postgresql.postgresql", "postgresql", "ghcr.io/bera-corp/wazi-phase2-postgresql", "data", "/var/lib/postgresql/data", "postgresql://local/wazi", 384, 2048, 15432 + offset, 5432, "0.5", []any{"CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"}}, nil
-	case "mysql":
-		return packageShape{"com.mysql.mysql", "mysql", "ghcr.io/bera-corp/wazi-phase2-mysql", "data", "/var/lib/mysql", "mysql://local/wazi", 768, 2048, 13306 + offset, 3306, "0.5", []any{"CHOWN", "FOWNER", "DAC_OVERRIDE", "SETUID", "SETGID"}}, nil
-	case "nginx":
-		return packageShape{"org.nginx.nginx", "nginx", "ghcr.io/bera-corp/wazi-phase2-nginx", "config", "/etc/nginx", "http://127.0.0.1:" + strconv.Itoa(18080+offset) + "/", 128, 128, 18080 + offset, 80, "0.25", []any{"CHOWN", "SETUID", "SETGID", "NET_BIND_SERVICE"}}, nil
+	_ = second // Both legacy slots retain the signed port and require sequential reuse.
+	var registry struct {
+		SchemaVersion string
+		Profiles      map[string]packageShape
 	}
-	return packageShape{}, fmt.Errorf("package profile is not reviewed")
+	decoder := json.NewDecoder(strings.NewReader(string(reviewedProfilesJSON)))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&registry); err != nil || registry.SchemaVersion != "1.0.0" {
+		return packageShape{}, fmt.Errorf("reviewed profile registry is invalid")
+	}
+	shape, ok := registry.Profiles[profile]
+	if !ok || shape.App == "" || shape.Service == "" || shape.RAM < 128 || shape.Storage < 100 ||
+		shape.Port < 1024 || shape.Port > 65535 || shape.ContainerPort < 1 || shape.ContainerPort > 65535 ||
+		!strings.HasPrefix(shape.Mount, "/") || shape.Image == "" || shape.CPU == "" {
+		return packageShape{}, fmt.Errorf("package profile is not reviewed")
+	}
+	return shape, nil
 }
 
 type DockerPackageBoundary struct {
@@ -68,7 +80,15 @@ func RenderReviewedPackageCompose(manifest []byte, config PackageInstanceConfig)
 }
 
 func (b *DockerPackageBoundary) rendererInputsDigest() (string, error) {
-	raw, err := canonicalPayload(map[string]any{"profile": b.config.Profile, "project": b.config.Runtime.Project, "images": b.config.Runtime.ImageConfigDigests, "secretFiles": b.config.SecretFiles, "policy": map[string]any{"service": b.shape.Service, "ramMb": b.shape.RAM, "cpu": b.shape.CPU, "storageMb": b.shape.Storage, "mount": b.shape.Mount, "capabilities": b.shape.Caps}})
+	inputs := map[string]any{"profile": b.config.Profile, "project": b.config.Runtime.Project, "images": b.config.Runtime.ImageConfigDigests, "secretFiles": b.config.SecretFiles, "policy": map[string]any{"service": b.shape.Service, "ramMb": b.shape.RAM, "cpu": b.shape.CPU, "storageMb": b.shape.Storage, "mount": b.shape.Mount, "capabilities": b.shape.Caps}}
+	if len(b.config.BackupEncryption.Recipients) > 0 || b.config.BackupEncryption.IdentityFile != "" {
+		recipients := make([]any, 0, len(b.config.BackupEncryption.Recipients))
+		for _, recipient := range b.config.BackupEncryption.Recipients {
+			recipients = append(recipients, recipient)
+		}
+		inputs["backupEncryption"] = map[string]any{"recipients": recipients, "identityFile": b.config.BackupEncryption.IdentityFile}
+	}
+	raw, err := canonicalPayload(inputs)
 	if err != nil {
 		return "", err
 	}
@@ -103,6 +123,9 @@ func NewDockerPackageBoundary(config PackageInstanceConfig, artifact []byte) (*D
 	if filepath.Clean(r.StateDirectory) != "/srv/wazi-runtime/phase2/"+project {
 		return nil, fmt.Errorf("package state directory mismatch")
 	}
+	if err := validatePackageBackupEncryption(config.BackupEncryption, project); err != nil {
+		return nil, err
+	}
 	for _, path := range config.SecretFiles {
 		if filepath.Clean(path) != path || !strings.HasPrefix(path, "/srv/wazi-runtime/secrets/"+project+"/") || strings.ContainsAny(filepath.Base(path), "/\\") {
 			return nil, fmt.Errorf("secret file is outside its operator-owned instance")
@@ -130,6 +153,7 @@ func NewDockerPackageBoundary(config PackageInstanceConfig, artifact []byte) (*D
 	r.ImageConfigDigests = cloneStringMap(r.ImageConfigDigests)
 	config.Runtime = r
 	config.SecretFiles = cloneStringMap(config.SecretFiles)
+	config.BackupEncryption.Recipients = append([]string(nil), config.BackupEncryption.Recipients...)
 	core := &DockerPilotBoundary{config: r, artifact: append([]byte(nil), artifact...)}
 	core.run = core.command
 	return &DockerPackageBoundary{core: core, config: config, shape: shape}, nil

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Find open-source applications, inspect reusable Wazi setups and contribute verified deployment knowledge."
+    />
+    <title>Wazi application library</title>
+    <link rel="icon" href="/assets/favicon.ico" />
+    <link rel="stylesheet" href="/assets/tokens.css" />
+    <link rel="stylesheet" href="/assets/catalog.css" />
+    <script src="/assets/catalog.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to applications</a>
+    <header class="topbar">
+      <div class="bar">
+        <a class="brand" href="/apps" aria-label="Wazi application library"
+          ><img src="/assets/wordmark.png" alt="Wazi" width="132" height="55"
+        /></a>
+        <nav aria-label="Main">
+          <a href="/apps" id="library-nav">Application library</a
+          ><a href="/dashboard" id="dashboard-nav">My workspace</a>
+        </nav>
+        <a class="signin" href="/auth/login" id="signin">Sign in with GitHub</a
+        ><span id="identity" hidden></span>
+      </div>
+    </header>
+    <main id="main">
+      <section id="library" aria-labelledby="library-title">
+        <div class="intro">
+          <div>
+            <h1 id="library-title">Good software.<br />Shared know-how.</h1>
+            <p>
+              Find a project. Reuse a verified setup.<br />Help the next person
+              get it running.
+            </p>
+          </div>
+          <aside>
+            <h2>Built once. Learned together.</h2>
+            <p>
+              Every recipe tells you what was tested, where it worked, and what
+              still needs a contributor.
+            </p>
+            <a href="#applications">Explore the library</a>
+          </aside>
+        </div>
+        <form id="filters" class="filters" role="search">
+          <label class="search"
+            >Find an application<input
+              id="search"
+              name="q"
+              type="search"
+              placeholder="Search projects and categories"
+              autocomplete="off" /></label
+          ><label
+            >Category<select id="category" name="category">
+              <option value="">All categories</option>
+            </select></label
+          ><label
+            >Environment<select id="environment" name="environment">
+              <option value="">Any environment</option>
+              <option value="linux-engine">Linux Docker</option>
+              <option value="windows-wsl2">Windows / WSL2</option>
+              <option value="macos-desktop">macOS Docker</option>
+            </select></label
+          ><label
+            >Application version<input
+              id="release"
+              name="release"
+              placeholder="Any version"
+              autocomplete="off" /></label
+          ><label
+            >Operation<select id="operation" name="operation">
+              <option value="">Any operation</option>
+              <option value="install">Install</option>
+              <option value="upgrade">Upgrade</option>
+              <option value="backup">Backup</option>
+              <option value="restore">Restore</option>
+              <option value="rollback">Rollback</option>
+              <option value="uninstall">Uninstall</option>
+            </select></label
+          ><label
+            >Packages<select id="availability" name="availability">
+              <option value="">All projects</option>
+              <option value="available">Signed package available</option>
+              <option value="needed">Needs a matching setup</option>
+              <option value="deferred">Deferred</option>
+            </select></label
+          ><label
+            >Sort by<select id="sort" name="sort">
+              <option value="name">Name</option>
+              <option value="stars">GitHub stars</option>
+            </select></label
+          >
+        </form>
+        <div class="results-heading">
+          <h2 id="applications">Application library</h2>
+          <span id="count" role="status" aria-live="polite"
+            >Loading projects</span
+          >
+        </div>
+        <p id="load-error" class="error" hidden></p>
+        <button id="retry" type="button" hidden>Try again</button>
+        <div id="results" class="app-grid" aria-busy="true">
+          <p class="loading">Loading the catalog and its evidence.</p>
+        </div>
+        <p class="footnote">
+          Popularity comes from GitHub. Compatibility comes from qualification.
+          An unlisted environment is unverified, not automatically supported.
+        </p>
+      </section>
+      <section id="workspace" hidden aria-labelledby="workspace-title">
+        <div class="workspace-heading">
+          <h1 id="workspace-title">Your workspace</h1>
+          <p>Applications on your hosts. Contributions for everyone.</p>
+        </div>
+        <nav class="tabs" aria-label="Workspace">
+          <button data-tab="applications" type="button">My applications</button
+          ><button data-tab="hosts" type="button">My hosts</button
+          ><button data-tab="installations" type="button">Installations</button
+          ><button data-tab="contributions" type="button">Contributions</button
+          ><button data-tab="evidence" type="button">Evidence</button>
+        </nav>
+        <p id="workspace-status" role="status" aria-live="polite"></p>
+        <section id="contribution-panel" hidden>
+          <h2>Share the setup, keep your data</h2>
+          <p>
+            Opt in to automatic submission of sanitized candidate templates,
+            recipe digests, coarse environment versions and terminal success or
+            failure evidence. No credentials, raw logs, private paths or
+            application files are shared.
+          </p>
+          <p>
+            Original contributed recipe files use Apache-2.0. Upstream licenses
+            remain in force. Community reports require independent qualification
+            before release promotion.
+          </p>
+          <form id="consent-form">
+            <label class="check"
+              ><input type="checkbox" id="license-consent" /> I have permission
+              to share my original recipe contributions under Apache-2.0.</label
+            ><label class="check"
+              ><input type="checkbox" id="contribute" /> Enable automatic
+              contributions</label
+            ><button type="submit">Save contribution preference</button>
+          </form>
+          <p>
+            Turning this off stops server intake. Connected workers cancel
+            unsent records at their next consent check. Offline workers collect
+            nothing until they can check consent again. Already downloaded
+            public releases cannot be recalled.
+          </p>
+          <h3>Connect a contribution worker</h3>
+          <p>
+            Approve only a code displayed by your own local Wazi worker. This
+            grants contribution submission only, never deployment access.
+          </p>
+          <form id="device-form">
+            <label
+              >Device code<input
+                id="device-code"
+                maxlength="8"
+                pattern="[A-Fa-f0-9]{8}"
+                required
+                autocomplete="off" /></label
+            ><button type="submit">Authorize my worker</button
+            ><button type="button" id="revoke-workers">
+              Revoke all workers
+            </button>
+          </form>
+          <h3>Submit a prepared candidate</h3>
+          <p>
+            Upload an inert candidate bundle prepared by the local tooling. It
+            enters quarantine for independent qualification; it cannot enable a
+            runtime profile.
+          </p>
+          <form id="candidate-upload">
+            <label
+              >Candidate ZIP<input
+                id="candidate-file"
+                type="file"
+                accept=".zip,application/zip"
+                required /></label
+            ><button type="submit">Submit candidate</button>
+          </form>
+          <div id="contributions"></div>
+        </section>
+        <div id="empty-workspace" class="empty">
+          <h2 id="empty-title">Your hosts stay under your control</h2>
+          <p id="empty-description">
+            This community service cannot connect to Docker or execute an
+            installation. Pair a host through your private Wazi control plane.
+          </p>
+          <a href="/apps">Browse applications</a>
+        </div>
+        <button type="button" id="logout" hidden>Sign out</button>
+      </section>
+      <section id="details" hidden aria-labelledby="detail-title">
+        <button id="close-detail" type="button">Back to applications</button>
+        <div id="detail-body"></div>
+      </section>
+      <noscript
+        ><p>
+          The interactive catalog requires JavaScript. Read the
+          <a href="/api/applications">public catalog data</a> or open a
+          project’s upstream repository. Downloads never execute automatically.
+        </p></noscript
+      >
+    </main>
+    <footer>
+      <div>
+        <strong>Wazi</strong>
+        <p>Open software, repeatable setups.</p>
+      </div>
+      <p>
+        Private pilot preview. Public hosting and software distribution remain
+        release gates. Immich qualification is deferred.
+      </p>
+    </footer>
+  </body>
+</html>

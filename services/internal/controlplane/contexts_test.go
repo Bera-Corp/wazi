@@ -95,14 +95,17 @@ func TestContextRequiresHTTPSAndDoesNotExposeOperatorCredential(t *testing.T) {
 	if w.Code != 403 {
 		t.Fatalf("plaintext session = %d", w.Code)
 	}
-	for _, path := range []string{"/context", "/context.js"} {
+	for _, path := range []string{"/context", "/context.js", "/assets/tokens.css", "/assets/base.css", "/assets/context.css"} {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, httptest.NewRequest("GET", "https://localhost"+path, nil))
 		if w.Code != 200 || bytes.Contains(w.Body.Bytes(), []byte(config.OperatorToken)) {
 			t.Fatalf("unsafe browser asset: %s", path)
 		}
-		if w.Header().Get("Content-Security-Policy") == "" {
+		if (path == "/context" || path == "/context.js") && w.Header().Get("Content-Security-Policy") == "" {
 			t.Fatal("missing CSP")
+		}
+		if path == "/context" && !bytes.Contains([]byte(w.Header().Get("Content-Security-Policy")), []byte("style-src 'self'")) {
+			t.Fatal("external workbench styles are blocked by the HTML policy")
 		}
 	}
 }

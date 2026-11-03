@@ -162,9 +162,15 @@ def author_candidate(provider, *, application_id, release_version, sources,
     for key, maximum in (("prompt_tokens", input_bound), ("completion_tokens", max_output_tokens)):
         if type(usage.get(key)) is not int or not 0 <= usage[key] <= maximum:
             raise ValueError("provider-usage-outside-reservation")
-    return {"manifest": manifest, "citations": output["citations"],
+    request_digest = "sha256:" + hashlib.sha256(wire).hexdigest()
+    packet = {"manifest": manifest,
+              "sources": [{"sourceId": source["sourceId"], "url": source["url"],
+                           "contentHash": source["contentHash"]} for source in sources],
+              "citations": output["citations"],
+              "origin": {"assistant": "Codex chat", "requestDigest": request_digest}}
+    return {"packet": packet, "manifest": manifest, "citations": output["citations"],
             "manifestDigest": validate.canonical_digest(manifest),
             "model": response["model"], "usage": usage,
             "elapsedSeconds": round(time.monotonic() - started, 3),
-            "reservedUsd": str(reservation), "requestDigest": "sha256:" + hashlib.sha256(wire).hexdigest(),
+            "reservedUsd": str(reservation), "requestDigest": request_digest,
             "state": "candidate-awaiting-qualification-and-human-review"}

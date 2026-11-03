@@ -290,14 +290,43 @@ gate passes.
   approval UI are implemented; all three smaller packages passed live recovery
   and separate-instance reuse on 1 Nov. Exact-source native qualification/CI
   and the live browser approval-to-completion walkthrough passed; real case
-  outcomes affected fresh retrieval. Beneficiary measurement, actual model
-  evidence and the final film remain closure gates. The owner approved the 4.5 CPU / 4 GiB / 48 GiB budget
+  outcomes affected fresh retrieval. Refreshed live acceptance and beneficiary
+  measurement remain Phase 2 gates. Under the 3 Nov amendment, automated model
+  authoring is deferred and the final film is a release-wide deliverable;
+  actual Meta tooling remains a judging gap. The owner approved the 4.5 CPU / 4 GiB / 48 GiB budget
   (runtime cap 4 CPU / 3 GiB; Immich excluded). Bounded candidate
   authoring is pulled forward from controlled AI packaging, with provider/model
   connection deferred by the owner on 1 Nov; a disabled provision and opt-in
   runner are available, with no real call or spending. Immich live
   qualification is deferred by the owner. See PHASE2_LIVE_EVIDENCE.md for
   the per-milestone evidence and remaining acceptance work.
+
+- [partial] Phase 3 package candidate workflow: tenant-scoped durable intake,
+  digest-bound qualification/review/promotion endpoints, canonical signed
+  receipt validation, retained failed attempts and the authenticated
+  Hallmark workbench are implemented locally. No isolated qualification
+  runner, real runner receipt, provider call or live deployment is evidenced.
+  Registry-first recovery and duplicate-promotion retries have HTTP regressions.
+  Independent maintainer quorum and live workflow acceptance remain open. See
+  PHASE3_CANDIDATE_WORKFLOW.md.
+
+- [partial] Phase 4 encrypted database backups: age-encrypted PostgreSQL and
+  MySQL backup/restore code and regressions are present locally. No live key
+  has been provisioned and no encrypted live backup/restore is evidenced.
+  Nginx configuration backups remain unencrypted; live recovery validation
+  and complete coverage remain open. See PHASE4_ENCRYPTED_BACKUPS.md.
+
+- [partial] Community catalog and portable packages (3 Nov): separate SQLite
+  service, ten-project discovery, daily conditional GitHub metadata, historical
+  pilot evidence projection, Hallmark frontend, server-managed OAuth/session
+  implementation, submission-only worker identities, consent-bound durable
+  outbox, actual template quarantine, inert package inspection/configuration,
+  maintainer-local signed publication and exact environment matching. Local
+  tests and native qualification are recorded separately from live acceptance.
+  OAuth configuration, private installation handoff, a generic new-app adapter,
+  supervised runner, independent qualification and community reuse remain open.
+  Mac access will be supplied later; no desktop support is claimed. See
+  COMMUNITY_CATALOG.md.
 
 ## Worlds and S-Prints extension
 

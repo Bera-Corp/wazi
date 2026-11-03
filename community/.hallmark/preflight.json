@@ -1,0 +1,16 @@
+{
+  "scope": "app",
+  "theme": "cobalt",
+  "direction": "refined technical, inherited from the existing Wazi workbench",
+  "preserved": [
+    "services/internal/controlplane/assets/tokens.css:1 shared Cobalt tokens",
+    "services/internal/controlplane/assets/context.css:5 Wazi forest and green brand accents",
+    "services/internal/controlplane/assets/wazi-wordmark-open.png approved wordmark",
+    "services/internal/controlplane/assets/favicon.ico approved W icon"
+  ],
+  "introduced": ["public application discovery", "exact compatibility disclosure", "authenticated contribution preferences"],
+  "audience": "self-hosters and small-team maintainers",
+  "action": "inspect a reusable setup or contribute a missing qualification",
+  "material": "GitHub API observations, actual recipe inventory and returned contribution records",
+  "absent": "no invented testimonials, installation counts, desktop qualification or community success claims"
+}

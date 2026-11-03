@@ -21,10 +21,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Bera-Corp/wazi/services/internal/approvalregistry"
+	"github.com/Bera-Corp/wazi/services/internal/candidateworkflow"
 	"github.com/Bera-Corp/wazi/services/internal/contracts"
 	"github.com/Bera-Corp/wazi/services/internal/controlplane"
 	"github.com/Bera-Corp/wazi/services/internal/manifestregistry"
@@ -53,6 +55,8 @@ func run(ctx context.Context) error {
 	signingPolicyFile := flag.String("signing-policy-file", os.Getenv("WAZI_SIGNING_POLICY_FILE"), "versioned operator-managed signer policy JSON")
 	capabilityPolicyFile := flag.String("capability-policy-file", os.Getenv("WAZI_CAPABILITY_POLICY_FILE"), "operator-managed tenant capability policy bundle JSON")
 	manifestRegistryDir := flag.String("manifest-registry-dir", os.Getenv("WAZI_MANIFEST_REGISTRY_DIR"), "private directory for verified signed manifests")
+	candidateStoreDir := flag.String("candidate-store-dir", os.Getenv("WAZI_CANDIDATE_STORE_DIR"), "private directory for tenant-scoped package candidate workflow records")
+	qualificationSigners := flag.String("qualification-signers", os.Getenv("WAZI_QUALIFICATION_SIGNERS"), "comma-separated trusted signer IDs reserved for isolated runner qualification receipts")
 	approvalRegistryDir := flag.String("approval-registry-dir", os.Getenv("WAZI_APPROVAL_REGISTRY_DIR"), "private directory for issued and consumed approvals")
 	approverCredentialsFile := flag.String("approver-credentials-file", os.Getenv("WAZI_APPROVER_CREDENTIALS_FILE"), "private file containing distinct approver credential hashes")
 	approverID := flag.String("approver-id", os.Getenv("WAZI_APPROVER_ID"), "configured local operator identity recorded on approvals")
@@ -112,6 +116,16 @@ func run(ctx context.Context) error {
 	if *approverRole != "" && *approverRole != "user" && *approverRole != "maintainer" {
 		return fmt.Errorf("-approver-role must be user or maintainer")
 	}
+	if *candidateStoreDir != "" && (*pilotSocket == "" || !mtlsEnabled || os.Getenv("WAZI_OPERATOR_TOKEN") == "" || *signingPolicyFile == "" || *manifestRegistryDir == "" || *approvalRegistryDir == "" || *approverRole != "maintainer" || *approverID == "" || *approverCredentialsFile != "") {
+		return fmt.Errorf("candidate workflow requires the private pilot, mTLS, operator token, signer policy, verified release registry, approval registry and one configured maintainer session")
+	}
+	qualificationSignerIDs := splitConfiguredIDs(*qualificationSigners)
+	if *candidateStoreDir != "" && len(qualificationSignerIDs) == 0 {
+		return fmt.Errorf("candidate workflow requires a separate trusted qualification signer list")
+	}
+	if *candidateStoreDir != "" && !qualificationSignersSeparateFromReleasePolicy(capabilityPolicyBundle, qualificationSignerIDs) {
+		return fmt.Errorf("qualification signers must be distinct from tenant release-promotion signers")
+	}
 
 	cfg := controlplane.Config{
 		PilotAgentSocket:       *pilotSocket,
@@ -139,6 +153,11 @@ func run(ctx context.Context) error {
 		log.Printf("pairing registry persisted at %s (codes stored hashed)", *registryFile)
 	}
 	defer func() {
+		if cfg.CandidateStore != nil {
+			if err := cfg.CandidateStore.Close(); err != nil {
+				log.Printf("close candidate workflow store: %v", err)
+			}
+		}
 		if cfg.ManifestRegistry != nil {
 			if err := cfg.ManifestRegistry.Close(); err != nil {
 				log.Printf("close manifest registry: %v", err)
@@ -163,12 +182,21 @@ func run(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("load signing policy: %w", err)
 		}
+		cfg.SigningPolicy = policy
 		manifestStore, err := manifestregistry.New(*manifestRegistryDir, policy)
 		if err != nil {
 			return fmt.Errorf("open verified manifest registry: %w", err)
 		}
 		cfg.ManifestRegistry = manifestStore
 		log.Printf("verified manifest registry loaded at %s (%d trusted signer(s))", *manifestRegistryDir, len(policy.TrustedSigners))
+		if *candidateStoreDir != "" {
+			candidateStore, err := candidateworkflow.Open(*candidateStoreDir, policy, qualificationSignerIDs...)
+			if err != nil {
+				return fmt.Errorf("open package candidate workflow store: %w", err)
+			}
+			cfg.CandidateStore = candidateStore
+			log.Printf("tenant-scoped package candidate workflow loaded at %s", *candidateStoreDir)
+		}
 	}
 	if *approvalRegistryDir != "" {
 		approvals, err := approvalregistry.New(*approvalRegistryDir, nil)
@@ -252,6 +280,53 @@ func envOr(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func splitConfiguredIDs(raw string) []string {
+	seen := map[string]bool{}
+	ids := []string{}
+	for _, item := range strings.Split(raw, ",") {
+		id := strings.TrimSpace(item)
+		if id == "" {
+			continue
+		}
+		if seen[id] {
+			return nil
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+func qualificationSignersSeparateFromReleasePolicy(raw []byte, qualificationIDs []string) bool {
+	bundle, err := contracts.DecodePolicyBundle(raw)
+	if err != nil {
+		return false
+	}
+	signing, ok := bundle["signing"].(map[string]any)
+	if !ok {
+		return false
+	}
+	releases, ok := signing["trustedSigners"].([]any)
+	if !ok || len(releases) == 0 {
+		return false
+	}
+	releaseSet := map[string]bool{}
+	for _, value := range releases {
+		if signer, ok := value.(string); ok {
+			releaseSet[signer] = true
+		}
+	}
+	if len(releaseSet) == 0 {
+		return false
+	}
+	for _, signer := range qualificationIDs {
+		if releaseSet[signer] {
+			return false
+		}
+	}
+	return true
 }
 
 // loadCA loads the pairing CA from files, or generates an ephemeral

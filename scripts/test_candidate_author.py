@@ -43,6 +43,15 @@ class CandidateAuthorTests(unittest.TestCase):
         self.assertEqual(result["manifest"]["reviewState"], "candidate")
         self.assertNotIn("signature", result["manifest"])
         self.assertIn("human-review", result["state"])
+        self.assertEqual(result["packet"]["manifest"], result["manifest"])
+        self.assertEqual(result["packet"]["citations"], ["source_test"])
+        self.assertEqual(result["packet"]["sources"], [{
+            "sourceId": "source_test", "url": self.args["sources"][0]["url"],
+            "contentHash": self.args["sources"][0]["contentHash"],
+        }])
+        self.assertNotIn("text", result["packet"]["sources"][0])
+        self.assertEqual(result["packet"]["origin"]["assistant"], "Codex chat")
+        self.assertEqual(result["packet"]["origin"]["requestDigest"], result["requestDigest"])
 
     def test_setup_and_tampered_sources_stop_before_call(self):
         for change in ({"pricing": {"verified": False}}, {"sources": []}):

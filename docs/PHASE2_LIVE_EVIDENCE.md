@@ -1,6 +1,6 @@
 # Phase 2 implementation and acceptance evidence
 
-Updated 1 November 2026. Phase 2 remains in progress. The offline prototype is
+Updated 3 November 2026. Phase 2 remains in progress. The offline prototype is
 complete; the expanded live/package/AI milestone is not closed.
 
 ## Acceptance matrix
@@ -198,3 +198,66 @@ Phase 2 remains open for beneficiary/manual-baseline measurements, actual
 authorized model authoring/promotion/reuse and the final three-minute film.
 Provider connection and live Immich qualification are explicitly owner-deferred.
 The single-approver pilot and same-release recovery limits remain in force.
+
+## Live pilot refresh — 3 November
+
+The 07:45:34Z host report is a dated observation, not a continuing health
+claim. The node certificate was renewed at 07:36:01Z and is valid through
+4 November at 07:37:01Z. The server trust anchor did not change; 41 journal
+files remained byte-identical, application health passed and the worker was
+active.
+
+The 07:45:34Z report observed four healthy applications, 2304 MiB of aggregate
+container memory limits and 3.25 CPU, authenticated database readiness checks,
+zero pending reconciliation, and unchanged case-store counts (35 cases,
+41 evidence records and 28 contexts) across agent restart. The Gitea proof
+remained
+728836b371192e623885770f40710bbe833d0f76d6cdbadfd9495621c25dc3e6.
+The host still reported source commit
+2547e84127b23398f68b2d0b3ffab75ccdc876c0 and archive SHA-256
+462b4e401142abcc8a28f2595a3ceadd6e14ec836a4683606267d5e1421eaa97.
+
+Revocation sequence 57, with zero entries, was signed, verified locally with
+Cosign and accepted by the control plane at 07:45:08Z. That record expired at
+08:08:55Z. Its package-manifest refresh did not complete because the publisher
+was run without the staged package tree. The corrected staging order is present
+in the working tree but has not been rerun against the live registry. Sequence
+57 is historical evidence only; refresh and verify the complete package and
+revocation set before another live mutation.
+
+This refresh does not close live acceptance. Beneficiary manual-versus-Wazi
+measurements, an authorized Meta AI authoring/promotion/reuse run, fresh
+registry publication evidence and the final three-minute film remain open.
+Receipts for this observation are in
+[the 3 November evidence directory](../releases/phase2/live-evidence/2026-11-03/).
+
+## Native qualification of the current working tree — 3 November
+
+At 09:10:20Z, Bera-003 qualified a staged working-tree archive with source
+commit 00757075c2c032ccf1d3ca47eed58b6ff16d9948 and SHA-256
+6c26cfa073b409d78a33e3eb9645cae3a46a6686c6de77bc6bfbebff1c1a93e1.
+The archive is identified as uncommitted source. Its local staging receipt and
+archive are under artifacts/phase2/20261103T091002Z; the remote copy is under
+/home/wazi-dev/wazi-phase2/20261103T091002Z.
+
+The full Go suite, native Linux race packages, Linux and Windows vet, gofmt,
+four service builds, all maintained Python suites and the repository secret
+scan passed. This qualified the staged implementation, including the
+candidate-promotion recovery regression and the active .age checkpoint
+corruption fixture.
+
+This is native working-tree qualification, not CI on a committed final source
+revision. It did not deploy binaries, restart services, publish revocation or
+package records, or perform live application mutations. Live Phase 2
+acceptance and the remaining beneficiary, Meta tooling and film evidence
+remain open.
+
+## Owner scope amendment — 3 November
+
+Automated model authoring/provider integration is now deferred. Codex assists
+through this chat and exported/imported candidate files. It is not a live
+in-product model connection or evidence of Meta tooling use. The final film
+is a release-wide deliverable rather than a retrieval-engine acceptance gate.
+Phase 2 still needs refreshed live acceptance and the observed maintainer
+manual-versus-Wazi comparison. Historical rows above retain their original
+reported scope and timestamps; this amendment supersedes their closure wording.

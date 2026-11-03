@@ -21,9 +21,11 @@ import (
 	"time"
 
 	"github.com/Bera-Corp/wazi/services/internal/approvalregistry"
+	"github.com/Bera-Corp/wazi/services/internal/candidateworkflow"
 	"github.com/Bera-Corp/wazi/services/internal/contracts"
 	"github.com/Bera-Corp/wazi/services/internal/manifestregistry"
 	"github.com/Bera-Corp/wazi/services/internal/pairing"
+	"github.com/Bera-Corp/wazi/services/internal/verify"
 )
 
 // Limits bound intake so a single caller cannot exhaust memory or
@@ -44,6 +46,8 @@ type Config struct {
 	PilotAgentSocket       string
 	Registry               *pairing.Registry
 	ManifestRegistry       *manifestregistry.Registry
+	CandidateStore         *candidateworkflow.Store
+	SigningPolicy          verify.Policy
 	ApprovalRegistry       *approvalregistry.Registry
 	CapabilityPolicyBundle []byte
 	CA                     *pairing.CA // nil = plain loopback dev mode (no enrollment issuance)
@@ -153,6 +157,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/deployments", s.handlePilotDeployment)
 	mux.HandleFunc("GET /v1/deployments/{jobID}", s.handlePilotDeploymentStatus)
 	s.registerContextRoutes(mux)
+	s.registerPackageCandidateRoutes(mux)
 	return mux
 }
 

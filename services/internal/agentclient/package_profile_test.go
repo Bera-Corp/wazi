@@ -1,6 +1,7 @@
 package agentclient
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"filippo.io/age"
 )
 
 func packageRenderFixture(t *testing.T, profile string) (*DockerPackageBoundary, map[string]any) {
@@ -51,7 +54,19 @@ func packageRenderFixture(t *testing.T, profile string) (*DockerPackageBoundary,
 		}
 	}
 	release["environment"] = entries
-	config := PackageInstanceConfig{Profile: profile, Runtime: DockerPilotConfig{Project: project, ImageConfigDigests: map[string]string{digest: "sha256:" + strings.Repeat("b", 64)}}, SecretFiles: secrets}
+	backupEncryption := PackageBackupEncryptionConfig{}
+	if profile == "postgresql" || profile == "mysql" {
+		identity, err := age.GenerateX25519Identity()
+		if err != nil {
+			t.Fatal(err)
+		}
+		identityFile := filepath.Join(t.TempDir(), "backup-identity.txt")
+		if err := os.WriteFile(identityFile, []byte(identity.String()+"\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		backupEncryption = PackageBackupEncryptionConfig{Recipients: []string{identity.Recipient().String()}, IdentityFile: identityFile}
+	}
+	config := PackageInstanceConfig{Profile: profile, Runtime: DockerPilotConfig{Project: project, ImageConfigDigests: map[string]string{digest: "sha256:" + strings.Repeat("b", 64)}}, SecretFiles: secrets, BackupEncryption: backupEncryption}
 	return &DockerPackageBoundary{config: config, shape: shape}, m
 }
 
@@ -134,7 +149,7 @@ func TestPackageCheckpointBindsScopeAndRejectsCorruptionBeforeMutation(t *testin
 	}
 	file.Close()
 	before := len(calls)
-	if err := os.WriteFile(filepath.Join(state, "backups", "bak_package_test.dump"), []byte("tampered"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(state, "backups", "bak_package_test.age"), []byte("tampered"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	if err := b.restore(context.Background(), p, "bak_package_test", nil); err == nil {
@@ -239,6 +254,11 @@ func TestFailedDatabaseRestoreRetainsPreRestoreCheckpoint(t *testing.T) {
 	if err := b.backup(context.Background(), p, "bak_restore_failure", "backups"); err != nil {
 		t.Fatal(err)
 	}
+	ciphertext, err := os.ReadFile(filepath.Join(b.config.Runtime.StateDirectory, "backups", "bak_restore_failure.age"))
+	if err != nil || !bytes.HasPrefix(ciphertext, []byte("age-encryption.org/v1\n")) || bytes.Contains(ciphertext, []byte("known-database-checkpoint")) {
+		t.Fatal("database checkpoint was not stored as age ciphertext")
+	}
+	identityFile := b.config.BackupEncryption.IdentityFile
 	envelope := parseReleaseObject(t, p.Envelope())
 	envelope["rollbackStrategy"] = map[string]any{"supported": false, "checkpointRequired": true, "checkpoint": map[string]any{"backupId": "bak_pre_declared", "volume": b.shape.Volume}}
 	p.envelopeRaw = canonical(t, envelope)
@@ -248,24 +268,46 @@ func TestFailedDatabaseRestoreRetainsPreRestoreCheckpoint(t *testing.T) {
 	if err := b.backup(context.Background(), p, "bak_pre_declared", "pre-restore"); err != nil {
 		t.Fatal(err)
 	}
+	_, _, wrongIdentityFile := packageAgeFixture(t)
+	b.config.BackupEncryption.IdentityFile = wrongIdentityFile
+	if err := b.restore(context.Background(), p, "bak_restore_failure", nil); err == nil || mutations != 0 {
+		t.Fatal("restore mutated the database with the wrong age identity")
+	}
+	b.config.BackupEncryption.IdentityFile = identityFile
 	if err := b.restore(context.Background(), p, "bak_restore_failure", nil); err == nil {
 		t.Fatal("failed restore reported success")
 	}
 	if mutations != 1 {
 		t.Fatalf("database mutations=%d", mutations)
 	}
-	files, err := filepath.Glob(filepath.Join(b.config.Runtime.StateDirectory, "pre-restore", "*.dump"))
+	files, err := filepath.Glob(filepath.Join(b.config.Runtime.StateDirectory, "pre-restore", "*.age"))
 	if err != nil || len(files) != 1 {
 		t.Fatal("pre-restore checkpoint missing")
 	}
-	id := strings.TrimSuffix(filepath.Base(files[0]), ".dump")
+	id := strings.TrimSuffix(filepath.Base(files[0]), ".age")
 	file, record, err := b.verifiedCheckpoint(p, id)
 	if err != nil {
 		t.Fatal(err)
 	}
 	file.Close()
-	if record.PayloadDigest == "" || record.Bytes == 0 {
+	if record.Format != "age-v1" || record.PayloadFormat != "postgres-custom" || record.PayloadDigest == "" || record.Bytes == 0 {
 		t.Fatal("pre-restore checkpoint lacks bound evidence")
+	}
+}
+
+func TestDatabaseBackupFailsClosedWithoutAgeConfiguration(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("private checkpoint directory permissions are qualified on Linux")
+	}
+	b, _ := packageRenderFixture(t, "postgresql")
+	b.config.Runtime.StateDirectory = t.TempDir()
+	b.config.BackupEncryption = PackageBackupEncryptionConfig{}
+	if err := b.backup(context.Background(), PreparedExecution{}, "bak_no_encryption", "backups"); err == nil {
+		t.Fatal("database backup proceeded without age configuration")
+	}
+	entries, err := os.ReadDir(filepath.Join(b.config.Runtime.StateDirectory, "backups"))
+	if err != nil || len(entries) != 0 {
+		t.Fatal("unencrypted backup bytes were written")
 	}
 }
 

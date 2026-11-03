@@ -269,3 +269,50 @@ This file contains a growing ruleset that improves over time. **At session start
 198. [TOOL] Omit unneeded trailing context from documentation patches — a final unmatched physical line can reject an otherwise correct file-scoped update.
 199. [TOOL] Keep environment-token detection and value extraction on separate lines — compacting the condition and assignment can resemble an embedded secret assignment to the scanner.
 200. [TOOL] Override core.autocrlf=false and core.eol=lf for committed-source Git archives — Windows archive checkout conversion can otherwise introduce CRLF into every Go file and fail native gofmt despite green Linux CI.
+201. [TOOL] Assign PowerShell try/catch results before piping to formatting cmdlets — a try statement cannot be used directly as a pipeline element.
+
+202. [TOOL] Label PowerShell existence-check output before interpreting it with other results — an unlabeled Boolean can be misread as the opposite state.
+
+203. [TOOL] Use ripgrep default-compatible regex or add --pcre2 for look-around constructs — the default engine rejects look-ahead and look-behind.
+
+204. [PROCESS] Stage the source archive beside signed Phase 2 records before using publish mode — publication updates revocation state before it reads package manifests, so a later file error can leave a partial registry update.
+205. [TOOL] Copy exact struct declarations before composing multi-function Go patches — spacing and alignment can differ from summarized snippets and reject the whole patch.
+206. [TOOL] Run go mod tidy after adding Go dependencies before tests — go get may update module requirements without adding checksums for transitive imports needed by package compilation.
+207. [TOOL] Verify cryptographic library call signatures in the pinned local module before integration — variadic APIs can differ from assumed slice arguments.
+208. [TOOL] Preserve exec_command session identifiers when a command exceeds its yield window — discarding them loses reliable completion state and output.
+209. [TOOL] Qualify POSIX file-mode assertions by target operating system — Windows ACLs are not represented by Go's Unix permission bits.
+210. [TOOL] Recheck gofmt-normalized lines before patching Go expressions — formatting changes spaces in path and composite expressions.
+211. [TOOL] Check Hallmark draw's accepted job vocabulary before passing a custom action — unsupported labels are ignored and yield generic composition.
+212. [TOOL] Add -- before ripgrep patterns that begin with a dash — otherwise rg parses the pattern as an option.
+213. [TOOL] Avoid assigning PowerShell automatic variables such as $PID to local values — variable names are case-insensitive and assignment fails for read-only shell state.
+214. [TOOL] Replace every Markdown code span in documentation patches with safe placeholders before composing String.raw — an inline backtick can abort JavaScript before the patch is applied.
+215. [TOOL] Assert CSP headers on HTML and script routes separately from static brand assets — the asset handler does not add the control-plane response headers.
+216. [TOOL] Re-read the current generated page before patching copy after a file replacement — remembered markup can differ from the on-disk version and reject the entire hunk.
+217. [TOOL] Put psql options before a positional conninfo argument or use explicit --dbname and --command options — psql may stop option parsing early and ignore a later query.
+218. [TOOL] Do not send Ctrl-C to a console-attached pg_ctl startup after readiness — its process group can include and stop the PostgreSQL cluster being qualified.
+219. [TOOL] Search known npm roots instead of recursively scanning a user home for Node packages — broad recursion is slow and may miss hidden or global installation paths.
+220. [PROCESS] Install the repository-declared postgres extra before enabling live Postgres tests in a validation venv — the dev extra intentionally omits psycopg.
+221. [TOOL] Resolve package registry implementation files from `rg --files` before reading validator-related paths — record validation may be implemented in a registry source file rather than a separate file named after the helper.
+222. [TOOL] Use existing directories with `rg -g` filters instead of wildcard directory arguments in PowerShell — ripgrep receives wildcards literally and reports invalid paths.
+223. [CODE] Parse source URLs with `net/url.ParseRequestURI` — URL parsing belongs to the net/url package, not time.
+224. [CODE] Keep Go regular-expression repetition bounds at 1000 or below and enforce larger length limits separately — RE2 rejects larger counted repetitions at package initialization.
+225. [TOOL] Search the verified `context/examples` path directly instead of adding a presumed root `examples` directory — this repository stores shared contract fixtures under context/examples.
+226. [TOOL] Copy exact import paths before patching Go import blocks — standard library imports may use path-qualified names such as `os/signal`.
+227. [CODE] Exempt URI schemes in secret-assignment scanning before evaluating the value — the `secret://` reference scheme otherwise resembles a secret key followed by a URL.
+228. [TOOL] Replace Go struct-tag backticks with a safe placeholder before placing Go patches in JavaScript template literals — the tag delimiter closes the wrapper before the patch tool receives the edit.
+229. [TOOL] Preserve the colon and whitespace when transforming CSS declaration prefixes — dropping the separator makes the stylesheet invalid.
+230. [TOOL] When restoring CSS declarations with removed separators, allow numeric values to follow property names without a word boundary — digits are word characters and otherwise remain fused to the property.
+231. [TOOL] Use normal package resolution for temporary renderer dependencies unless the full dependency tree is confirmed cached — npm offline mode fails when a transitive tarball is absent.
+232. [UX] Inspect mobile render screenshots for dense multi-step labels even when the UI linter is clean — equal four-column stage grids can clip text at phone widths.
+233. [TOOL] Verify exact exported constructor names before writing integration tests — manifestregistry exposes New, not Open.
+234. [CODE] Compute the signed-record digest before mutating a parsed map for candidate comparison — Go map views alias, so deleting the signature also changes the source value.
+235. [TEST] Target the active checkpoint extension in corruption fixtures — tampering a legacy .dump sibling does not exercise verification of the current .age file.
+236. [DATA] Register each new canonical schema in the repository validator and embedded Go copy inventory — unregistered schemas intentionally fail closed during shared validation.
+237. [TOOL] Enumerate context worker filenames before reading a presumed live module — live receipt import is implemented in context_worker.py, not context_live.py.
+238. [TOOL] Rebase every source inspection path when switching an exec command to the services working directory — mixing repository-relative reads with module-relative tests fails before inspection.
+239. [CODE] Assign runtime OAuth credential references through indexed fields rather than secret-key dictionary literals — the secret scanner flags high-entropy-looking source expressions even when the value is read at runtime.
+240. [CODE] Explicitly close SQLite connections after their transaction context — sqlite3.Connection context managers commit or roll back but do not release Windows file handles.
+241. [TEST] Mirror the actual private case-store column names in contribution fixtures — simplified evidence tables can miss the id column used by the read-only exporter.
+242. [TOOL] Run schema-dependent community tests with the repository validation virtual environment — the global Python installation does not include the pinned jsonschema dependencies.
+243. [CODE] Set runtime CSRF headers through indexed header assignments — token-named object literals can make runtime expressions resemble embedded secrets to the repository scanner.
+244. [CODE] Update the actual HTML response CSP when moving workbench styles into external files — style-src unsafe-inline alone blocks same-origin stylesheets even when a static preview looks correct.

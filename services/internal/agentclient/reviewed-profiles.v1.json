@@ -1,0 +1,8 @@
+{
+  "SchemaVersion": "1.0.0",
+  "Profiles": {
+    "postgresql": {"App":"org.postgresql.postgresql","Service":"postgresql","Image":"ghcr.io/bera-corp/wazi-phase2-postgresql","Volume":"data","Mount":"/var/lib/postgresql/data","Health":"postgresql://local/wazi","RAM":384,"Storage":2048,"Port":15432,"ContainerPort":5432,"CPU":"0.5","Caps":["CHOWN","FOWNER","DAC_OVERRIDE","SETUID","SETGID"]},
+    "mysql": {"App":"com.mysql.mysql","Service":"mysql","Image":"ghcr.io/bera-corp/wazi-phase2-mysql","Volume":"data","Mount":"/var/lib/mysql","Health":"mysql://local/wazi","RAM":768,"Storage":2048,"Port":13306,"ContainerPort":3306,"CPU":"0.5","Caps":["CHOWN","FOWNER","DAC_OVERRIDE","SETUID","SETGID"]},
+    "nginx": {"App":"org.nginx.nginx","Service":"nginx","Image":"ghcr.io/bera-corp/wazi-phase2-nginx","Volume":"config","Mount":"/etc/nginx","Health":"http://127.0.0.1:18080/","RAM":128,"Storage":128,"Port":18080,"ContainerPort":80,"CPU":"0.25","Caps":["CHOWN","SETUID","SETGID","NET_BIND_SERVICE"]}
+  }
+}

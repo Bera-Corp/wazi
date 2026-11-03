@@ -1,0 +1,17 @@
+{
+  "operation": "expired-node-repair",
+  "tenantScope": "tenant_live_20261030T064834Z",
+  "hostId": "host_bera-003",
+  "previousCertificateFingerprint": "sha256:bf0abf0ef510aa20ef1a7eeff6507be65775b9eda69f0ee024633e48c5553110",
+  "newCertificateFingerprint": "sha256:ce656404fae751d1997bef9901a15985cc1d917eb914070e70210f7f00a238af",
+  "newCertificatePemSha256": "sha256:8412611a0ac3a5c598c4590d380f3ebd7a43b2f884122284f1d801967c3d08b0",
+  "certificateDates": [
+    "notBefore=Nov  3 07:36:01 2026 GMT",
+    "notAfter=Nov  4 07:37:01 2026 GMT"
+  ],
+  "serverAnchorUnchanged": true,
+  "journalFilesUnchanged": 41,
+  "applicationHealth": "pass",
+  "workerActive": true,
+  "verifiedAt": "2026-11-03T07:37:01+00:00"
+}

@@ -1,0 +1,12 @@
+[
+  {"applicationId":"org.gitea.gitea","name":"Gitea","repository":"go-gitea/gitea","category":"Developer tools","description":"A self-hosted Git forge. Existing pilot evidence remains environment-specific.","deferred":false},
+  {"applicationId":"org.postgresql.postgresql","name":"PostgreSQL","repository":"postgres/postgres","category":"Databases","description":"Relational database with explicit backup and recovery requirements.","deferred":false},
+  {"applicationId":"com.mysql.mysql","name":"MySQL","repository":"mysql/mysql-server","category":"Databases","description":"Relational database. Select a qualified package for your environment.","deferred":false},
+  {"applicationId":"org.nginx.nginx","name":"Nginx","repository":"nginx/nginx","category":"Networking","description":"Web server and proxy with reproducible configuration.","deferred":false},
+  {"applicationId":"pet.kuma.uptime","name":"Uptime Kuma","repository":"louislam/uptime-kuma","category":"Monitoring","description":"Self-hosted monitoring. Help contribute its first reviewed Wazi setup.","deferred":false},
+  {"applicationId":"net.vaultwarden.server","name":"Vaultwarden","repository":"dani-garcia/vaultwarden","category":"Security","description":"Unofficial Bitwarden-compatible server. Discovery listing only.","deferred":false},
+  {"applicationId":"org.jellyfin.server","name":"Jellyfin","repository":"jellyfin/jellyfin","category":"Media","description":"A personal media server. Resource and architecture qualification required.","deferred":false},
+  {"applicationId":"com.paperless-ngx.server","name":"Paperless-ngx","repository":"paperless-ngx/paperless-ngx","category":"Documents","description":"Document management with coordinated storage and database recovery.","deferred":false},
+  {"applicationId":"dev.gethomepage.homepage","name":"Homepage","repository":"gethomepage/homepage","category":"Productivity","description":"A customizable application dashboard. Discovery listing only.","deferred":false},
+  {"applicationId":"app.immich.server","name":"Immich","repository":"immich-app/immich","category":"Media","description":"Photo management. Live qualification remains owner-deferred.","deferred":true}
+]

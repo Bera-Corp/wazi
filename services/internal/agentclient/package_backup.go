@@ -10,10 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"filippo.io/age"
 )
 
 type packageCheckpoint struct {
 	Format, Profile, Project, Tenant, ManifestDigest, BackupID, PayloadDigest, CreatedAt string
+	PayloadFormat                                                                        string
 	Bytes                                                                                int64
 }
 
@@ -43,7 +46,11 @@ func (b *DockerPackageBoundary) checkpointPath(id, kind string) (string, error) 
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 || info.Mode().Perm()&0077 != 0 {
 		return "", fmt.Errorf("package checkpoint directory must be private")
 	}
-	return filepath.Join(root, id+".dump"), nil
+	extension := ".dump"
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" {
+		extension = ".age"
+	}
+	return filepath.Join(root, id+extension), nil
 }
 
 func (b *DockerPackageBoundary) checkReleaseAnchor(p PreparedExecution, create bool) error {
@@ -84,10 +91,43 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 	if err != nil {
 		return err
 	}
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" {
+		legacyPath := strings.TrimSuffix(path, ".age") + ".dump"
+		if _, err := os.Lstat(legacyPath); err == nil {
+			return fmt.Errorf("legacy package checkpoint identity is retained; choose a new identity")
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
 	if _, err := os.Lstat(path); err == nil {
 		return fmt.Errorf("package backup identity already exists")
 	} else if !os.IsNotExist(err) {
 		return err
+	}
+	format := "nginx-config-json"
+	payloadFormat := ""
+	var recipients []age.Recipient
+	switch b.config.Profile {
+	case "postgresql":
+		format, payloadFormat = "age-v1", "postgres-custom"
+		recipients, err = parsePackageAgeRecipients(b.config.BackupEncryption.Recipients)
+	case "mysql":
+		format, payloadFormat = "age-v1", "mysql-logical"
+		recipients, err = parsePackageAgeRecipients(b.config.BackupEncryption.Recipients)
+	case "nginx":
+	default:
+		return fmt.Errorf("package checkpoint profile is not supported")
+	}
+	if err != nil {
+		return fmt.Errorf("package backup encryption is not configured")
+	}
+	if format == "age-v1" {
+		if b.config.BackupEncryption.IdentityFile == "" {
+			return fmt.Errorf("package backup encryption is not configured")
+		}
+		if err := validatePackageAgeKeyPair(b.config.BackupEncryption); err != nil {
+			return err
+		}
 	}
 	f, err := os.CreateTemp(filepath.Dir(path), ".package-dump-")
 	if err != nil {
@@ -97,16 +137,25 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 	defer os.Remove(temporary)
 	defer f.Close()
 	h := sha256.New()
-	writer := &limitedPackageDump{writer: io.MultiWriter(f, h), remaining: int64(b.shape.Storage) * 1024 * 1024}
-	format := "postgres-custom"
+	ciphertextWriter := io.MultiWriter(f, h)
+	limit := int64(b.shape.Storage) * 1024 * 1024
+	var encryptedWriter io.WriteCloser
+	var writer *limitedPackageDump
+	if format == "age-v1" {
+		encryptedWriter, err = age.Encrypt(ciphertextWriter, recipients...)
+		if err != nil {
+			return fmt.Errorf("package backup encryption could not start")
+		}
+		writer = &limitedPackageDump{writer: encryptedWriter, remaining: limit}
+	} else {
+		writer = &limitedPackageDump{writer: ciphertextWriter, remaining: limit}
+	}
 	switch b.config.Profile {
 	case "postgresql":
 		_, err = b.client(ctx, "pg_dump", nil, writer, "--dbname=service=wazi", "--no-password", "--format=custom")
 	case "mysql":
-		format = "mysql-logical"
 		_, err = b.client(ctx, "mysqldump", nil, writer, "--defaults-extra-file=/run/secrets/client.conf", "--single-transaction", "--skip-lock-tables", "--no-tablespaces", "--set-gtid-purged=OFF", "wazi")
 	case "nginx":
-		format = "nginx-config-json"
 		var raw []byte
 		raw, err = b.readNginxConfig()
 		if err == nil {
@@ -114,7 +163,15 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 		}
 	}
 	if err != nil {
+		if encryptedWriter != nil {
+			_ = encryptedWriter.Close()
+		}
 		return fmt.Errorf("package checkpoint creation failed: %w", err)
+	}
+	if encryptedWriter != nil {
+		if err := encryptedWriter.Close(); err != nil {
+			return fmt.Errorf("package checkpoint encryption finalization failed")
+		}
 	}
 	if err = f.Sync(); err != nil {
 		return err
@@ -126,7 +183,7 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 	if err = f.Close(); err != nil {
 		return err
 	}
-	metadata := packageCheckpoint{Format: format, Profile: b.config.Profile, Project: b.config.Runtime.Project, Tenant: p.TenantScope(), ManifestDigest: p.Binding().Release.ManifestDigest, BackupID: id,
+	metadata := packageCheckpoint{Format: format, PayloadFormat: payloadFormat, Profile: b.config.Profile, Project: b.config.Runtime.Project, Tenant: p.TenantScope(), ManifestDigest: p.Binding().Release.ManifestDigest, BackupID: id,
 		PayloadDigest: fmt.Sprintf("sha256:%x", h.Sum(nil)), CreatedAt: time.Now().UTC().Format(time.RFC3339), Bytes: info.Size()}
 	raw, err := json.Marshal(metadata)
 	if err != nil {
@@ -174,7 +231,17 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 		return nil, record, err
 	}
 	info, err := os.Lstat(path)
-	if err != nil || !info.Mode().IsRegular() || info.Size() > int64(b.shape.Storage)*1024*1024 {
+	if os.IsNotExist(err) && (b.config.Profile == "postgresql" || b.config.Profile == "mysql") {
+		legacyPath := strings.TrimSuffix(path, ".age") + ".dump"
+		if legacyInfo, legacyErr := os.Lstat(legacyPath); legacyErr == nil {
+			path, info, err = legacyPath, legacyInfo, nil
+		}
+	}
+	maxBytes := int64(b.shape.Storage) * 1024 * 1024
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" {
+		maxBytes += ageHeaderAllowance
+	}
+	if err != nil || !info.Mode().IsRegular() || info.Size() > maxBytes {
 		return nil, record, fmt.Errorf("package checkpoint file invalid")
 	}
 	meta, err := os.Lstat(path + ".json")
@@ -188,8 +255,14 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 	if json.Unmarshal(raw, &record) != nil || record.Profile != b.config.Profile || record.Project != b.config.Runtime.Project || record.Tenant != p.TenantScope() || record.ManifestDigest != p.Binding().Release.ManifestDigest || record.BackupID != id || record.Bytes != info.Size() {
 		return nil, record, fmt.Errorf("package checkpoint binding mismatch; cross-version restore requires a separately qualified migration")
 	}
-	expectedFormat := map[string]string{"postgresql": "postgres-custom", "mysql": "mysql-logical", "nginx": "nginx-config-json"}[b.config.Profile]
-	if record.Format != expectedFormat {
+	expectedPayload := map[string]string{"postgresql": "postgres-custom", "mysql": "mysql-logical"}[b.config.Profile]
+	if expectedPayload != "" && record.Format == "age-v1" && record.PayloadFormat != expectedPayload {
+		return nil, record, fmt.Errorf("encrypted checkpoint payload format mismatch")
+	}
+	if expectedPayload != "" && record.Format != "age-v1" && record.Format != expectedPayload {
+		return nil, record, fmt.Errorf("checkpoint format mismatch")
+	}
+	if expectedPayload == "" && record.Format != "nginx-config-json" {
 		return nil, record, fmt.Errorf("checkpoint format mismatch")
 	}
 	file, err := os.Open(path)
@@ -218,11 +291,23 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 		return err
 	}
 	defer file.Close()
+	restoreFile := file
+	cleanupRestore := func() {}
+	if record.Format == "age-v1" {
+		restoreFile, cleanupRestore, _, err = stageAgeDecryption(file, filepath.Dir(file.Name()), b.config.BackupEncryption.IdentityFile, int64(b.shape.Storage)*1024*1024)
+		if err != nil {
+			return fmt.Errorf("package checkpoint decryption failed: %w", err)
+		}
+		defer cleanupRestore()
+	}
 	if b.config.Profile == "postgresql" {
-		if _, err := b.client(ctx, "pg_restore", file, nil, "--list"); err != nil {
+		if record.Format != "age-v1" && record.Format != "postgres-custom" {
+			return fmt.Errorf("checkpoint format mismatch")
+		}
+		if _, err := b.client(ctx, "pg_restore", restoreFile, nil, "--list"); err != nil {
 			return fmt.Errorf("PostgreSQL checkpoint does not parse")
 		}
-		if _, err := file.Seek(0, io.SeekStart); err != nil {
+		if _, err := restoreFile.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
 	}
@@ -237,9 +322,24 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 		if !strings.HasPrefix(beforeID, "bak_pre_") || beforeID == id || checkpoint["volume"] != b.shape.Volume {
 			return fmt.Errorf("pre-restore checkpoint reference invalid")
 		}
-		before, _, err := b.verifiedCheckpoint(p, beforeID)
+		before, beforeRecord, err := b.verifiedCheckpoint(p, beforeID)
 		if err != nil {
 			return fmt.Errorf("declared pre-restore checkpoint required: %w", err)
+		}
+		if beforeRecord.Format == "age-v1" {
+			staged, cleanup, _, decryptErr := stageAgeDecryption(before, filepath.Dir(before.Name()), b.config.BackupEncryption.IdentityFile, int64(b.shape.Storage)*1024*1024)
+			if decryptErr != nil {
+				before.Close()
+				return fmt.Errorf("declared pre-restore checkpoint is not decryptable: %w", decryptErr)
+			}
+			if b.config.Profile == "postgresql" {
+				if _, err := b.client(ctx, "pg_restore", staged, nil, "--list"); err != nil {
+					cleanup()
+					before.Close()
+					return fmt.Errorf("declared pre-restore PostgreSQL checkpoint does not parse")
+				}
+			}
+			cleanup()
 		}
 		before.Close()
 	} else {
@@ -253,7 +353,7 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 	}
 	switch b.config.Profile {
 	case "postgresql":
-		if record.Format != "postgres-custom" {
+		if record.Format != "age-v1" && record.Format != "postgres-custom" {
 			return fmt.Errorf("checkpoint format mismatch")
 		}
 		if _, err = b.client(ctx, "dropdb", nil, nil, "--maintenance-db=service=wazi dbname=postgres", "--no-password", "--force", "wazi"); err != nil {
@@ -262,21 +362,21 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 		if _, err = b.client(ctx, "createdb", nil, nil, "--maintenance-db=service=wazi dbname=postgres", "--no-password", "--owner=wazi", "wazi"); err != nil {
 			return err
 		}
-		_, err = b.client(ctx, "pg_restore", file, nil, "--dbname=service=wazi", "--no-password", "--clean", "--if-exists", "--single-transaction", "--exit-on-error")
+		_, err = b.client(ctx, "pg_restore", restoreFile, nil, "--dbname=service=wazi", "--no-password", "--clean", "--if-exists", "--single-transaction", "--exit-on-error")
 	case "mysql":
-		if record.Format != "mysql-logical" {
+		if record.Format != "age-v1" && record.Format != "mysql-logical" {
 			return fmt.Errorf("checkpoint format mismatch")
 		}
 		if _, err = b.client(ctx, "mysql", nil, nil, "--defaults-extra-file=/run/secrets/client.conf", "--execute", "DROP DATABASE wazi; CREATE DATABASE wazi"); err != nil {
 			return err
 		}
-		_, err = b.client(ctx, "mysql", file, nil, "--defaults-extra-file=/run/secrets/client.conf", "wazi")
+		_, err = b.client(ctx, "mysql", restoreFile, nil, "--defaults-extra-file=/run/secrets/client.conf", "wazi")
 	case "nginx":
 		if record.Format != "nginx-config-json" {
 			return fmt.Errorf("checkpoint format mismatch")
 		}
 		var data map[string]string
-		raw, readErr := io.ReadAll(io.LimitReader(file, (4<<20)+1))
+		raw, readErr := io.ReadAll(io.LimitReader(restoreFile, (4<<20)+1))
 		if readErr != nil || len(raw) > 4<<20 || json.Unmarshal(raw, &data) != nil {
 			return fmt.Errorf("configuration checkpoint invalid")
 		}

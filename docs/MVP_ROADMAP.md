@@ -66,6 +66,17 @@ and demonstrated reuse. Immich live qualification is deferred; provider access
 and spending remain setup gates. Full Phase 2 stays open; see
 [the acceptance matrix](PHASE2_LIVE_EVIDENCE.md).
 
+**3 November scope amendment:** finish Phase 2 acceptance first, then build
+the public community catalog/private dashboard and reusable-package contribution
+journey in Phase 3. Original recipe contributions use Apache-2.0; Wazi software
+distribution licensing remains a separate gate. Phase 4 includes explicit Linux,
+Windows/WSL2 and macOS Docker qualification, with no inferred compatibility.
+Automatic contribution is opt-in and cannot promote reports into trusted releases.
+Codex assists through this chat and candidate files; automated model authoring
+and Immich remain deferred. Actual Meta tooling evidence remains a separate
+judging gap rather than a Phase 2 retrieval-engine closure requirement.
+See [the implemented catalog slice and remaining gates](COMMUNITY_CATALOG.md).
+
 Nodes/Fabric selection adds explicit eligible/ineligible destination reasons,
 availability policy and atomic capacity reservations after the node slice
 has runtime evidence. Later lifecycle work adds durable drain/removal and

@@ -22,7 +22,7 @@ func repositoryRoot(t *testing.T) string {
 
 func TestEmbeddedSchemasMatchCanonicalSource(t *testing.T) {
 	root := repositoryRoot(t)
-	for _, name := range []string{"common.schema.json", "app-manifest.schema.json", "procedure.schema.json", "revocation-record.schema.json", "execution-context-envelope.schema.json", "execution-context-envelope-v2.schema.json", "deployment-plan.schema.json", "approval-record.schema.json", "contribution-budget.schema.json", "managed-volume-qualification.schema.json", "policy-bundle.schema.json"} {
+	for _, name := range []string{"common.schema.json", "app-manifest.schema.json", "procedure.schema.json", "revocation-record.schema.json", "execution-context-envelope.schema.json", "execution-context-envelope-v2.schema.json", "deployment-plan.schema.json", "approval-record.schema.json", "contribution-budget.schema.json", "managed-volume-qualification.schema.json", "policy-bundle.schema.json", "candidate-qualification.schema.json"} {
 		source, err := os.ReadFile(filepath.Join(root, "schemas", name))
 		if err != nil {
 			t.Fatalf("read canonical %s: %v", name, err)

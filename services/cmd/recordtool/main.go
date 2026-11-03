@@ -92,7 +92,7 @@ func run(args []string) error {
 		}
 		fmt.Print(digest)
 		return nil
-	case "verify":
+	case "verify", "verify-community-package":
 		if len(args) != 3 {
 			return fmt.Errorf("verify requires an operator policy")
 		}
@@ -103,6 +103,14 @@ func run(args []string) error {
 		record, ok := value.(map[string]any)
 		if !ok {
 			return fmt.Errorf("record must be an object")
+		}
+		if args[0] == "verify-community-package" {
+			if record["schemaVersion"] != "1.0.0" || record["recipeId"] == nil || record["files"] == nil {
+				return fmt.Errorf("portable package index required")
+			}
+			// The community package inspector enforces the closed portable
+			// contract and file hashes before this cryptographic boundary.
+			return verify.VerifySignedRecord(raw, policy)
 		}
 		switch {
 		case record["appId"] != nil:

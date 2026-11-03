@@ -84,6 +84,7 @@ REQUIRED_SCHEMAS = {
     "eval-fixture.schema.json",
     "contribution-budget.schema.json",
     "managed-volume-qualification.schema.json",
+    "candidate-qualification.schema.json",
 }
 
 EXAMPLE_MAP = {
