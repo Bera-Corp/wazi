@@ -71,10 +71,34 @@ class Application:
 
         class Handler(BaseHTTPRequestHandler):
             protocol_version = "HTTP/1.1"
+            request_timeout = 30
 
             def setup(self):
                 super().setup()
                 self.connection.settimeout(10)
+
+            def handle_one_request(self):
+                # Idle timeouts alone allow an indefinite trickle of headers/body.
+                guard = threading.Lock()
+                active = True
+                def expire():
+                    with guard:
+                        if active:
+                            try:
+                                self.connection.shutdown(socket.SHUT_RDWR)
+                            except OSError:
+                                pass
+                timer = threading.Timer(self.request_timeout, expire)
+                timer.daemon = True
+                timer.start()
+                try:
+                    super().handle_one_request()
+                except OSError:
+                    self.close_connection = True
+                finally:
+                    with guard:
+                        active = False
+                    timer.cancel()
 
             def log_message(self, fmt, *args):
                 # Query strings can contain OAuth authorization codes.
@@ -199,7 +223,8 @@ class Application:
                     if owner is None:
                         raise PermissionError()
                     revision = float(self.headers["X-Wazi-Consent-Revision"])
-                    self.response(201, app.store.submit(owner, self.body(), revision))
+                    self.response(201, app.store.submit(owner, self.body(), revision,
+                                                       agent_credential=authorization.removeprefix("Bearer ")))
                 elif write and path in {"/api/agent/recipe-candidates", "/api/recipe-candidates"}:
                     if path.startswith("/api/agent/"):
                         authorization = self.headers.get("Authorization", "")
@@ -208,6 +233,7 @@ class Application:
                             raise PermissionError()
                     else:
                         owner = self.user(True)["owner"]
+                        authorization = None
                     if self.headers.get("Transfer-Encoding") or len(self.headers.get_all("Content-Length", [])) != 1 or self.headers.get("Content-Type") != "application/zip":
                         raise ValueError("bounded ZIP body required")
                     size = int(self.headers.get("Content-Length", "0"))
@@ -217,7 +243,8 @@ class Application:
                     if len(raw) != size:
                         raise ValueError("incomplete archive")
                     revision = float(self.headers["X-Wazi-Consent-Revision"]) if path.startswith("/api/agent/") else None
-                    self.response(201, app.store.submit_candidate(owner, raw, revision))
+                    credential = authorization.removeprefix("Bearer ") if authorization is not None else None
+                    self.response(201, app.store.submit_candidate(owner, raw, revision, agent_credential=credential))
                 elif write and path == "/api/recipe-candidates/withdraw":
                     user, body = self.user(True), self.body()
                     closed(body, "id")

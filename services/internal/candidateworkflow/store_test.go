@@ -150,6 +150,54 @@ func TestCandidateWorkflowPersistsDigestBoundTransitions(t *testing.T) {
 	}
 }
 
+func TestCandidateRetrySnapshotsRemainReopenable(t *testing.T) {
+	key, policy := candidateTestSigner(t)
+	root := filepath.Join(t.TempDir(), "candidates")
+	store, err := Open(root, policy, "candidate-test-signer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	request := candidateTestImport(t)
+	now := time.Now()
+	var failed, passed []byte
+	// Five snapshots each exceeds the former four-per-candidate startup cap
+	// while remaining within the advertised candidate and byte capacities.
+	for index := 0; index < maxCandidates*4/5+1; index++ {
+		candidate, err := store.Import("tenant_alpha", request, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if failed == nil {
+			failed = candidateTestQualificationOutcome(t, key, "tenant_alpha", candidate.CandidateDigest, false, "qual_failed", "failed", "failed")
+			passed = candidateTestQualification(t, key, "tenant_alpha", candidate.CandidateDigest, false)
+		}
+		if _, err := store.RecordQualification("tenant_alpha", candidate.CandidateID, candidate.CandidateDigest, failed, now); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.RecordQualification("tenant_alpha", candidate.CandidateID, candidate.CandidateDigest, passed, now); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.Review("tenant_alpha", candidate.CandidateID, candidate.CandidateDigest, "maintainer", now); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.MarkPromoted("tenant_alpha", candidate.CandidateID, candidate.CandidateDigest, "sha256:"+strings.Repeat("f", 64), now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := Open(root, policy, "candidate-test-signer")
+	if err != nil {
+		t.Fatalf("accepted retry snapshots prevented restart: %v", err)
+	}
+	defer reopened.Close()
+	if len(reopened.List("tenant_alpha")) != maxCandidates*4/5+1 {
+		t.Fatal("restart lost candidates")
+	}
+}
+
 func TestCandidateImportRejectsUncitedAndSignedManifest(t *testing.T) {
 	_, policy := candidateTestSigner(t)
 	store, err := Open(filepath.Join(t.TempDir(), "candidates"), policy, "candidate-test-signer")

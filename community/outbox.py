@@ -7,6 +7,7 @@ from contextlib import contextmanager
 import sqlite3
 import time
 import urllib.parse
+import zipfile
 from pathlib import Path
 
 from .contracts import VERSION, canonical, contribution, digest
@@ -98,11 +99,17 @@ class Outbox:
                 return []
             rows = db.execute("SELECT * FROM outbox WHERE state IN ('pending','retry') AND next_attempt<=? ORDER BY rowid LIMIT 1", (now,)).fetchall()
             for row in rows:
-                body = json.loads(row["body"])
-                if body.get("kind") == "recipe-candidate":
-                    inspect_archive(base64.b64decode(body["archive"], validate=True), candidate=True)
-                else:
-                    contribution(body)
+                try:
+                    body = json.loads(row["body"])
+                    if body.get("kind") == "recipe-candidate":
+                        inspect_archive(base64.b64decode(body["archive"], validate=True), candidate=True)
+                    else:
+                        contribution(body)
+                except (ValueError, KeyError, TypeError, zipfile.BadZipFile):
+                    # Older queued data may fail a newer sanitizer. Withhold it
+                    # without crashing the worker or blocking later safe items.
+                    db.execute("UPDATE outbox SET state='failed',body='{}' WHERE digest=?", (row["digest"],))
+                    continue
                 attempts = row["attempts"] + 1
                 try:
                     receipt = send(body)

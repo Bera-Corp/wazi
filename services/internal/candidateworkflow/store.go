@@ -32,6 +32,8 @@ const (
 	maxCandidateBytes        = 1 << 20
 	maxQualificationBytes    = 64 << 10
 	maxQualificationAttempts = 16
+	// Import, up to sixteen qualifications, review and promotion.
+	maxCandidateSnapshots = maxQualificationAttempts + 3
 )
 
 var (
@@ -211,7 +213,7 @@ func (s *Store) load() error {
 		}
 		return snapshots[i].revision < snapshots[j].revision
 	})
-	if len(snapshots) > maxCandidates*4 {
+	if len(snapshots) > maxCandidates*maxCandidateSnapshots {
 		return fmt.Errorf("candidate workflow snapshot limit exceeded")
 	}
 	for _, file := range snapshots {

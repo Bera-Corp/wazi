@@ -102,3 +102,11 @@ execution from a receipt alone.
 The current single maintainer session does not establish independent-human
 quorum. Candidate workflow APIs are not enabled on the live service until its
 dedicated runner signer and private store configuration are provisioned.
+
+The 3 Nov adversarial pass found that cryptographic qualification trust could
+also authorize release promotion. Promotion now requires the intersection of
+tenant release authorization and provisioned signing keys; generic registry
+intake excludes qualification-only keys. A negative HTTP regression confirms
+that a runner-signed manifest cannot change the registry or reviewed state.
+Valid multi-attempt candidates also reopen beyond the former 4,000-snapshot
+limit; the bound now matches the maximum permitted transition history.

@@ -155,7 +155,7 @@ and signed recipe definitions. Runtime checks additionally enforce cross-record
 bindings and archive integrity.
 
 ~~~powershell
-& ./.venv/Scripts/python.exe -m unittest community.test_community -v
+& ./.venv/Scripts/python.exe -m unittest discover -s community -t . -p 'test_*.py' -v
 node community/test_web.mjs
 ~~~
 
@@ -193,3 +193,17 @@ Public ingress and the Wazi software distribution license are separate release
 gates. Only original recipe contributions are designated Apache-2.0; upstream
 licenses and attribution remain in force. This change does not license the
 whole Wazi application or publish it publicly.
+
+## Adversarial fixes, 3 Nov
+
+Disposable reproductions exposed filename-dependent candidate sanitization,
+in-flight worker writes after credential revocation, withdrawal resurrection
+on retries, idle-only request bounds and qualification-key release promotion.
+The revised source rejects unknown archive roles and private home paths,
+checks worker identity inside the insertion transaction, retains empty
+withdrawal tombstones, bounds complete requests and separates qualification
+trust from tenant release authority. Sign-in remains disabled.
+
+Local validation now includes 31 community tests, complete Go tests and
+browser checks. Native Linux qualification and exact-commit CI are recorded
+separately; these fixes do not close the remaining product acceptance gates.

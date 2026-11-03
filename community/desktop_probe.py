@@ -33,11 +33,11 @@ def observe(family, executable="docker", invoke=run, system=None, desktop_versio
         raise ValueError("remote Docker contexts cannot supply local desktop observations")
     if family in {"windows-wsl2", "macos-desktop"} and name != "desktop-linux":
         raise ValueError("desktop adapter requires explicit desktop-linux context")
-    info = json.loads(invoke(executable, "info", "--format", "{{json .}}"))
+    info = json.loads(invoke(executable, "--context", name, "info", "--format", "{{json .}}"))
     if info.get("OSType") != "linux":
         raise ValueError("Linux execution guest required")
     architecture = {"x86_64": "amd64", "aarch64": "arm64", "amd64": "amd64", "arm64": "arm64"}.get(info.get("Architecture"))
-    compose = invoke(executable, "compose", "version", "--short").removeprefix("v")
+    compose = invoke(executable, "--context", name, "compose", "version", "--short").removeprefix("v")
     if desktop_version is None:
         desktop_version = platform.mac_ver()[0] if system == "Darwin" else platform.version() if system == "Windows" else "0"
     public = {"family": family, "architecture": architecture, "desktopVersion": desktop_version,

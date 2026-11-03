@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
@@ -49,6 +52,39 @@ func TestStartupErrorReleasesConfiguredRegistryWriters(t *testing.T) {
 	}
 	if err := reopenedManifests.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRegistryPolicyExcludesQualificationAuthority(t *testing.T) {
+	policy, err := verify.LoadPolicyFile(writeSigningPolicyFixture(t, t.TempDir()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	der, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256(der)
+	policy.TrustedSigners["qualification-only"] = verify.TrustedKey{KeyID: "sha256:" + hex.EncodeToString(digest[:]), PublicKeyPEM: pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: der})}
+	if err := verify.ValidatePolicy(policy); err != nil {
+		t.Fatal(err)
+	}
+	release, err := releaseRegistryPolicy(policy, []string{"qualification-only"})
+	if err != nil || len(release.TrustedSigners) != 1 {
+		t.Fatalf("release policy = %+v, %v", release, err)
+	}
+	if _, ok := release.TrustedSigners["qualification-only"]; ok {
+		t.Fatal("qualification key retained release authority")
+	}
+	if len(policy.TrustedSigners) != 2 {
+		t.Fatal("filter mutated the qualification verification policy")
+	}
+	if _, err := releaseRegistryPolicy(policy, []string{"qualification-only", "cosign-v3.1.4-fixture"}); err == nil {
+		t.Fatal("startup accepted no release authority")
 	}
 }
 

@@ -317,3 +317,7 @@ This file contains a growing ruleset that improves over time. **At session start
 243. [CODE] Set runtime CSRF headers through indexed header assignments — token-named object literals can make runtime expressions resemble embedded secrets to the repository scanner.
 244. [CODE] Update the actual HTML response CSP when moving workbench styles into external files — style-src unsafe-inline alone blocks same-origin stylesheets even when a static preview looks correct.
 245. [TOOL] Read qualification receipts from the exact returned timestamp directory — sorting all artifact directories can select a signing directory without a staging receipt.
+246. [TOOL] Resolve plugin reference and recipe paths with rg --files before reading them — reference documents may live at the plugin root and recipe directories need not contain an index fixture.
+247. [TEST] Explicitly close fixture SQLite connections as well as production connections — transaction context managers leave Windows test database handles open.
+248. [TOOL] Verify exact security progress-unit enums and enumerate documentation paths before tool calls — descriptive labels and assumed README locations are not executable tool contracts.
+249. [TOOL] Submit attack-path records only for reportable or deferred validated candidates — suppressed candidates are terminal validation outcomes and the workbench rejects them in attack-path batches.

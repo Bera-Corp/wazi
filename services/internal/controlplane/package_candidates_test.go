@@ -162,7 +162,7 @@ func TestPackageCandidatePromotionRetriesAfterRegistryOrResponseFailure(t *testi
 	config := Config{
 		PilotAgentSocket: "/run/wazi-phase1/agent.sock", OperatorToken: "local-" + "fixture-" + "operator",
 		ApproverID: "pilot-maintainer", ApproverRole: "maintainer",
-		CapabilityPolicyBundle: policyBundle, CandidateStore: store, ManifestRegistry: registry, SigningPolicy: policy,
+		CapabilityPolicyBundle: candidateReleasePolicyFixture(t, policyBundle), CandidateStore: store, ManifestRegistry: registry, SigningPolicy: policy,
 		Now: func() time.Time { return time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC) },
 	}
 	handler := New(config).Handler()
@@ -260,6 +260,16 @@ func TestPackageCandidatePromotionRetriesAfterRegistryOrResponseFailure(t *testi
 	}
 	signedManifestValue := signedValue.(map[string]any)
 	signedManifestValue["reviewState"] = "signed"
+	qualificationSigned := candidateWorkflowSignRecord(t, keys["runner-qualification"], "runner-qualification", signedManifestValue)
+	deniedBody, _ := json.Marshal(map[string]any{"candidateDigest": candidate.CandidateDigest, "signedManifest": json.RawMessage(qualificationSigned)})
+	denied := call(http.MethodPost, "/v1/package-candidates/"+candidate.CandidateID+"/promotion", deniedBody, cookie, "https://localhost", session["csrf"], false)
+	if denied.Code != http.StatusUnprocessableEntity || len(registry.List()) != 0 {
+		t.Fatalf("qualification key authorized release or mutated registry: status=%d entries=%d", denied.Code, len(registry.List()))
+	}
+	stillReviewed, _ := store.Get("tenant_demo", candidate.CandidateID)
+	if stillReviewed.State != "reviewed" {
+		t.Fatal("denied promotion advanced candidate state")
+	}
 	signedManifest := candidateWorkflowSignRecord(t, keys["release-signer"], "release-signer", signedManifestValue)
 
 	// Simulate a process stop after the manifest registry is durable but before
@@ -292,6 +302,20 @@ func TestPackageCandidatePromotionRetriesAfterRegistryOrResponseFailure(t *testi
 	if repeated.Revision != promoted.Revision || repeated.SignedManifestDigest != promoted.SignedManifestDigest {
 		t.Fatal("promotion retry changed its durable record")
 	}
+}
+
+func candidateReleasePolicyFixture(t *testing.T, raw []byte) []byte {
+	t.Helper()
+	value, err := verify.ParseJSON(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	value.(map[string]any)["signing"].(map[string]any)["trustedSigners"] = []any{"release-signer"}
+	result, err := verify.CanonicalJSON(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return result
 }
 
 func candidateWorkflowTestPolicy(t *testing.T) verify.Policy {

@@ -308,9 +308,11 @@ class CommunityTests(unittest.TestCase):
                 return "desktop-linux"
             if args[:2] == ("context", "inspect"):
                 return json.dumps([{"Endpoints": {"docker": {"Host": "npipe:////./pipe/dockerDesktopLinuxEngine"}}}])
-            if args[0] == "info":
+            if args == ("--context", "desktop-linux", "info", "--format", "{{json .}}"):
                 return json.dumps({"OSType": "linux", "Architecture": "aarch64", "ServerVersion": "29.1.3", "KernelVersion": "6.10.0-linuxkit"})
-            return "2.40.3"
+            if args == ("--context", "desktop-linux", "compose", "version", "--short"):
+                return "2.40.3"
+            self.fail("unchecked Docker context: " + repr(args))
         result = observe("windows-wsl2", invoke=command, system="Windows", desktop_version="11.0")
         self.assertEqual(result["environment"]["architecture"], "arm64")
         self.assertEqual(result["environment"]["enforcement"], "unverified")

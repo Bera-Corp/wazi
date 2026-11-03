@@ -106,6 +106,20 @@ func TestStageAgeDecryptionRejectsWrongKeyTamperingTruncationAndOverflow(t *test
 	}
 }
 
+func TestAgeCiphertextLimitIncludesChunkAuthentication(t *testing.T) {
+	_, recipient, _ := packageAgeFixture(t)
+	// At 2 GiB, chunk tags exceed the old fixed 64 KiB allowance.
+	if got := packageAgeCiphertextLimit(2 << 30); got <= (2<<30)+(64<<10) {
+		t.Fatal("large checkpoint bound omits chunk authentication overhead")
+	}
+	for _, size := range []int{1, 65535, 65536, 65537, 4 << 20} {
+		ciphertext := encryptPackageFixture(t, recipient, make([]byte, size))
+		if int64(len(ciphertext)) > packageAgeCiphertextLimit(int64(size)) {
+			t.Fatalf("valid age checkpoint rejected at plaintext boundary %d", size)
+		}
+	}
+}
+
 func TestPackageBackupAgeIdentityAndRecipientBinding(t *testing.T) {
 	identity, recipient, identityFile := packageAgeFixture(t)
 	valid := PackageBackupEncryptionConfig{Recipients: []string{recipient}, IdentityFile: identityFile}

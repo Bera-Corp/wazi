@@ -45,6 +45,8 @@ class Store:
               digest TEXT NOT NULL,body TEXT NOT NULL,archive BLOB NOT NULL,created REAL NOT NULL,
               UNIQUE(owner,digest));
             """)
+            if "withdrawn" not in {row[1] for row in db.execute("PRAGMA table_info(candidates)")}:
+                db.execute("ALTER TABLE candidates ADD COLUMN withdrawn INTEGER NOT NULL DEFAULT 0")
         os.chmod(self.path, 0o600)
 
     @contextmanager
@@ -97,11 +99,20 @@ class Store:
             row = db.execute("SELECT enabled,version,changed FROM consent WHERE owner=?", (owner,)).fetchone()
             return {"enabled": bool(row["enabled"]), "version": row["version"], "changed": row["changed"]} if row else {"enabled": False, "version": "1.0.0", "changed": None}
 
-    def submit(self, owner, body, consent_change=None):
+    @staticmethod
+    def authorize_agent(db, owner, credential):
+        # This check and the insertion share the write transaction with revocation.
+        if credential is not None and not db.execute(
+                "SELECT 1 FROM agents WHERE hash=? AND owner=? AND expires>?",
+                (Store.key(credential), owner, time.time())).fetchone():
+            raise PermissionError("contribution credential revoked or expired")
+
+    def submit(self, owner, body, consent_change=None, *, agent_credential=None):
         contribution(body)
         encoded, fingerprint = canonical(body).decode(), digest(body)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            self.authorize_agent(db, owner, agent_credential)
             consent = db.execute("SELECT enabled,version,changed FROM consent WHERE owner=?", (owner,)).fetchone()
             if not consent or not consent[0] or consent[1] != body["consentVersion"]:
                 raise PermissionError("contribution consent disabled")
@@ -193,12 +204,13 @@ class Store:
         with self.connect() as db:
             db.execute("DELETE FROM agents WHERE owner=?", (owner,))
 
-    def submit_candidate(self, owner, raw, consent_change=None):
+    def submit_candidate(self, owner, raw, consent_change=None, *, agent_credential=None):
         from .packages import inspect_archive
         index, _ = inspect_archive(raw, candidate=True)
         fingerprint = "sha256:" + hashlib.sha256(raw).hexdigest()
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            self.authorize_agent(db, owner, agent_credential)
             consent = db.execute("SELECT enabled,changed FROM consent WHERE owner=?", (owner,)).fetchone()
             if not consent or not consent[0]:
                 raise PermissionError("contribution consent disabled")
@@ -206,21 +218,21 @@ class Store:
                 raise PermissionError("contribution consent changed")
             if not db.execute("SELECT 1 FROM applications WHERE id=?", (index["applicationId"],)).fetchone():
                 raise ValueError("application must be curated")
-            prior = db.execute("SELECT id FROM candidates WHERE owner=? AND digest=?", (owner, fingerprint)).fetchone()
+            prior = db.execute("SELECT id,withdrawn FROM candidates WHERE owner=? AND digest=?", (owner, fingerprint)).fetchone()
             if prior:
-                return {"id": prior[0], "digest": fingerprint, "state": "reported"}
+                return {"id": prior[0], "digest": fingerprint, "state": "withdrawn" if prior[1] else "reported"}
             if db.execute("SELECT count(*) FROM candidates WHERE owner=?", (owner,)).fetchone()[0] >= 100 or db.execute("SELECT coalesce(sum(length(archive)),0) FROM candidates").fetchone()[0] + len(raw) > 64 << 20:
                 raise ValueError("candidate quarantine capacity exceeded")
             candidate_id = "candidate_" + secrets.token_hex(16)
-            db.execute("INSERT INTO candidates VALUES(?,?,?,?,?,?)", (candidate_id, owner, fingerprint, canonical(index).decode(), raw, time.time()))
+            db.execute("INSERT INTO candidates(id,owner,digest,body,archive,created) VALUES(?,?,?,?,?,?)", (candidate_id, owner, fingerprint, canonical(index).decode(), raw, time.time()))
             return {"id": candidate_id, "digest": fingerprint, "state": "reported"}
 
     def candidates(self, owner):
         with self.connect() as db:
             return [{"id": row[0], "digest": row[1], "index": json.loads(row[2]), "state": "candidate; independent qualification required"}
-                    for row in db.execute("SELECT id,digest,body FROM candidates WHERE owner=? ORDER BY created DESC", (owner,))]
+                    for row in db.execute("SELECT id,digest,body FROM candidates WHERE owner=? AND withdrawn=0 ORDER BY created DESC", (owner,))]
 
     def withdraw_candidate(self, owner, candidate_id):
         with self.connect() as db:
-            if db.execute("DELETE FROM candidates WHERE id=? AND owner=?", (candidate_id, owner)).rowcount != 1:
+            if db.execute("UPDATE candidates SET withdrawn=1,body='{}',archive=x'' WHERE id=? AND owner=?", (candidate_id, owner)).rowcount != 1:
                 raise LookupError("candidate not found")

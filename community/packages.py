@@ -17,6 +17,10 @@ MAX_ARCHIVE = 4 << 20
 FILE_NAME = re.compile(r"[a-z][a-z0-9_-]{0,63}\.json\Z")
 
 
+def supported_file(name):
+    return name in {"manifest.json", "licenses.json"} or name.startswith(("procedure-", "config-"))
+
+
 def validate_index(value, signed=True):
     fields = "schemaVersion recipeId applicationId releaseVersion revision license authors upstreamSources inputs files environments operations operationProcedures evidenceRefs"
     closed(value, fields + (" signature" if signed else ""))
@@ -54,7 +58,7 @@ def validate_index(value, signed=True):
     if not isinstance(files, dict) or not 1 <= len(files) <= 32 or not {"manifest.json", "licenses.json"} <= set(files):
         raise ValueError("manifest and bounded files required")
     for name, fingerprint in files.items():
-        if not FILE_NAME.fullmatch(name) or name == "recipe.json":
+        if not FILE_NAME.fullmatch(name) or not supported_file(name):
             raise ValueError("unsafe package filename")
         sha(fingerprint)
     if not isinstance(value["environments"], list) or not 1 <= len(value["environments"]) <= 32:
@@ -89,6 +93,13 @@ def validate_index(value, signed=True):
 
 
 def inspect_archive(raw, verifier=None, *, candidate=False):
+    try:
+        return _inspect_archive(raw, verifier, candidate=candidate)
+    except (KeyError, TypeError, UnicodeError, RecursionError, NotImplementedError) as error:
+        raise ValueError("malformed portable package") from error
+
+
+def _inspect_archive(raw, verifier=None, *, candidate=False):
     if len(raw) > MAX_ARCHIVE:
         raise ValueError("package archive too large")
     with zipfile.ZipFile(io.BytesIO(raw)) as archive:
@@ -107,6 +118,7 @@ def inspect_archive(raw, verifier=None, *, candidate=False):
                 raise ValueError("expanded archive too large")
             contents = archive.read(entry)
             parsed_contents = strict_json(contents)
+            validate_public_paths(parsed_contents)
             decoded_text = canonical(parsed_contents).decode("ascii")
             if "wazi-secret-scan: allow" in decoded_text or scan_text(decoded_text):
                 raise ValueError("package contains a credential pattern")
@@ -166,6 +178,18 @@ def inspect_archive(raw, verifier=None, *, candidate=False):
         if strict_json(files[name]).get("operation") != operation:
             raise ValueError("operation procedure binding mismatch")
     return index, files
+
+
+def validate_public_paths(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            validate_public_paths(key)
+            validate_public_paths(item)
+    elif isinstance(value, list):
+        for item in value:
+            validate_public_paths(item)
+    elif isinstance(value, str) and re.search(r"(?i)(/users/|/home/|[a-z]:[\\/]users[\\/])", value):
+        raise ValueError("private home paths forbidden in every package role")
 
 
 @functools.lru_cache(maxsize=2)

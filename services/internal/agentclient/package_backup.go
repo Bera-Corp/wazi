@@ -239,7 +239,7 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 	}
 	maxBytes := int64(b.shape.Storage) * 1024 * 1024
 	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" {
-		maxBytes += ageHeaderAllowance
+		maxBytes = packageAgeCiphertextLimit(maxBytes)
 	}
 	if err != nil || !info.Mode().IsRegular() || info.Size() > maxBytes {
 		return nil, record, fmt.Errorf("package checkpoint file invalid")

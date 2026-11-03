@@ -79,3 +79,8 @@ checkpoint sidecar digest detects accidental changes to the stored bytes.
 The code currently preserves legacy checkpoint compatibility and adds local
 regressions for age round trips and pre-mutation rejection. No live encrypted
 database backup or restore has been performed.
+
+The 3 Nov adversarial pass corrected the encrypted checkpoint size bound to
+include age authentication tags for every 64 KiB plaintext chunk. Boundary
+regressions verify real encrypted payloads; this remains local test evidence,
+not live encrypted recovery acceptance.

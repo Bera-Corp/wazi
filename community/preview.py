@@ -1,10 +1,9 @@
 """Read-only loopback UI preview using the real catalog database, without sign-in."""
 import argparse
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 from .contracts import strict_json
-from .server import Application
+from .server import Application, BoundedServer
 from .store import Store
 
 
@@ -21,7 +20,7 @@ def main():
             self.response(403, {"error": "read-only UI preview"})
             self.close_connection = True
     print("Read-only community preview: http://127.0.0.1:" + str(args.port), flush=True)
-    ThreadingHTTPServer(("127.0.0.1", args.port), ReadOnly).serve_forever()
+    BoundedServer(("127.0.0.1", args.port), ReadOnly).serve_forever()
 
 
 if __name__ == "__main__":

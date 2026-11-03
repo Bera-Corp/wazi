@@ -13,7 +13,7 @@ export PATH=/usr/local/go/bin:/usr/bin:/bin
 cd services
 go version
 go test ./... -count=1
-CGO_ENABLED=1 go test -race ./internal/controlplane ./internal/agentclient ./internal/pilotqueue -count=1
+CGO_ENABLED=1 go test -race ./internal/controlplane ./internal/agentclient ./internal/pilotqueue ./internal/candidateworkflow -count=1
 go vet ./...
 GOOS=windows go vet ./...
 test -z "$(gofmt -l .)"
@@ -35,7 +35,7 @@ PY
 for suite in validate test_adversarial test_sprints test_secret_scan test_render_compose test_render_compose_v1 test_context_engine test_context_live test_package_composition test_candidate_author test_prepare_package_build test_prepare_phase2_release; do
   python3 "scripts/$suite.py"
 done
-python3 -m unittest community.test_community -v
+python3 -m unittest discover -s community -t . -p 'test_*.py' -v
 python3 scripts/secret_scan.py
 printf 'QUALIFICATION_COMPLETED_AT='
 date -u +%Y-%m-%dT%H:%M:%SZ

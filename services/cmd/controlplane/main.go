@@ -183,7 +183,14 @@ func run(ctx context.Context) error {
 			return fmt.Errorf("load signing policy: %w", err)
 		}
 		cfg.SigningPolicy = policy
-		manifestStore, err := manifestregistry.New(*manifestRegistryDir, policy)
+		registryPolicy := policy
+		if *candidateStoreDir != "" {
+			registryPolicy, err = releaseRegistryPolicy(policy, qualificationSignerIDs)
+			if err != nil {
+				return fmt.Errorf("release registry policy: %w", err)
+			}
+		}
+		manifestStore, err := manifestregistry.New(*manifestRegistryDir, registryPolicy)
 		if err != nil {
 			return fmt.Errorf("open verified manifest registry: %w", err)
 		}
@@ -280,6 +287,22 @@ func envOr(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+// Qualification keys verify runner receipts only, including on generic
+// manifest/procedure/revocation ingestion paths backed by this registry.
+func releaseRegistryPolicy(policy verify.Policy, qualificationIDs []string) (verify.Policy, error) {
+	releasePolicy := verify.Policy{Algorithms: append([]string(nil), policy.Algorithms...), TrustedSigners: map[string]verify.TrustedKey{}}
+	qualification := map[string]bool{}
+	for _, id := range qualificationIDs {
+		qualification[id] = true
+	}
+	for id, key := range policy.TrustedSigners {
+		if !qualification[id] {
+			releasePolicy.TrustedSigners[id] = key
+		}
+	}
+	return releasePolicy, verify.ValidatePolicy(releasePolicy)
 }
 
 func splitConfiguredIDs(raw string) []string {

@@ -12,6 +12,7 @@ import (
 	"github.com/Bera-Corp/wazi/services/internal/candidateworkflow"
 	"github.com/Bera-Corp/wazi/services/internal/contracts"
 	"github.com/Bera-Corp/wazi/services/internal/manifestregistry"
+	"github.com/Bera-Corp/wazi/services/internal/verify"
 )
 
 var packageCandidateID = regexp.MustCompile("^cand_[0-9a-f]{32}$")
@@ -172,7 +173,12 @@ func (s *Server) registerPackageCandidateRoutes(mux *http.ServeMux) {
 			writeJSON(w, http.StatusConflict, map[string]string{"error": "candidate_digest_changed"})
 			return
 		}
-		signedDigest, err := candidateworkflow.ValidatePromotion(record, request.SignedManifest, s.cfg.SigningPolicy)
+		releasePolicy, err := s.candidateReleaseSigningPolicy()
+		if err != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "release_signing_policy_unavailable"})
+			return
+		}
+		signedDigest, err := candidateworkflow.ValidatePromotion(record, request.SignedManifest, releasePolicy)
 		if err != nil {
 			writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": "signed_release_rejected", "detail": err.Error()})
 			return
@@ -198,6 +204,40 @@ func (s *Server) registerPackageCandidateRoutes(mux *http.ServeMux) {
 		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusOK, record)
 	})
+}
+
+// A cryptographically trusted qualification key is not a release authority.
+// Intersect the tenant's release authorization with operator-provisioned keys
+// before any immutable registry mutation.
+func (s *Server) candidateReleaseSigningPolicy() (verify.Policy, error) {
+	var policy verify.Policy
+	bundle, err := contracts.DecodePolicyBundle(s.cfg.CapabilityPolicyBundle)
+	if err != nil {
+		return policy, err
+	}
+	signing, ok := bundle["signing"].(map[string]any)
+	if !ok {
+		return policy, fmt.Errorf("tenant signing authorization missing")
+	}
+	policy.TrustedSigners = map[string]verify.TrustedKey{}
+	ids, _ := signing["trustedSigners"].([]any)
+	for _, rawID := range ids {
+		id, _ := rawID.(string)
+		if key, trusted := s.cfg.SigningPolicy.TrustedSigners[id]; trusted {
+			policy.TrustedSigners[id] = key
+		}
+	}
+	algorithms, _ := signing["algorithms"].([]any)
+	for _, rawAlgorithm := range algorithms {
+		algorithm, _ := rawAlgorithm.(string)
+		for _, trusted := range s.cfg.SigningPolicy.Algorithms {
+			if algorithm == trusted {
+				policy.Algorithms = append(policy.Algorithms, algorithm)
+				break
+			}
+		}
+	}
+	return policy, verify.ValidatePolicy(policy)
 }
 
 func (s *Server) decodeCandidateJSON(w http.ResponseWriter, r *http.Request, limit int64, target any) error {

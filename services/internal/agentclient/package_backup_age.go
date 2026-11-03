@@ -18,6 +18,16 @@ const (
 	ageHeaderAllowance     = 64 << 10
 )
 
+// The age STREAM payload uses 64 KiB plaintext chunks and a 16-byte tag
+// per chunk. Keep a separate bounded allowance for recipient headers and nonce.
+func packageAgeCiphertextLimit(plaintextBytes int64) int64 {
+	chunks := (plaintextBytes + (64 << 10) - 1) / (64 << 10)
+	if chunks == 0 {
+		chunks = 1
+	}
+	return plaintextBytes + chunks*16 + ageHeaderAllowance
+}
+
 // PackageBackupEncryptionConfig contains public age recipients and a
 // protected reference to the private restore identity. Private key bytes
 // never belong in operator JSON or a request.

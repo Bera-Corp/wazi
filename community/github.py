@@ -140,7 +140,10 @@ class OAuth:
         state, verifier = secrets.token_urlsafe(32), secrets.token_urlsafe(48)
         challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
         with self.store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             db.execute("DELETE FROM oauth WHERE expires<?", (time.time(),))
+            if db.execute("SELECT count(*) FROM oauth").fetchone()[0] >= 256:
+                raise ValueError("pending identity capacity exceeded")
             db.execute("INSERT INTO oauth VALUES(?,?,?)", (self.store.key(state), verifier, time.time() + 300))
         query = urllib.parse.urlencode({"client_id": self.client_id, "redirect_uri": self.origin + "/auth/callback",
                                       "state": state, "scope": "", "code_challenge": challenge, "code_challenge_method": "S256"})
