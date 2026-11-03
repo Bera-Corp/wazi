@@ -62,7 +62,9 @@ fabricating records. Linking and listing private installations is still open.
 Version 1 packages are bounded ZIP archives of JSON files. recipe.json is a
 closed index binding every file hash, app/release/revision, original-recipe
 license, authors, pinned upstream commits, typed inputs, procedures, exact
-environment observations and evidence references. Config inputs support
+environment observations and evidence references. licenses.json carries copies
+of original/upstream license texts and attribution; it does not replace review
+of the actual upstream licensing terms. Config inputs support
 instance names, unprivileged ports and protected secret references.
 
 The inspector rejects duplicate/traversing/symlink entries, oversized expanded
@@ -168,8 +170,16 @@ Real GitHub OAuth setup/login; private installation handoff and host listings;
 supervised isolated runner and independent signer receipts; one newly reviewed
 application adapter/package; a second installation; desktop qualification and
 the remaining Phase 4 upgrade/migration/canary/supply-chain lifecycle matrix.
-Mac access will be supplied later. Docker Desktop was not found on this
-machine's PATH or standard installation path; desktop tests remain unverified.
+The owner confirmed Windows and Mac test machines are available; Mac connection
+details will be supplied later. Docker Desktop was not found on this machine's
+PATH or standard installation path; desktop tests remain unverified.
+
+The first implementation commit, 301beb789f3f4693e65b1f5427cf5cb94cfedd9f,
+passed [CI 41640674876](https://github.com/Bera-Corp/wazi/actions/runs/41640674876)
+and committed-source native Linux qualification at 13:02:17Z. It included
+22 community tests, the maintained suites, Go tests/race/vet/builds and the
+secret scan. Subsequent TLS handshake isolation adds a real certificate-based
+regression; its final source qualification is recorded separately.
 
 Public ingress and the Wazi software distribution license are separate release
 gates. Only original recipe contributions are designated Apache-2.0; upstream

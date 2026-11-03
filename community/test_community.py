@@ -4,7 +4,11 @@ import http.client
 import io
 import json
 import sqlite3
+import shutil
+import socket
+import ssl
 import stat
+import subprocess
 import tempfile
 import threading
 import time
@@ -19,6 +23,7 @@ from .outbox import Outbox
 from .packages import configure, inspect_archive
 from .platforms import compatibility
 from .server import Application
+from .server import BoundedServer
 from .store import Store
 
 
@@ -378,6 +383,61 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.request("/api/agent/contributions", report(), headers)[0], 403)
         self.store.revoke_agents("1")
         self.assertEqual(self.request("/api/agent/consent", headers=headers)[0], 403)
+
+
+class TLSTests(unittest.TestCase):
+    def test_tls_health_cookie_flags_and_slow_handshake_isolation(self):
+        executable = shutil.which("openssl")
+        if executable is None and Path("C:/Program Files/Git/usr/bin/openssl.exe").is_file():
+            executable = "C:/Program Files/Git/usr/bin/openssl.exe"
+        if executable is None:
+            self.skipTest("OpenSSL is required for this ephemeral TLS fixture")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            certificate, key = root / "server.crt", root / "server.key"
+            subprocess.run([executable, "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+                            "-subj", "/CN=localhost", "-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1",
+                            "-addext", "basicConstraints=critical,CA:TRUE", "-addext", "keyUsage=critical,digitalSignature,keyCertSign",
+                            "-keyout", str(key), "-out", str(certificate)], check=True,
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            store = Store(root / "catalog.sqlite")
+            def identity(url, **kwargs):
+                if url.endswith("access_token"):
+                    response = {"scope": ""}
+                    response["access_token"] = "short" + "-fixture"
+                    return 200, {}, response
+                return 200, {}, {"id": 7, "login": "fixture"}
+            app = Application(store, "https://localhost", root / "objects")
+            tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            tls.minimum_version = ssl.TLSVersion.TLSv1_2
+            tls.load_cert_chain(certificate, key)
+            server = BoundedServer(("127.0.0.1", 0), app.handler(), tls_context=tls)
+            app.origin = "https://localhost:" + str(server.server_port)
+            app.authority = "localhost:" + str(server.server_port)
+            app.oauth = OAuth(store, "fixture", "short-fixture", app.origin, identity)
+            worker = threading.Thread(target=server.serve_forever, daemon=True)
+            worker.start()
+            slow = socket.create_connection(("127.0.0.1", server.server_port), timeout=5)
+            context = ssl.create_default_context(cafile=str(certificate))
+            try:
+                conn = http.client.HTTPSConnection("localhost", server.server_port, context=context, timeout=3)
+                conn.request("GET", "/healthz")
+                response = conn.getresponse()
+                self.assertEqual(response.status, 200)
+                response.read()
+                conn.request("GET", "/auth/login")
+                response = conn.getresponse()
+                self.assertEqual(response.status, 303)
+                cookie = response.getheader("Set-Cookie")
+                self.assertTrue(cookie.startswith("__Host-wazi-oauth="))
+                self.assertIn("Secure; HttpOnly; SameSite=Lax", cookie)
+                response.read()
+                conn.close()
+            finally:
+                slow.close()
+                server.shutdown()
+                server.server_close()
+                worker.join()
 
 
 if __name__ == "__main__":

@@ -215,7 +215,9 @@ function showDetails(app) {
         "h2",
         app.deferred
           ? "Qualification is deferred"
-          : "Contribute the first Wazi setup",
+          : app.pilotEvidence
+            ? "Contribute a portable Wazi package"
+            : "Contribute the first Wazi setup",
       ),
       node(
         "p",

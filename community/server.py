@@ -32,7 +32,13 @@ class BoundedServer(ThreadingHTTPServer):
 
     def __init__(self, *args, **kwargs):
         self.slots = threading.BoundedSemaphore(32)
+        self.tls_context = kwargs.pop("tls_context", None)
         super().__init__(*args, **kwargs)
+
+    def get_request(self):
+        request, address = super().get_request()
+        request.settimeout(10)
+        return request, address
 
     def process_request(self, request, client_address):
         if not self.slots.acquire(blocking=False):
@@ -46,7 +52,11 @@ class BoundedServer(ThreadingHTTPServer):
 
     def process_request_thread(self, request, client_address):
         try:
+            if self.tls_context is not None:
+                request = self.tls_context.wrap_socket(request, server_side=True)
             super().process_request_thread(request, client_address)
+        except (ssl.SSLError, OSError):
+            self.shutdown_request(request)
         finally:
             self.slots.release()
 
@@ -305,17 +315,16 @@ def main():
         parser.error("configure both GitHub OAuth fields or neither")
     oauth = OAuth(store, client_id, secret_value, args.origin) if client_id and secret_value else None
     app = Application(store, args.origin, args.objects, oauth)
-    if args.bind == "::1":
-        class IPv6Server(BoundedServer):
-            address_family = socket.AF_INET6
-        server = IPv6Server((args.bind, args.port), app.handler())
-    else:
-        server = BoundedServer((args.bind, args.port), app.handler())
-    server.daemon_threads = True
     tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     tls.minimum_version = ssl.TLSVersion.TLSv1_2
     tls.load_cert_chain(args.certificate, args.key)
-    server.socket = tls.wrap_socket(server.socket, server_side=True)
+    if args.bind == "::1":
+        class IPv6Server(BoundedServer):
+            address_family = socket.AF_INET6
+        server = IPv6Server((args.bind, args.port), app.handler(), tls_context=tls)
+    else:
+        server = BoundedServer((args.bind, args.port), app.handler(), tls_context=tls)
+    server.daemon_threads = True
     def metadata_loop():
         while True:
             try:
