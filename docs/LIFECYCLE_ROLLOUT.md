@@ -1,7 +1,8 @@
 # Migration, canary and downgrade implementation
 
-Status: code implementation, 4 November 2026. No tests, vulnerability review,
-image execution, host mutation or platform qualification performed in this pass.
+Status: code implementation, 4 November 2026. Later native qualification and
+selected Uptime live operations are recorded in LINUX_INTEGRATION_2026-11-04.md;
+cross-version canary/downgrade acceptance and platform-wide qualification remain open.
 
 ## Version transitions
 
@@ -20,7 +21,7 @@ The upgraded signed image performs its built-in migration after a quiesced,
 encrypted volume checkpoint. PostgreSQL/MySQL engine major migrations remain
 blocked until separate adapters and data-conversion procedures exist.
 
-Uptime Kuma procedures generated from the package build use version 1.3.0.
+Uptime Kuma procedures generated from the current package build use version 1.5.0.
 Upgrade sequences now checkpoint before image startup and declare that same
 checkpoint in the envelope. The backup binds the source release/data format,
 even though the upgrade plan targets the new release. Before changing versions,

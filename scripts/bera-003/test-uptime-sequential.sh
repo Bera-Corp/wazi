@@ -4,9 +4,10 @@ set -euo pipefail
 umask 077
 test "$(hostname)" = bera-003
 test "$(id -u)" -eq 0
-python3 - "$1" <<'PY'
+python3 - "$@" <<'PY'
 import datetime,hashlib,json,pathlib,re,subprocess,sys,time,urllib.request
 source=pathlib.Path(sys.argv[1]);assert re.fullmatch(r'/home/wazi-dev/wazi-phase2/\d{8}T\d{6}Z',str(source))
+mode=sys.argv[2] if len(sys.argv)>2 else 'qualify';assert mode in ('qualify','restore')
 config=json.loads(pathlib.Path('/etc/wazi-phase1/agent.json').read_bytes());runtime=config['Runtime']
 prefix=['sudo','-u','wazi-runtime','env','HOME='+runtime['Home'],'XDG_RUNTIME_DIR=/run/user/'+str(runtime['RuntimeUID']),'DOCKER_HOST='+runtime['Endpoint'],'docker']
 def docker(*args):return subprocess.check_output(prefix+list(args),timeout=60)
@@ -21,14 +22,20 @@ if anchor_path.exists():
     assert anchor['manifestDigest'] in policy['Runtime']['AllowedManifests'] and anchor['project']==policy['Runtime']['Project']
     assert not anchor_path.with_name('instance-transition.json').exists()
     operation='upgrade'
+if mode=='restore':
+    previous=json.loads((source/'uptime-sequential-test.json').read_bytes())
+    assert previous['state']=='passed' and previous['manifestDigest']==anchor['manifestDigest']
+    restored=pathlib.Path(previous['checkpointFile']);assert restored.parent==anchor_path.parent/'backups' and restored.suffix=='.age'
+    restore_id=restored.stem;operation='restore';backup+='_after_restore'
 try:
     docker('stop','--time','30',pg)
-    if operation=='upgrade':
+    if operation in ('upgrade','restore'):
         container,=docker('ps','-a','--filter','label=com.docker.compose.project=wazi-uptime-kuma-01','--format','{{.ID}}').decode().split()
         inspected=json.loads(docker('inspect',container))[0]
         assert inspected['Image']==anchor['imageConfig'] and inspected['HostConfig']['Memory']==512*1048576 and inspected['HostConfig']['NanoCpus']==500000000
         docker('start',container)
-    subprocess.run(['bash',str(test),'execute',str(source),'wazi-uptime-kuma-01',operation,backup+'_upgrade' if operation=='upgrade' else ''],check=True,timeout=300)
+    input_id=restore_id if operation=='restore' else (backup+'_upgrade' if operation=='upgrade' else '')
+    subprocess.run(['bash',str(test),'execute',str(source),'wazi-uptime-kuma-01',operation,input_id],check=True,timeout=300)
     with urllib.request.urlopen('http://127.0.0.1:13001/',timeout=10) as response:assert response.status==200
     subprocess.run(['bash',str(test),'execute',str(source),'wazi-uptime-kuma-01','backup',backup],check=True,timeout=300)
     payload=pathlib.Path('/srv/wazi-runtime/phase2/wazi-uptime-kuma-01/backups')/(backup+'.age')

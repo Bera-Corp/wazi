@@ -1,7 +1,7 @@
 # Phase 2–4 implementation handoff
 
 Status: implementation in progress, 4 November 2026. Testing, bug hunting,
-security review, live execution and acceptance are deferred by the owner.
+security review, live execution and acceptance were initially deferred by the owner.
 The later [Linux integration authorization](LINUX_INTEGRATION_2026-11-04.md)
 supersedes that deferral for the current VPS work; the original statement
 records the boundary at this document's creation.
@@ -31,7 +31,7 @@ Run it on a native Linux rootless Docker development worker with an already
 loaded, immutable suite image. It does not pull images or accept candidate
 commands. The operator policy has exactly these fields:
 
-- image: repository@sha256 digest of the trusted suite image;
+- image: repository@sha256 digest or immutable local sha256 image identity of the trusted suite;
 - tenantScope, runnerId, runnerVersion and suiteDigest;
 - testIds: the complete ordered suite inventory;
 - cpuMilli, ramMb, storageMb and timeoutSeconds;
@@ -57,7 +57,8 @@ synthetic-file persistence in /work/data. Bake it into the operator's pinned
 suite image as /wazi/qualify with an executable mode and Node at
 /usr/local/bin/node. The image must contain the pinned app at /app and support
 UID 65534. Suite image assembly is now encoded in the manual image workflow;
-execution and qualification remain open. These scenarios
+the actual Linux qualification and separate receipt signature are now recorded
+in the Linux integration document. These scenarios
 do not establish monitor-record recovery, upgrades or backup correctness.
 
 scripts/sign_qualification.py takes --input, --output, --key, --signer-id,
@@ -67,7 +68,8 @@ uses recordtool's qualification schema/signature path before writing the final
 record. The signer key never enters the suite container. Tenant release policy
 must continue to exclude qualification signers. Upload the resulting signed
 record through the existing candidate qualification API, then use the existing
-review and promotion flow. No runner or signing command has been executed here.
+review and promotion flow. The Windows signing wrapper stores the encrypted
+qualification key outside the repository with a DPAPI-protected passphrase.
 
 ## Phase 4 checkpoint buildout
 
@@ -84,7 +86,9 @@ explicit database references, cleanup failures, concurrent restores and large
 imports are unresolved qualification cases. Do not claim that arbitrary SQL
 is confined to the disposable schema solely because a default schema is set.
 
-No source change here has been tested, security-reviewed or deployed. Off-host
-key provisioning/recovery, version migrations, canary rollout, vulnerability
-and SBOM evidence, and Windows/WSL2/macOS qualification remain open. The
+Later Linux native qualification, deployment, encrypted Uptime backup/restore,
+and Windows off-host decryption/SQLite verification are recorded in the linked
+integration document. Independent security review, cross-version migrations,
+canary acceptance, vulnerability/SBOM closure, and the full Windows/WSL2/macOS
+application qualification remain open. The
 existing Phase 3/4 completion plan continues to define the exit gates.

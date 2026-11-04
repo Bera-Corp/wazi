@@ -59,6 +59,53 @@ The full documented phases cannot honestly all be reported at 90% yet. The
 selected Linux Uptime path is being integrated before broadening the remaining
 adapters; existing release and resource checks remain mandatory.
 
+## Later integration results
+
+Runtime revision c68d59c passed full native qualification at 20:45:47 UTC and
+was deployed at 20:46:14 UTC. The runtime preserves candidate-workflow settings
+across deployment. The private candidate store contains
+cand_244ed888373fa82d86d5778b698232dd with the real passing qualification;
+review is pending and this candidate has not been promoted through that flow.
+The owner-approved signed pilot package was published separately to the private
+manifest/procedure registry, alongside fresh signed revocation sequence 60.
+
+The first persistent install started the correct image and initialized SQLite,
+but its health step failed because the root returns the fixed /dashboard
+redirect. The journal records that failure without an unresolved mutation.
+The corrected readiness adapter recognizes only 200 or that exact relative 302
+without following redirects. Generic application health still requires 200.
+The source also corrects storage admission to bind 25/13 GiB and 27/11 GiB
+application/shared allocations; other pairings and inadequate headroom fail.
+
+Using the initialized synthetic instance, a checkpointed same-release upgrade
+completed at 20:46:38 UTC and encrypted backup at 20:46:55 UTC. A restore of that
+checkpoint completed at 20:48:49 UTC, followed by another backup at 20:49:07 UTC.
+These are real approved jobs on the selected Linux pilot, not evidence of a
+cross-version migration or automatic downgrade. PostgreSQL's authenticated
+SELECT 1 passed afterward; Uptime is stopped with its volume retained, respecting
+the sequential-testing authorization and unchanged runtime CPU/RAM cap.
+
+The first ciphertext was transferred to Windows, authenticated and decrypted
+with the separately held off-host age identity. Its recovered SQLite database
+passed integrity_check and contained the expected Uptime schema. No application
+was installed or restored on Windows. The encrypted checkpoint digest is
+sha256:941b1fc83a3c5f21fe35ad963d96c04d49633bdd6aafd0203c02dec46fc41fc8.
+Recovery bytes and private identities remain outside Git. The archive verifier
+rejects unsafe paths, links, duplicate entries and corrupted databases; its
+regressions cover those boundaries. This narrows the off-host recovery gap but
+does not qualify the full platform matrix or monitor-record recovery.
+
+## Next code milestones
+
+The estimates above remain conservative: Phase 2 90%, Phase 3 85%, Phase 4 80%.
+The new live evidence strengthens acceptance coverage without automatically
+raising source percentages. Reach the remaining source milestones by completing
+the catalog-to-private installation handoff, then the independently versioned
+database-engine conversion adapters and Windows/WSL2/macOS lifecycle adapters.
+Keep those implementations distinct from the existing Uptime startup adapter.
+Afterward, run the paired beneficiary baseline, independent review, cross-version
+canary/recovery exercises and claimed platform matrix before phase closure.
+
 ## Approved allocation revision
 
 The owner authorized 27 GiB application reservations, 11 GiB shared
