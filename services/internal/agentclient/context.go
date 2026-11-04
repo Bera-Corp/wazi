@@ -266,6 +266,10 @@ func (b *ContextBridge) Handler() http.Handler {
 		raw, err := json.Marshal(b.Packages.Catalog())
 		respond(w, raw, err)
 	})
+	mux.HandleFunc("GET /contexts/alpha-report", func(w http.ResponseWriter, r *http.Request) {
+		raw, err := b.Worker.Call(r.Context(), map[string]any{"action": "alpha-report", "tenantScope": b.TenantScope})
+		respond(w, raw, err)
+	})
 	mux.HandleFunc("POST /contexts/propose", func(w http.ResponseWriter, r *http.Request) {
 		raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4096))
 		if err != nil {

@@ -335,3 +335,6 @@ This file contains a growing ruleset that improves over time. **At session start
 261. [TOOL] Trim line endings from serialized DPAPI SecureString files before ConvertTo-SecureString — Set-Content adds a trailing newline that the hexadecimal decoder rejects.
 262. [CODE] Bind shared-pool admission to the approved application allocation revision — reallocating storage requires matching both the enforced quota and the runtime capacity check.
 263. [CODE] Account for Uptime Kuma's exact relative dashboard redirect in its fixed readiness adapter without following arbitrary redirects — its healthy root returns 302 after database preparation.
+264. [PROCESS] Defer the independent reviewer step during the current Phase 2–5 buildout as directed by the owner — keep owner approval, signatures and runtime checks, and do not describe deferred independent review as completed.
+265. [CODE] Treat equality with a health deadline as expired and use atomic counters in concurrent HTTP fixtures — coarse Windows clocks can otherwise permit an extra zero-timeout probe.
+266. [TOOL] Bootstrap the repository import path before importing community modules from a directly executed scripts test — Python places the script directory, not the repository root, first on sys.path.

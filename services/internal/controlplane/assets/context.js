@@ -10,7 +10,7 @@
     'context-id', 'inspect', 'confirm', 'approve-run', 'deploy', 'job-id', 'refresh',
     'candidate-packet', 'candidate-import', 'candidate-list', 'qualification-receipt',
     'candidate-qualify', 'candidate-confirm-review', 'candidate-review', 'signed-manifest',
-    'candidate-confirm-promotion', 'candidate-promote'];
+    'candidate-confirm-promotion', 'candidate-promote', 'alpha-refresh'];
 
   function setStatus(message, state = 'idle') {
     el('status').textContent = message;
@@ -565,6 +565,22 @@
     el('candidate-state').textContent = 'Release promotion rejected. ' + error.message;
     el('candidate-state').dataset.state = 'error';
   });
+  el('alpha-refresh').onclick = () => run(async () => {
+    const value = await api('/v1/alpha-report');
+    const labels = {firstAttemptSuccess:'First-attempt deployment',rollbackSuccess:'Rollback success',restoreVerification:'Restore verification',plannerSchemaAfterRetry:'Planner schema after retry',deterministicDeployments:'Deterministic deployments',falseCompatible:'False-compatible decisions','secret-exposure':'Secret exposure','uncited-action':'Uncited actions','arbitrary-shell':'Arbitrary shell execution'};
+    el('alpha-metrics').replaceChildren();
+    for (const [name, metric] of Object.entries(value.metrics)) {
+      const row = document.createElement('tr');
+      for (const text of [labels[name] || name, metric.state.replaceAll('-', ' '), metric.numerator + ' / ' + metric.denominator]) {
+        const cell = document.createElement('td');
+        cell.textContent = text;
+        row.appendChild(cell);
+      }
+      el('alpha-metrics').appendChild(row);
+    }
+    el('alpha-summary').textContent = (value.alphaThresholdsMet ? 'Measured thresholds met. ' : 'More evidence is needed. ') + value.appsWithSameReleaseLocalAndVpsRecovery.length + ' apps have matching-release local and VPS recovery observations. ' + value.observations + ' observations recorded.';
+    setStatus('Private alpha progress refreshed.', 'success');
+  }, 'Loading private alpha progress…');
   el('refresh').onclick = () => run(async () => {
     const jobID = el('job-id').value.trim();
     executionPending('Refreshing status for job ' + jobID + '…');

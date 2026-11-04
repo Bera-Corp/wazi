@@ -70,7 +70,7 @@ func (r *PackageRegistry) Catalog() []map[string]any {
 	for _, key := range keys {
 		config := r.entries[key]
 		shape, _ := shapeFor(config.Profile, false)
-		operations := []string{"install", "upgrade", "backup", "restore", "uninstall"}
+		operations := []string{"install", "upgrade", "backup", "restore", "uninstall", "health-check"}
 		if config.RecoveryReleaseVersion != "" {
 			operations = append(operations, "downgrade")
 		}
@@ -96,10 +96,14 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 		}
 		operation = "restore"
 	}
-	actions := map[string]string{"install": "install", "upgrade": "upgrade", "backup": "backup", "restore": "destructive-storage", "uninstall": "uninstall"}
+	actions := map[string]string{"install": "install", "upgrade": "upgrade", "backup": "backup", "restore": "destructive-storage", "uninstall": "uninstall", "health-check": ""}
 	action, ok := actions[operation]
 	if !ok {
 		return empty, fmt.Errorf("package operation unsupported")
+	}
+	requiredApprovals := []string{}
+	if action != "" {
+		requiredApprovals = append(requiredApprovals, action)
 	}
 	if (operation == "backup" || operation == "restore") && !pilotBackupID.MatchString(backupID) {
 		return empty, fmt.Errorf("explicit immutable checkpoint identity required")
@@ -257,7 +261,7 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 		"hostProfileRef": hostRef, "policyBundleRef": policyRef, "procedureRef": procedureRef, "composeArtifactRef": artifactRef,
 		"contributionBudgetRef": budgetRef, "managedVolumeQualificationRef": qualificationRef, "secretReferences": secretRefs,
 		"allowedCapabilities": unique, "forbiddenOperations": []string{"shell.exec", "volume.delete-without-checkpoint"},
-		"requiredApprovals": []string{action}, "verificationChecks": []any{map[string]any{"id": "package-readiness", "type": "health", "target": shape.Health}},
+		"requiredApprovals": requiredApprovals, "verificationChecks": []any{map[string]any{"id": "package-readiness", "type": "health", "target": shape.Health}},
 		"rollbackStrategy": map[string]any{"supported": false, "checkpointRequired": operation == "restore" || (operation == "upgrade" && config.Profile == "uptime-kuma")},
 		"citedSources":     []any{map[string]any{"recordId": provenance["sourceId"], "contentHash": provenance["contentHash"]}}, "createdAt": created, "expiresAt": expires}
 	if rollbackProcedure != nil {
@@ -318,7 +322,7 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 		steps = append(steps, step)
 	}
 	plan, err := canonicalPayload(map[string]any{"schemaVersion": "1.0.0", "planId": "plan_" + id, "envelopeId": "env_" + id, "operation": operation,
-		"origin": "deterministic-resolver", "unresolvedQuestions": []any{}, "composeArtifactRef": artifactRef, "steps": steps, "rollbackSteps": rollbackSteps, "requiredApprovals": []string{action}, "createdAt": created, "expiresAt": expires})
+		"origin": "deterministic-resolver", "unresolvedQuestions": []any{}, "composeArtifactRef": artifactRef, "steps": steps, "rollbackSteps": rollbackSteps, "requiredApprovals": requiredApprovals, "createdAt": created, "expiresAt": expires})
 	if err != nil {
 		return empty, err
 	}

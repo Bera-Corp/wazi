@@ -95,7 +95,8 @@ def unsigned_records(profile, metadata, now):
                  "upgrade": ["manifest.verify", "compose.pull", "compose.up", "health.check"],
                  "backup": ["manifest.verify", "health.check", "volume.backup", "health.check"],
                  "restore": ["manifest.verify"] + ([] if profile in ("nginx", "uptime-kuma") else ["health.check"]) + restore[1:],
-                 "uninstall": ["manifest.verify", "compose.down"]}
+                 "uninstall": ["manifest.verify", "compose.down"],
+                 "health-check": ["manifest.verify", "health.check"]}
     if profile == "uptime-kuma":
         sequences["upgrade"] = ["manifest.verify", "volume.backup", "compose.pull", "compose.up", "health.check"]
     required = {"manifest.verify": ["manifestDigest", "requireReviewState"], "compose.pull": ["service", "imageDigest"],

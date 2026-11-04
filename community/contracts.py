@@ -4,7 +4,7 @@ import json
 import re
 
 VERSION = "1.0.0"
-OPERATIONS = {"install", "upgrade", "backup", "restore", "rollback", "uninstall"}
+OPERATIONS = {"install", "upgrade", "backup", "restore", "rollback", "uninstall", "health-check"}
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
 IDENTIFIER = re.compile(r"[a-z][a-z0-9._-]{0,95}\Z")
 ENVIRONMENTS = {"linux-engine", "windows-wsl2", "macos-desktop"}

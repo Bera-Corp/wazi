@@ -304,17 +304,30 @@ gate passes.
 - [partial] Phase 3 package candidate workflow: tenant-scoped durable intake,
   digest-bound qualification/review/promotion endpoints, canonical signed
   receipt validation, retained failed attempts and the authenticated
-  Hallmark workbench are implemented locally. No isolated qualification
-  runner, real runner receipt, provider call or live deployment is evidenced.
+  Hallmark workbench are implemented. The isolated Linux runner, separately
+  signed real qualification receipt and private VPS candidate intake are live.
+  A verified catalog-to-private proposal handoff is implemented. No provider
+  call is claimed.
   Registry-first recovery and duplicate-promotion retries have HTTP regressions.
-  Independent maintainer quorum and live workflow acceptance remain open. See
+  Independent review is owner-deferred during the current buildout; owner
+  review, signature gates and live journey acceptance remain. See
   PHASE3_CANDIDATE_WORKFLOW.md.
 
 - [partial] Phase 4 encrypted database backups: age-encrypted PostgreSQL and
-  MySQL backup/restore code and regressions are present locally. No live key
-  has been provisioned and no encrypted live backup/restore is evidenced.
-  Nginx configuration backups remain unencrypted; live recovery validation
-  and complete coverage remain open. See PHASE4_ENCRYPTED_BACKUPS.md.
+  MySQL backup/restore, encrypted Nginx checkpoints, protected runtime/off-host
+  identities and Uptime live encrypted backup/restore are implemented.
+  Windows off-host decryption and SQLite integrity checks passed. Timed canary
+  jobs, durable scheduling and portable lifecycle preparation are available.
+  Engine-major conversion and complete desktop runtime integration remain
+  incomplete; full platform and cross-version acceptance remain open. See
+  PHASE4_ENCRYPTED_BACKUPS.md and BUILDOUT_90_2026-11-05.md.
+
+- [in progress] Phase 5 private alpha: five-to-ten-app cohort configuration,
+  release/environment-bound reliability ledger, explicit retry attribution,
+  local receipt import, private progress view, support state transitions and
+  consent-controlled feedback file export. Actual local/VPS sample collection,
+  expanded app qualification and product walkthrough remain open. See
+  PHASE5_ALPHA_OPERATIONS.md.
 
 - [partial] Community catalog and portable packages (3 Nov): separate SQLite
   service, ten-project discovery, daily conditional GitHub metadata, historical

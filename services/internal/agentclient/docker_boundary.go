@@ -82,7 +82,7 @@ func waitForHealthResponse(ctx context.Context, target string, timeout, interval
 				err = fmt.Errorf("health check did not pass: status %d", response.StatusCode)
 			}
 		}
-		if time.Now().After(deadline) {
+		if !time.Now().Before(deadline) {
 			return fmt.Errorf("health check did not pass before deadline: %w", err)
 		}
 		select {

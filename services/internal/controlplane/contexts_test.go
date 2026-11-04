@@ -9,6 +9,21 @@ import (
 	"time"
 )
 
+func TestAlphaProgressRequiresPrivateAuthentication(t *testing.T) {
+	config := Config{PilotAgentSocket: "/run/wazi-phase1/agent.sock"}
+	config.OperatorToken = "local-" + "fixture-" + "operator"
+	request := httptest.NewRequest(http.MethodGet, "https://localhost/v1/alpha-report", nil)
+	request.RemoteAddr = "127.0.0.1:1234"
+	response := httptest.NewRecorder()
+	New(config).Handler().ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthenticated alpha report = %d", response.Code)
+	}
+	if bytes.Contains(response.Body.Bytes(), []byte("observations")) {
+		t.Fatal("private alpha data returned without authentication")
+	}
+}
+
 func TestContextSessionExchangeIsolationAndCSRF(t *testing.T) {
 	now := time.Now()
 	config := Config{PilotAgentSocket: "/run/wazi-phase1/agent.sock", Now: func() time.Time { return now }}

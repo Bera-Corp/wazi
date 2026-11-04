@@ -35,6 +35,9 @@ jobs:
           python scripts/test_prepare_phase2_release.py
           python scripts/test_lifecycle_rollout.py
           python scripts/test_verify_uptime_recovery_stage.py
+          python scripts/test_alpha_ops.py
+          python scripts/test_platform_lifecycle.py
+          python scripts/test_lifecycle_service.py
           python -m unittest discover -s community -t . -p 'test_*.py' -v
       - name: JSON syntax gate
         run: make validate

@@ -80,5 +80,23 @@ class RolloutTests(unittest.TestCase):
         self.assertEqual(headers.get('X-wazi-operator-token'),'synthetic')
         self.assertNotIn('Authorization',headers)
 
+    def test_timed_health_observation_waits_without_api_calls(self):
+        self.state.update(action=2,targetStartedAt=dt.datetime.now(dt.timezone.utc).isoformat())
+        self.plan['waves'][0]['targets'][0]['forward'][2]['observeAfterSeconds']=60
+        calls=[]
+        rollout.tick(self.plan,self.state,lambda *args:calls.append(args))
+        self.assertEqual(calls,[])
+        self.assertEqual(self.state['action'],2)
+
+    def test_cached_health_result_before_observation_window_blocks(self):
+        self.state.update(action=2,targetStartedAt=(dt.datetime.now(dt.timezone.utc)-dt.timedelta(seconds=120)).isoformat())
+        self.plan['waves'][0]['targets'][0]['forward'][2]['observeAfterSeconds']=60
+        def request(target,method,job):
+            value=response(job,'completed')
+            value['operation']['Operation']['updatedAt']=(dt.datetime.now(dt.timezone.utc)-dt.timedelta(seconds=300)).isoformat()
+            return value
+        rollout.tick(self.plan,self.state,request)
+        self.assertEqual(self.state['phase'],'blocked')
+
 
 if __name__=='__main__': unittest.main()

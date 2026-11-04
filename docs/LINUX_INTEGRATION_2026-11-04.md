@@ -44,7 +44,10 @@ private recovery identity material remains outside the repository. The expired
 node certificate was repaired through the existing pairing flow at 18:05:41 UTC,
 preserving the tenant and host identity. Automatic renewal remains open.
 
-## Provisional code estimates
+## Historical code estimates — 4 November
+
+Superseded for the current buildout by BUILDOUT_90_2026-11-05.md. The estimates
+below describe the earlier integration checkpoint, not the latest source state.
 
 These remain engineering estimates against the documented scope, not objective
 test percentages. They distinguish source coverage from accepted live behavior.
@@ -95,7 +98,7 @@ rejects unsafe paths, links, duplicate entries and corrupted databases; its
 regressions cover those boundaries. This narrows the off-host recovery gap but
 does not qualify the full platform matrix or monitor-record recovery.
 
-## Next code milestones
+## Code milestones at the earlier checkpoint
 
 The estimates above remain conservative: Phase 2 90%, Phase 3 85%, Phase 4 80%.
 The new live evidence strengthens acceptance coverage without automatically

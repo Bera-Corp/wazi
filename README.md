@@ -336,6 +336,8 @@ The original Wazi deterministic Linux Docker Compose architecture remains the pr
 
 - [Wazi Unified Master Plan](docs/WAZI_MASTER_PLAN.md) — full research-based product strategy and long-term architecture.
 - [Phase 3 and 4 completion plan](docs/PHASE3_4_COMPLETION_PLAN.md) — evidence gates and dependency order for controlled packaging and lifecycle operations.
+- [Current Phase 2–5 code checkpoint](docs/BUILDOUT_90_2026-11-05.md) — provisional 90% Phase 2–4 code estimates, remaining adapters, and owner-deferred independent review.
+- [Private alpha operations](docs/PHASE5_ALPHA_OPERATIONS.md) — cohort metrics, receipt import, support workflows and the private progress view.
 - [Phase 1–5 closeout ledger](docs/PHASE1_5_CLOSEOUT.md) — provisional progress estimates, selected Uptime Kuma source pin, and remaining acceptance dependencies.
 - [Phase 2–4 buildout handoff](docs/PHASE2_4_BUILDOUT.md) — measurement tooling, restricted runner, receipt signing and checkpoint implementation pending validation.
 - [Uptime Kuma image and runtime](docs/UPTIME_KUMA_BUILDOUT.md) — pinned image pipeline, reviewed adapter, encrypted volume checkpoints and remaining deployment dependencies.

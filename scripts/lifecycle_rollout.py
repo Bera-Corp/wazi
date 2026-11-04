@@ -50,10 +50,12 @@ def checked_plan(plan):
                 if not 1 <= len(actions) <= 32:
                     raise ValueError('action-count-invalid')
                 for action in actions:
-                    if set(action) != {'kind','job'} or action['kind'] not in ('checkpoint','migration','upgrade','health','quiesce','restore','downgrade'):
+                    if set(action) not in ({'kind','job'},{'kind','job','observeAfterSeconds'}) or action['kind'] not in ('checkpoint','migration','upgrade','health','quiesce','restore','downgrade'):
                         raise ValueError('action-shape-invalid')
+                    if 'observeAfterSeconds' in action and (direction!='forward' or action['kind']!='health' or type(action['observeAfterSeconds']) is not int or not 0<=action['observeAfterSeconds']<=86400):
+                        raise ValueError('timed-observation-must-be-read-only-forward-health')
                     job=action['job']; envelope=job['envelope']
-                    if job['jobId'] in jobs or not re.fullmatch(r'job_[A-Za-z0-9_-]{1,96}',job['jobId']) or not job.get('approvals'):
+                    if job['jobId'] in jobs or not re.fullmatch(r'job_[A-Za-z0-9_-]{1,96}',job['jobId']) or (action['kind']!='health' and not job.get('approvals')):
                         raise ValueError('unique-preapproved-jobs-required')
                     jobs.add(job['jobId'])
                     if any(envelope.get(key) != target[key] for key in ('tenantScope','hostId') if key in envelope):
@@ -67,7 +69,7 @@ def checked_plan(plan):
                     expected=target['fromManifestDigest'] if (direction == 'recovery' and action['kind'] != 'quiesce') or action['kind'] == 'checkpoint' else target['toManifestDigest']
                     if envelope['manifestDigest'] != expected:
                         raise ValueError('job-release-mismatch')
-                    if action['kind']=='health' and any(step['capability'] not in ('manifest.verify','health.check','compose.ps') for step in job['plan']['steps']):
+                    if action['kind']=='health' and (operation!='health-check' or any(step['capability'] not in ('manifest.verify','health.check','compose.ps') for step in job['plan']['steps'])):
                         raise ValueError('observation-job-must-be-read-only')
             forward=[a['kind'] for a in target['forward']]
             recovery=[a['kind'] for a in target['recovery']]
@@ -156,6 +158,12 @@ def tick(plan,state,request):
         target=plan['waves'][state['wave']]['targets'][state['target']]
         actions=target['forward']
     action=actions[state['action']]; job=action['job']
+    if state['phase']=='forward' and 'targetStartedAt' not in state:
+        state['targetStartedAt']=timestamp()
+    due=None
+    if 'observeAfterSeconds' in action:
+        due=dt.datetime.fromisoformat(state['targetStartedAt'])+dt.timedelta(seconds=action['observeAfterSeconds'])
+        if dt.datetime.now(dt.timezone.utc)<due:return state
     response=request(target['targetId'],'GET',job)
     if response is None:
         request(target['targetId'],'POST',job)
@@ -164,6 +172,13 @@ def tick(plan,state,request):
         state.update(phase='blocked',blockedJob=job['jobId'],reason='job-response-identity-mismatch')
         return state
     outcome=observe(response)
+    if due is not None and outcome=='completed':
+        try:
+            observed=dt.datetime.fromisoformat(response['operation']['Operation']['updatedAt'].replace('Z','+00:00'))
+            if observed.tzinfo is None or observed<due:raise ValueError('stale-observation')
+        except (KeyError,TypeError,ValueError):
+            state.update(phase='blocked',blockedJob=job['jobId'],reason='stale-or-unbound-canary-observation')
+            return state
     if outcome=='waiting':
         return state
     if outcome=='ambiguous' or (outcome=='failed' and state['phase']=='recovery'):
@@ -187,6 +202,7 @@ def tick(plan,state,request):
         state['recoveryTargets'].pop()
         return state
     state['completedTargets'].append([state['wave'],state['target']])
+    state.pop('targetStartedAt',None)
     state['target']+=1
     if state['target']==len(plan['waves'][state['wave']]['targets']):
         hold=plan['waves'][state['wave']]['holdSeconds']

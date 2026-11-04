@@ -21,7 +21,13 @@ source=pathlib.Path(os.environ['WAZI_QUALIFIED_SOURCE'])
 release=pathlib.Path('/opt/wazi-dev/releases')/(source.name+'-platform')
 units={'wazi-controlplane-dev.service':'wazi-controlplane','wazi-pilot-agent.service':'wazi-pilot-agent'}
 def command(args):return subprocess.check_output(args,text=True,timeout=30)
-config=json.loads(pathlib.Path('/etc/wazi-phase1/agent.json').read_text())
+config_path=pathlib.Path('/etc/wazi-phase1/agent.json')
+original_config=config_path.read_bytes()
+config=json.loads(original_config)
+def replace_config(raw):
+    info=config_path.stat();temporary=config_path.with_name('agent.json.qualified-next')
+    with temporary.open('xb') as output:output.write(raw);output.flush();os.fsync(output.fileno())
+    os.chown(temporary,info.st_uid,info.st_gid);os.chmod(temporary,info.st_mode & 0o777);os.replace(temporary,config_path)
 state=pathlib.Path(config['StateDirectory']) if 'StateDirectory' in config else pathlib.Path(config['Runtime']['StateDirectory'])
 def hashes():return {p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in (state/'journal').glob('*.json')}
 requests={p.name for p in (state/'queue/requests').glob('*.json')}
@@ -39,7 +45,14 @@ for name in ('scripts','schemas','community'):
         os.chmod(root,0o755)
         for file in files:os.chmod(pathlib.Path(root)/file,0o644)
 backups=[]
+config_changed=False
 try:
+    command(['systemctl','stop','wazi-pilot-agent.service'])
+    if config.get('Context'):
+        (source/'agent-config.before').write_bytes(original_config)
+        config['Context']['WorkerPath']=str(release/'scripts/context_worker.py')
+        replace_config(json.dumps(config,sort_keys=True,separators=(',',':')).encode())
+        config_changed=True
     for unit,binary in units.items():
         text=command(['systemctl','cat',unit])
         (source/(unit+'.before')).write_text(text)
@@ -83,6 +96,7 @@ try:
         with urllib.request.urlopen('https://127.0.0.1:9443'+route,context=context,timeout=3) as response:
             if response.status!=200:raise ValueError('browser entry or asset unavailable')
 except Exception:
+    if config_changed:replace_config(original_config)
     for path,prior in reversed(backups):
         if prior is None:path.unlink(missing_ok=True)
         else:path.write_bytes(prior)

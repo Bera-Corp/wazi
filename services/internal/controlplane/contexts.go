@@ -165,6 +165,12 @@ func (s *Server) registerContextRoutes(mux *http.ServeMux) {
 		}
 		s.forwardPilot(w, r, http.MethodGet, "/contexts/catalog", nil)
 	})
+	mux.HandleFunc("GET /v1/alpha-report", func(w http.ResponseWriter, r *http.Request) {
+		if !s.contextAuthorized(w, r) {
+			return
+		}
+		s.forwardPilot(w, r, http.MethodGet, "/contexts/alpha-report", nil)
+	})
 	mux.HandleFunc("POST /v1/context-proposals", func(w http.ResponseWriter, r *http.Request) {
 		if !s.contextAuthorized(w, r) {
 			return

@@ -124,8 +124,17 @@ def record_terminal(store, payload):
     return {"imported": store.import_case(case, records, procedure_ref=envelope["procedureRef"]), "classification": outcome}
 
 
-def dispatch(store, payload):
+def dispatch(store, payload, alpha_path=None):
     action = payload["action"]
+    if action == "alpha-report":
+        if alpha_path is None:
+            raise ValueError("alpha-ledger-path-not-configured")
+        from alpha_ops import Ledger
+        ledger=Ledger(alpha_path)
+        try:
+            return ledger.report(payload["tenantScope"])
+        finally:
+            ledger.close()
     if action == "retrieve":
         return retrieve(store, payload)
     if action == "record":
@@ -181,7 +190,7 @@ def main():
         raise ValueError("worker-input-too-large")
     store = ContextStore(args.database)
     try:
-        print(json.dumps(dispatch(store, json.loads(raw)), sort_keys=True))
+        print(json.dumps(dispatch(store, json.loads(raw), Path(args.database).with_name("alpha.sqlite")), sort_keys=True))
     finally:
         store.close()
 

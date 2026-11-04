@@ -21,6 +21,9 @@ class PackageReleaseShapeTests(unittest.TestCase):
                 schema = 'app-manifest.schema.json' if name == 'manifest' else 'procedure.schema.json'
                 self.assertEqual(engine._record_schema_errors(schema, dict(record, reviewState='candidate')), [], (profile, name))
             self.assertFalse(records['manifest']['release']['rollback']['supported'])
+            self.assertEqual(records['procedure-health-check']['capabilitySequence'],['manifest.verify','health.check'])
+            self.assertFalse(records['procedure-health-check']['requiresCheckpoint'])
+            self.assertNotIn('rollbackProcedureId',records['procedure-health-check'])
             self.assertNotIn('rollback', records)
             self.assertEqual(records['procedure-restore']['requiresCheckpoint'], True)
             for operation in ('install','upgrade','uninstall','restore'):
