@@ -4,13 +4,18 @@ import unittest
 
 import context_engine as engine
 import prepare_phase2_release as release
+import prepare_package_build as build
 
 
 class PackageReleaseShapeTests(unittest.TestCase):
     def test_all_unsigned_packages_validate_before_signing(self):
         root = Path(__file__).resolve().parents[1]
         for profile in release.SHAPES:
-            metadata = json.loads((root/'releases/phase2'/profile/'image-export.json').read_text())
+            if profile == 'uptime-kuma':
+                # Schema fixture only: no image build or provenance is claimed.
+                metadata = {'source': build.locked_source(profile), 'image': {'name':'ghcr.io/bera-corp/wazi-phase2-uptime-kuma','digest':'sha256:'+'a'*64}}
+            else:
+                metadata = json.loads((root/'releases/phase2'/profile/'image-export.json').read_text())
             records = release.unsigned_records(profile, metadata, '2026-10-31T12:00:00Z')
             for name, record in records.items():
                 schema = 'app-manifest.schema.json' if name == 'manifest' else 'procedure.schema.json'

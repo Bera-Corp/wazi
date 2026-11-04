@@ -31,7 +31,7 @@ def patch_recipe(raw, source):
     if hashlib.sha256(raw).hexdigest() != source["dockerfileSha256"]:
         raise ValueError("source-recipe-digest-mismatch")
     text = raw.decode("utf-8")
-    if source["repository"] == "louislam/uptime-kuma":
+    if source.get("repository") == "louislam/uptime-kuma":
         helper = source["helperImage"]
         if not re.fullmatch("louislam/uptime-kuma@sha256:[0-9a-f]{64}", helper):
             raise ValueError("helper-image-not-pinned")

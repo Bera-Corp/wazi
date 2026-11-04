@@ -97,7 +97,11 @@ func (b *DockerPackageBoundary) admitPackageTransition(p PreparedExecution, from
 		expected = to["manifestDigest"]
 		for _, step := range plan.Steps {
 			if step.Capability == "volume.restore" {
-				id = step.Parameters.VolumeRestore.BackupID
+				decoded, _, decodeErr := decodeStep(step)
+				if decodeErr != nil {
+					return decodeErr
+				}
+				id = decoded.Parameters.VolumeRestore.BackupID
 			}
 		}
 	}

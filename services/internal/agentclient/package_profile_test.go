@@ -30,10 +30,10 @@ func packageRenderFixture(t *testing.T, profile string) (*DockerPackageBoundary,
 	release["resourceLimits"] = []any{map[string]any{"service": shape.Service, "cpuCores": json.Number(shape.CPU), "ramMb": json.Number(fmt.Sprint(shape.RAM))}}
 	release["volumes"] = []any{map[string]any{"service": shape.Service, "name": shape.Volume, "mountPath": shape.Mount, "backup": true, "storageLimitMb": json.Number(fmt.Sprint(shape.Storage))}}
 	release["ports"] = []any{map[string]any{"service": shape.Service, "hostPort": json.Number(fmt.Sprint(shape.Port)), "containerPort": json.Number(fmt.Sprint(shape.ContainerPort)), "exposure": "loopback"}}
-	release["healthCheck"] = map[string]any{"type": map[string]string{"postgresql": "postgresql-authenticated", "mysql": "mysql-authenticated", "nginx": "nginx-config-and-http"}[profile], "target": shape.Health}
+	release["healthCheck"] = map[string]any{"type": map[string]string{"postgresql": "postgresql-authenticated", "mysql": "mysql-authenticated", "nginx": "nginx-config-and-http", "uptime-kuma": "http"}[profile], "target": shape.Health}
 	entries := []any{}
 	secrets := map[string]string{}
-	if profile != "nginx" {
+	if profile == "postgresql" || profile == "mysql" {
 		prefix := "POSTGRES"
 		if profile == "mysql" {
 			prefix = "MYSQL"
@@ -71,7 +71,7 @@ func packageRenderFixture(t *testing.T, profile string) (*DockerPackageBoundary,
 }
 
 func TestReviewedPackageRendererIsClosedAndDeterministic(t *testing.T) {
-	for _, profile := range []string{"postgresql", "mysql", "nginx"} {
+	for _, profile := range []string{"postgresql", "mysql", "nginx", "uptime-kuma"} {
 		t.Run(profile, func(t *testing.T) {
 			b, manifest := packageRenderFixture(t, profile)
 			raw := canonical(t, manifest)
@@ -140,6 +140,9 @@ func TestPackageCheckpointBindsScopeAndRejectsCorruptionBeforeMutation(t *testin
 		return nil, nil
 	}
 	p := executorPrepared(t, "health.check", "{\"target\":\"http://localhost:3000/api/healthz\"}")
+	if err := b.writePackageState("instance-release.json", map[string]string{"profile": b.config.Profile, "project": b.config.Runtime.Project, "manifestDigest": p.Binding().Release.ManifestDigest, "imageConfig": "sha256:" + strings.Repeat("b", 64)}); err != nil {
+		t.Fatal(err)
+	}
 	if err := b.backup(context.Background(), p, "bak_package_test", "backups"); err != nil {
 		t.Fatal(err)
 	}
@@ -251,6 +254,9 @@ func TestFailedDatabaseRestoreRetainsPreRestoreCheckpoint(t *testing.T) {
 		return nil, nil
 	}
 	p := executorPrepared(t, "health.check", "{\"target\":\"http://localhost:3000/api/healthz\"}")
+	if err := b.writePackageState("instance-release.json", map[string]string{"profile": b.config.Profile, "project": b.config.Runtime.Project, "manifestDigest": p.Binding().Release.ManifestDigest, "imageConfig": "sha256:" + strings.Repeat("b", 64)}); err != nil {
+		t.Fatal(err)
+	}
 	if err := b.backup(context.Background(), p, "bak_restore_failure", "backups"); err != nil {
 		t.Fatal(err)
 	}
@@ -306,7 +312,7 @@ func TestDatabaseBackupFailsClosedWithoutAgeConfiguration(t *testing.T) {
 		t.Fatal("database backup proceeded without age configuration")
 	}
 	entries, err := os.ReadDir(filepath.Join(b.config.Runtime.StateDirectory, "backups"))
-	if err != nil || len(entries) != 0 {
+	if (err != nil && !os.IsNotExist(err)) || len(entries) != 0 {
 		t.Fatal("unencrypted backup bytes were written")
 	}
 }

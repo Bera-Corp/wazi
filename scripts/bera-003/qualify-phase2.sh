@@ -32,10 +32,16 @@ actual = {name:metadata.version(name) for name in expected}
 assert actual == expected, ('runtime dependency versions changed', actual)
 print('BERA003_RUNTIME_DEPENDENCIES', actual)
 PY
-for suite in validate test_adversarial test_sprints test_secret_scan test_render_compose test_render_compose_v1 test_context_engine test_context_live test_package_composition test_candidate_author test_prepare_package_build test_prepare_phase2_release; do
+for suite in validate test_adversarial test_sprints test_secret_scan test_render_compose test_render_compose_v1 test_context_engine test_context_live test_package_composition test_candidate_author test_prepare_package_build test_prepare_phase2_release test_lifecycle_rollout; do
   python3 "scripts/$suite.py"
 done
 python3 -m unittest discover -s community -t . -p 'test_*.py' -v
 python3 scripts/secret_scan.py
+sha256sum bin/wazi-controlplane bin/wazi-pilot-agent bin/wazi-agent bin/wazi-recordtool > binary-sha256.txt
+python3 - <<'PY'
+import datetime,json,pathlib
+identity=json.loads(pathlib.Path('source-identity.json').read_text(encoding='utf-8-sig'))
+pathlib.Path('qualification.json').write_text(json.dumps({'state':'passed','source':identity,'completedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()},sort_keys=True))
+PY
 printf 'QUALIFICATION_COMPLETED_AT='
 date -u +%Y-%m-%dT%H:%M:%SZ

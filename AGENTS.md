@@ -329,3 +329,4 @@ This file contains a growing ruleset that improves over time. **At session start
 255. [TOOL] Resolve Phase 2 package recipes from the committed source lock and pinned upstream checkout before inspection — this repository does not keep profile Dockerfiles under releases/phase2.
 256. [PROCESS] Build Uptime Kuma images through the same pinned-source, image-provenance, transport-attestation and reviewed-runtime path as Gitea — the owner explicitly requested the existing reference-image approach.
 257. [TOOL] Scope scripted release-version substitutions to the proposal function — catalog responses use config.ReleaseVersion and do not share the proposal's local releaseVersion variable.
+258. [CODE] Decode planStep parameters with decodeStep before accessing typed capability fields — planStep.Parameters contains raw JSON, while executable Step.Parameters is the tagged union.
