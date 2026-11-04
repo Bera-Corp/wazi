@@ -13,9 +13,22 @@ def docker(*args):return subprocess.check_output(prefix+list(args),timeout=60)
 def instances(project):return docker('ps','--filter','label=com.docker.compose.project='+project,'--format','{{.ID}}').decode().split()
 pg,=instances('wazi-postgresql-02');assert not instances('wazi-uptime-kuma-01')
 test=source/'scripts/bera-003/test-phase2-package.sh';backup='bak_uptime_'+source.name.lower();succeeded=False
+operation='install'
+anchor_path=pathlib.Path('/srv/wazi-runtime/phase2/wazi-uptime-kuma-01/instance-release.json')
+if anchor_path.exists():
+    anchor=json.loads(anchor_path.read_bytes())
+    policy=next(p for p in config['Packages'] if p['Runtime']['Project']=='wazi-uptime-kuma-01')
+    assert anchor['manifestDigest'] in policy['Runtime']['AllowedManifests'] and anchor['project']==policy['Runtime']['Project']
+    assert not anchor_path.with_name('instance-transition.json').exists()
+    operation='upgrade'
 try:
     docker('stop','--time','30',pg)
-    subprocess.run(['bash',str(test),'execute',str(source),'wazi-uptime-kuma-01','install'],check=True,timeout=300)
+    if operation=='upgrade':
+        container,=docker('ps','-a','--filter','label=com.docker.compose.project=wazi-uptime-kuma-01','--format','{{.ID}}').decode().split()
+        inspected=json.loads(docker('inspect',container))[0]
+        assert inspected['Image']==anchor['imageConfig'] and inspected['HostConfig']['Memory']==512*1048576 and inspected['HostConfig']['NanoCpus']==500000000
+        docker('start',container)
+    subprocess.run(['bash',str(test),'execute',str(source),'wazi-uptime-kuma-01',operation,backup+'_upgrade' if operation=='upgrade' else ''],check=True,timeout=300)
     with urllib.request.urlopen('http://127.0.0.1:13001/',timeout=10) as response:assert response.status==200
     subprocess.run(['bash',str(test),'execute',str(source),'wazi-uptime-kuma-01','backup',backup],check=True,timeout=300)
     payload=pathlib.Path('/srv/wazi-runtime/phase2/wazi-uptime-kuma-01/backups')/(backup+'.age')
@@ -33,7 +46,7 @@ finally:
         except Exception:
             if attempt==29:raise
             time.sleep(1)
-    record={'state':'passed' if succeeded else 'failed','postgresqlRestored':True,'uptimeStoppedAfterSequentialTest':not instances('wazi-uptime-kuma-01'),'volumesPreserved':True,'completedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+    record={'state':'passed' if succeeded else 'failed','operation':operation,'postgresqlRestored':True,'uptimeStoppedAfterSequentialTest':not instances('wazi-uptime-kuma-01'),'volumesPreserved':True,'completedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()}
     if succeeded:record.update(checkpointFile=str(payload),ciphertextDigest=actual,manifestDigest=metadata['ManifestDigest'])
     (source/'uptime-sequential-test.json').write_text(json.dumps(record,sort_keys=True,indent=2));print(json.dumps(record))
 PY

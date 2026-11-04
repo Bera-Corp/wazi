@@ -51,8 +51,24 @@ const (
 // is requested, redirects are never followed, and any non-200 outcome
 // keeps polling until the deadline; it never reports success early.
 func waitForHealth(ctx context.Context, target string, timeout, interval time.Duration) error {
+	return waitForHealthResponse(ctx, target, timeout, interval, func(response *http.Response) bool {
+		return response.StatusCode == http.StatusOK
+	})
+}
+
+// Uptime Kuma's root redirects to its fixed dashboard after DB preparation.
+// Observe that exact relative redirect without following it or accepting any
+// other redirect destination. Other profiles retain the strict 200 gate.
+func waitForUptimeHealth(ctx context.Context, target string, timeout, interval time.Duration) error {
+	return waitForHealthResponse(ctx, target, timeout, interval, func(response *http.Response) bool {
+		return response.StatusCode == http.StatusOK ||
+			(response.StatusCode == http.StatusFound && response.Header.Get("Location") == "/dashboard")
+	})
+}
+
+func waitForHealthResponse(ctx context.Context, target string, timeout, interval time.Duration, accepted func(*http.Response) bool) error {
 	deadline := time.Now().Add(timeout)
-	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return fmt.Errorf("health redirects are forbidden") }}
+	client := &http.Client{Timeout: 5 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	for {
 		request, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 		if err == nil {
@@ -60,7 +76,7 @@ func waitForHealth(ctx context.Context, target string, timeout, interval time.Du
 			response, err = client.Do(request)
 			if err == nil {
 				_ = response.Body.Close()
-				if response.StatusCode == http.StatusOK {
+				if accepted(response) {
 					return nil
 				}
 				err = fmt.Errorf("health check did not pass: status %d", response.StatusCode)

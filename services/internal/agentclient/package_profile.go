@@ -451,7 +451,7 @@ func (b *DockerPackageBoundary) readiness(ctx context.Context) error {
 			return fmt.Errorf("authenticated MySQL readiness failed")
 		}
 	case "uptime-kuma":
-		return waitForHealth(ctx, b.shape.Health, healthTimeout, healthPollInterval)
+		return waitForUptimeHealth(ctx, b.shape.Health, healthTimeout, healthPollInterval)
 	case "nginx":
 		if _, err := b.client(ctx, "nginx", nil, nil, "-t"); err != nil {
 			return fmt.Errorf("nginx configuration validation failed")
