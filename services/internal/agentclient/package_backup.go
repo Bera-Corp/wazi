@@ -49,7 +49,7 @@ func (b *DockerPackageBoundary) checkpointPath(id, kind string) (string, error) 
 		return "", fmt.Errorf("package checkpoint directory must be private")
 	}
 	extension := ".dump"
-	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" {
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" || b.config.Profile == "uptime-kuma" {
 		extension = ".age"
 	}
 	return filepath.Join(root, id+extension), nil
@@ -93,7 +93,7 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 	if err != nil {
 		return err
 	}
-	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" {
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" || b.config.Profile == "uptime-kuma" {
 		legacyPath := strings.TrimSuffix(path, ".age") + ".dump"
 		if _, err := os.Lstat(legacyPath); err == nil {
 			return fmt.Errorf("legacy package checkpoint identity is retained; choose a new identity")
@@ -115,6 +115,9 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 		recipients, err = parsePackageAgeRecipients(b.config.BackupEncryption.Recipients)
 	case "mysql":
 		format, payloadFormat = "age-v1", "mysql-logical"
+		recipients, err = parsePackageAgeRecipients(b.config.BackupEncryption.Recipients)
+	case "uptime-kuma":
+		format, payloadFormat = "age-v1", "volume-tar"
 		recipients, err = parsePackageAgeRecipients(b.config.BackupEncryption.Recipients)
 	case "nginx":
 		format, payloadFormat = "age-v1", "nginx-config-json"
@@ -159,6 +162,8 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 		_, err = b.client(ctx, "pg_dump", nil, writer, "--dbname=service=wazi", "--no-password", "--format=custom")
 	case "mysql":
 		_, err = b.client(ctx, "mysqldump", nil, writer, "--defaults-extra-file=/run/secrets/client.conf", "--single-transaction", "--skip-lock-tables", "--no-tablespaces", "--set-gtid-purged=OFF", "wazi")
+	case "uptime-kuma":
+		err = b.packageVolumeOut(ctx, p, writer)
 	case "nginx":
 		var raw []byte
 		raw, err = b.readNginxConfig()
@@ -235,14 +240,14 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 		return nil, record, err
 	}
 	info, err := os.Lstat(path)
-	if os.IsNotExist(err) && (b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx") {
+	if os.IsNotExist(err) && (b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" || b.config.Profile == "uptime-kuma") {
 		legacyPath := strings.TrimSuffix(path, ".age") + ".dump"
 		if legacyInfo, legacyErr := os.Lstat(legacyPath); legacyErr == nil {
 			path, info, err = legacyPath, legacyInfo, nil
 		}
 	}
 	maxBytes := int64(b.shape.Storage) * 1024 * 1024
-	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" {
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" || b.config.Profile == "uptime-kuma" {
 		maxBytes = packageAgeCiphertextLimit(maxBytes)
 	}
 	if err != nil || !info.Mode().IsRegular() || info.Size() > maxBytes {
@@ -259,7 +264,7 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 	if json.Unmarshal(raw, &record) != nil || record.Profile != b.config.Profile || record.Project != b.config.Runtime.Project || record.Tenant != p.TenantScope() || record.ManifestDigest != p.Binding().Release.ManifestDigest || record.BackupID != id || record.Bytes != info.Size() {
 		return nil, record, fmt.Errorf("package checkpoint binding mismatch; cross-version restore requires a separately qualified migration")
 	}
-	expectedPayload := map[string]string{"postgresql": "postgres-custom", "mysql": "mysql-logical", "nginx": "nginx-config-json"}[b.config.Profile]
+	expectedPayload := map[string]string{"postgresql": "postgres-custom", "mysql": "mysql-logical", "nginx": "nginx-config-json", "uptime-kuma": "volume-tar"}[b.config.Profile]
 	if expectedPayload != "" && record.Format == "age-v1" && record.PayloadFormat != expectedPayload {
 		return nil, record, fmt.Errorf("encrypted checkpoint payload format mismatch")
 	}
@@ -417,6 +422,11 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 			return err
 		}
 		_, err = b.client(ctx, "mysql", restoreFile, nil, "--defaults-extra-file=/run/secrets/client.conf", "wazi")
+	case "uptime-kuma":
+		if record.Format != "age-v1" {
+			return fmt.Errorf("encrypted package volume checkpoint required")
+		}
+		err = b.packageVolumeIn(ctx, p, restoreFile, compose)
 	case "nginx":
 		if record.Format != "nginx-config-json" && record.Format != "age-v1" {
 			return fmt.Errorf("checkpoint format mismatch")

@@ -117,7 +117,7 @@ func (b *DockerPackageBoundary) verifyStorageReservations(ctx context.Context) e
 		return err
 	}
 	sizes := map[string]int64{"wazi-gitea-phase1_gitea-data": 18432, "wazi-gitea-phase1_gitea-config": 2048}
-	for _, profile := range []string{"postgresql", "mysql", "nginx"} {
+	for _, profile := range []string{"postgresql", "mysql", "nginx", "uptime-kuma"} {
 		shape, _ := shapeFor(profile, false)
 		for _, suffix := range []string{"01", "02"} {
 			sizes["wazi-"+profile+"-"+suffix+"_"+shape.Volume] = int64(shape.Storage)

@@ -6,10 +6,10 @@ import validate
 
 
 READINESS = {"postgresql": "postgres-authenticated", "immich-postgresql": "postgres-authenticated",
-             "mysql": "mysql-authenticated", "nginx": "nginx-config-and-http",
+             "uptime-kuma": "http", "mysql": "mysql-authenticated", "nginx": "nginx-config-and-http",
              "immich-server": "immich-http", "cache": "cache-authenticated"}
 APPLICATIONS = {"postgresql": "org.postgresql.postgresql", "mysql": "com.mysql.mysql",
-                "nginx": "org.nginx.nginx", "immich-server": "app.immich.server",
+                "uptime-kuma": "pet.kuma.uptime", "nginx": "org.nginx.nginx", "immich-server": "app.immich.server",
                 "immich-postgresql": "app.immich.postgresql", "cache": "io.valkey.valkey"}
 
 
@@ -99,6 +99,6 @@ def validate_composition(record, manifests, available, authorized_secret_refs=()
                 errors.append("immich-readiness-order")
             if not any(g["strategy"] == "quiesced-database-and-media" and {server["id"], db["id"]} <= set(g["members"]) for g in record["recoveryGroups"]):
                 errors.append("immich-coordinated-recovery-required")
-    elif len(components) != 1 or roles[0] not in ("postgresql", "mysql", "nginx"):
+    elif len(components) != 1 or roles[0] not in ("postgresql", "mysql", "nginx", "uptime-kuma"):
         errors.append("standalone-component-matrix")
     return sorted(set(errors))

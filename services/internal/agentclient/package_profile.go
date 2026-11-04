@@ -239,7 +239,7 @@ func (b *DockerPackageBoundary) render(manifestRaw []byte) ([]byte, error) {
 		return nil, fmt.Errorf("package loopback port mismatch")
 	}
 	health, ok := objectValue(release["healthCheck"])
-	healthType := map[string]string{"postgresql": "postgresql-authenticated", "mysql": "mysql-authenticated", "nginx": "nginx-config-and-http"}[b.config.Profile]
+	healthType := map[string]string{"postgresql": "postgresql-authenticated", "mysql": "mysql-authenticated", "nginx": "nginx-config-and-http", "uptime-kuma": "http"}[b.config.Profile]
 	if !ok || health["target"] != b.shape.Health || health["type"] != healthType {
 		return nil, fmt.Errorf("package health target mismatch")
 	}
@@ -282,7 +282,7 @@ func (b *DockerPackageBoundary) render(manifestRaw []byte) ([]byte, error) {
 	for _, name := range []string{"password", "root-password", "client"} {
 		path := b.config.SecretFiles[name]
 		if path == "" {
-			if name == "root-password" && b.config.Profile == "postgresql" || b.config.Profile == "nginx" {
+			if name == "root-password" && b.config.Profile == "postgresql" || b.config.Profile == "nginx" || b.config.Profile == "uptime-kuma" {
 				continue
 			}
 			return nil, fmt.Errorf("package secret file missing")
@@ -434,6 +434,8 @@ func (b *DockerPackageBoundary) readiness(ctx context.Context) error {
 		if err != nil || strings.TrimSpace(string(raw)) != "1" {
 			return fmt.Errorf("authenticated MySQL readiness failed")
 		}
+	case "uptime-kuma":
+		return waitForHealth(ctx, b.shape.Health, healthTimeout, healthPollInterval)
 	case "nginx":
 		if _, err := b.client(ctx, "nginx", nil, nil, "-t"); err != nil {
 			return fmt.Errorf("nginx configuration validation failed")
@@ -510,6 +512,11 @@ func (b *DockerPackageBoundary) Execute(ctx context.Context, p PreparedExecution
 		}
 		if b.config.Profile == "nginx" && plan.Operation == "install" {
 			if err := b.initializeNginx(); err != nil {
+				return Outcome{}, err
+			}
+		}
+		if b.config.Profile == "uptime-kuma" && plan.Operation == "install" {
+			if err := b.initializePackageData(ctx, p); err != nil {
 				return Outcome{}, err
 			}
 		}

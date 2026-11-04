@@ -39,6 +39,22 @@
       "baseImage": "debian@sha256:f6b08b09a05725f9431502d3b5714f5c4576e82c1a84fa1debe0c24a7e0c3ec4",
       "applicationId": "org.nginx.nginx",
       "license": "BSD-2-Clause"
+    },
+    "uptime-kuma": {
+      "repository": "louislam/uptime-kuma",
+      "commit": "df601c58d9205562f34cfe5ef35264b341019d19",
+      "commitSignatureVerified": false,
+      "context": ".",
+      "dockerfile": "docker/dockerfile",
+      "dockerfileSha256": "8c572b67220da306c014bdba9ca2b469dee40b6204e5b12a11fe3081098af6c6",
+      "upstreamVersion": "2.5.9",
+      "baseTag": "louislam/uptime-kuma:base2",
+      "baseImage": "louislam/uptime-kuma@sha256:56a19c052fef98b0d742384f84577b6952b5b4a32dd251cfadd0677120a58f3f",
+      "helperImage": "louislam/uptime-kuma@sha256:50e49d7f27f124a5a086c076387d5419aa3767d88bc2c16354ca52790f709865",
+      "applicationId": "pet.kuma.uptime",
+      "license": "MIT",
+      "distUrl": "https://github.com/louislam/uptime-kuma/releases/download/2.5.9/dist.tar.gz",
+      "distSha256": "f979084bbc74dc80a142d91d09b807f0a4ed52c06830c0e44c36adc9e77c064b"
     }
   }
 }

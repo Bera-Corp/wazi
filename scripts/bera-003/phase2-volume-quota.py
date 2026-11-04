@@ -23,7 +23,8 @@ def main():
     allowed, projects = {}, {}
     for profile, start, limit, volume in (("postgresql", 32010, 2048, "data"),
                                            ("mysql", 32020, 2048, "data"),
-                                           ("nginx", 32030, 128, "config")):
+                                           ("nginx", 32030, 128, "config"),
+                                           ("uptime-kuma", 32040, 2048, "data")):
         for index in (1, 2):
             project = "wazi-" + profile + "-0" + str(index)
             name = project + "_" + volume

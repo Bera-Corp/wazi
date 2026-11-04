@@ -18,14 +18,14 @@
         "required": ["id", "role", "manifestRef", "dependsOn", "limits", "readiness", "secretRefs"],
         "properties": {
           "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$"},
-          "role": {"enum": ["postgresql", "immich-postgresql", "mysql", "nginx", "immich-server", "cache"]},
+          "role": {"enum": ["postgresql", "immich-postgresql", "mysql", "nginx", "immich-server", "cache", "uptime-kuma"]},
           "manifestRef": {"$ref": "common.schema.json#/$defs/recordRef"},
           "dependsOn": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
           "limits": {
             "type": "object", "additionalProperties": false, "required": ["cpuCores", "ramMb", "storageMb"],
             "properties": {"cpuCores": {"type": "number", "exclusiveMinimum": 0}, "ramMb": {"type": "integer", "minimum": 16}, "storageMb": {"type": "integer", "minimum": 0}}
           },
-          "readiness": {"enum": ["postgres-authenticated", "mysql-authenticated", "nginx-config-and-http", "immich-http", "cache-authenticated"]},
+          "readiness": {"enum": ["postgres-authenticated", "mysql-authenticated", "nginx-config-and-http", "immich-http", "cache-authenticated", "http"]},
           "secretRefs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/secretRef"}}
         }
       }

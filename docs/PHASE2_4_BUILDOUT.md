@@ -53,7 +53,8 @@ It checks candidate identity, startup HTTP, SQLite creation, restart HTTP and
 synthetic-file persistence in /work/data. Bake it into the operator's pinned
 suite image as /wazi/qualify with an executable mode and Node at
 /usr/local/bin/node. The image must contain the pinned app at /app and support
-UID 65534. Suite image assembly and qualification remain open. These scenarios
+UID 65534. Suite image assembly is now encoded in the manual image workflow;
+execution and qualification remain open. These scenarios
 do not establish monitor-record recovery, upgrades or backup correctness.
 
 scripts/sign_qualification.py takes --input, --output, --key, --signer-id,

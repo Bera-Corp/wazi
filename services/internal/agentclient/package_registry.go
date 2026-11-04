@@ -29,7 +29,7 @@ func ResolveRuntimeBoundary(legacy DockerPilotConfig, budget string, registry *P
 }
 
 func NewPackageRegistry(configs []PackageInstanceConfig) (*PackageRegistry, error) {
-	if len(configs) > 6 {
+	if len(configs) > 8 {
 		return nil, fmt.Errorf("package registry capacity exceeded")
 	}
 	registry := &PackageRegistry{entries: map[string]PackageInstanceConfig{}}

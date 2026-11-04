@@ -327,3 +327,4 @@ This file contains a growing ruleset that improves over time. **At session start
 253. [PROCESS] Inspect systemctl cat and update the active Bera-003 systemd drop-in alongside the base unit — the Phase 2 ExecStart override keeps the older binary active when only the base unit changes.
 254. [TOOL] Capture ssh-dev.ps1 BashScriptPath output from the exec result instead of Tee-Object — its ProcessStartInfo transport can bypass the PowerShell output pipeline.
 255. [TOOL] Resolve Phase 2 package recipes from the committed source lock and pinned upstream checkout before inspection — this repository does not keep profile Dockerfiles under releases/phase2.
+256. [PROCESS] Build Uptime Kuma images through the same pinned-source, image-provenance, transport-attestation and reviewed-runtime path as Gitea — the owner explicitly requested the existing reference-image approach.

@@ -9,6 +9,7 @@ import prepare_package_build
 import context_engine as engine
 
 SHAPES = {
+    "uptime-kuma": dict(service="uptime-kuma", ram=512, cpu=0.5, storage=2048, volume="data", mount="/app/data", port=13001, containerPort=3001, health="http://127.0.0.1:13001/", healthType="http"),
     "postgresql": dict(service="postgresql", ram=384, cpu=0.5, storage=2048, volume="data", mount="/var/lib/postgresql/data", port=15432, containerPort=5432, health="postgresql://local/wazi", healthType="postgresql-authenticated"),
     "mysql": dict(service="mysql", ram=768, cpu=0.5, storage=2048, volume="data", mount="/var/lib/mysql", port=13306, containerPort=3306, health="mysql://local/wazi", healthType="mysql-authenticated"),
     "nginx": dict(service="nginx", ram=128, cpu=0.25, storage=128, volume="config", mount="/etc/nginx", port=18080, containerPort=80, health="http://127.0.0.1:18080/", healthType="nginx-config-and-http"),
@@ -49,8 +50,8 @@ def unsigned_records(profile, metadata, now):
     version = source["upstreamVersion"]
     if version.count(".") == 1:
         version += ".0"
-    version += "+wazi.2" if profile=='nginx' else "+wazi.1"
-    procedure_version='1.2.0' if profile=='nginx' else '1.1.0'
+    version += "+wazi.2" if profile == 'nginx' else "+wazi.1"
+    procedure_version='1.2.0' if profile in ('nginx','uptime-kuma') else '1.1.0'
     provenance = {
         "sourceId": "https://github.com/" + source["repository"] + "/blob/" + source["commit"] + "/" + source["dockerfile"],
         "sourceType": "dockerfile", "contentHash": "sha256:" + source["dockerfileSha256"],
@@ -59,7 +60,7 @@ def unsigned_records(profile, metadata, now):
         "authorityLevel": "wazi-reviewed", "sensitivity": "public",
     }
     environment = []
-    if profile != "nginx":
+    if profile in ("postgresql", "mysql"):
         prefix = "POSTGRES" if profile == "postgresql" else "MYSQL"
         environment = [
             {"service": shape["service"], "name": prefix + ("_DB" if profile == "postgresql" else "_DATABASE"), "default": "wazi"},
@@ -87,11 +88,11 @@ def unsigned_records(profile, metadata, now):
                          "minStorageMb": shape["storage"], "minDockerVersion": "29.1.3",
                          "minComposeVersion": "2.40.3", "privileged": False},
     }
-    restore = ["manifest.verify", "volume.backup", "volume.restore"] + (["compose.up"] if profile == "nginx" else []) + ["health.check"]
+    restore = ["manifest.verify", "volume.backup", "volume.restore"] + (["compose.up"] if profile in ("nginx", "uptime-kuma") else []) + ["health.check"]
     sequences = {"install": ["manifest.verify", "compose.pull", "compose.up", "health.check"],
                  "upgrade": ["manifest.verify", "compose.pull", "compose.up", "health.check"],
                  "backup": ["manifest.verify", "health.check", "volume.backup", "health.check"],
-                 "restore": ["manifest.verify"] + ([] if profile == "nginx" else ["health.check"]) + restore[1:],
+                 "restore": ["manifest.verify"] + ([] if profile in ("nginx", "uptime-kuma") else ["health.check"]) + restore[1:],
                  "uninstall": ["manifest.verify", "compose.down"]}
     required = {"manifest.verify": ["manifestDigest", "requireReviewState"], "compose.pull": ["service", "imageDigest"],
                 "compose.up": ["service", "projectName", "composeArtifactDigest"], "compose.down": ["service", "projectName", "removeVolumes"],
@@ -114,7 +115,7 @@ def unsigned_records(profile, metadata, now):
         }
         compensation = {'install':['compose.down'], 'upgrade':['compose.down'],
                         'uninstall':['compose.up'],
-                        'restore':['volume.backup']+(['compose.down'] if profile=='nginx' else [])}.get(operation)
+                        'restore':['volume.backup']+(['compose.down'] if profile in ('nginx','uptime-kuma') else [])}.get(operation)
         if compensation:
             identity='proc_compensate_'+operation+'_'+profile
             records['procedure-'+operation]['rollbackProcedureId']=identity
