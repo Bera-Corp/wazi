@@ -21,13 +21,15 @@ import (
 // PackageInstanceConfig is reviewed operator policy. Requests cannot introduce
 // a profile, project, endpoint, image mapping, budget or secret file.
 type PackageInstanceConfig struct {
-	Profile, BudgetDigest                         string
-	ReleaseVersion, BudgetFile, QualificationFile string
-	ProcedureVersion                              string
-	ApplicationStorageBudgetMb                    int64
-	Runtime                                       DockerPilotConfig
-	SecretFiles                                   map[string]string
-	BackupEncryption                              PackageBackupEncryptionConfig
+	Transitions                                      []PackageTransition
+	RecoveryReleaseVersion, RecoveryProcedureVersion string
+	Profile, BudgetDigest                            string
+	ReleaseVersion, BudgetFile, QualificationFile    string
+	ProcedureVersion                                 string
+	ApplicationStorageBudgetMb                       int64
+	Runtime                                          DockerPilotConfig
+	SecretFiles                                      map[string]string
+	BackupEncryption                                 PackageBackupEncryptionConfig
 }
 
 type packageShape struct {
@@ -81,6 +83,13 @@ func RenderReviewedPackageCompose(manifest []byte, config PackageInstanceConfig)
 
 func (b *DockerPackageBoundary) rendererInputsDigest() (string, error) {
 	inputs := map[string]any{"profile": b.config.Profile, "project": b.config.Runtime.Project, "images": b.config.Runtime.ImageConfigDigests, "secretFiles": b.config.SecretFiles, "policy": map[string]any{"service": b.shape.Service, "ramMb": b.shape.RAM, "cpu": b.shape.CPU, "storageMb": b.shape.Storage, "mount": b.shape.Mount, "capabilities": b.shape.Caps}}
+	if len(b.config.Transitions) > 0 {
+		raw, err := json.Marshal(b.config.Transitions)
+		if err != nil {
+			return "", err
+		}
+		inputs["transitionPolicyDigest"] = fmt.Sprintf("sha256:%x", sha256.Sum256(raw))
+	}
 	if len(b.config.BackupEncryption.Recipients) > 0 || b.config.BackupEncryption.IdentityFile != "" {
 		recipients := make([]any, 0, len(b.config.BackupEncryption.Recipients))
 		for _, recipient := range b.config.BackupEncryption.Recipients {
@@ -100,6 +109,10 @@ func (b *DockerPackageBoundary) rendererInputsDigest() (string, error) {
 }
 
 func NewDockerPackageBoundary(config PackageInstanceConfig, artifact []byte) (*DockerPackageBoundary, error) {
+	if err := validatePackageTransitions(config); err != nil {
+		return nil, err
+	}
+	config.Transitions = append([]PackageTransition(nil), config.Transitions...)
 	project := config.Runtime.Project
 	if project != "wazi-"+config.Profile+"-01" && project != "wazi-"+config.Profile+"-02" {
 		return nil, fmt.Errorf("package instance is outside the reviewed project set")
@@ -538,7 +551,10 @@ func (b *DockerPackageBoundary) Execute(ctx context.Context, p PreparedExecution
 		if step.Parameters.HealthCheck.Target != b.shape.Health {
 			return Outcome{}, fmt.Errorf("unapproved package readiness target")
 		}
-		return success, b.waitReady(ctx)
+		if err := b.waitReady(ctx); err != nil {
+			return Outcome{}, err
+		}
+		return success, b.finishPackageTransition(p)
 	case "volume.backup":
 		if step.Parameters.VolumeBackup.Volume != b.shape.Volume {
 			return Outcome{}, fmt.Errorf("package backup volume mismatch")
@@ -551,6 +567,9 @@ func (b *DockerPackageBoundary) Execute(ctx context.Context, p PreparedExecution
 	case "volume.restore":
 		if step.Parameters.VolumeRestore.Volume != b.shape.Volume {
 			return Outcome{}, fmt.Errorf("package restore volume mismatch")
+		}
+		if err := b.checkReleaseAnchor(p, true); err != nil {
+			return Outcome{}, err
 		}
 		return success, b.restore(ctx, p, step.Parameters.VolumeRestore.BackupID, compose)
 	}

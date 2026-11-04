@@ -51,7 +51,7 @@ def unsigned_records(profile, metadata, now):
     if version.count(".") == 1:
         version += ".0"
     version += "+wazi.2" if profile == 'nginx' else "+wazi.1"
-    procedure_version='1.2.0' if profile in ('nginx','uptime-kuma') else '1.1.0'
+    procedure_version='1.3.0' if profile=='uptime-kuma' else ('1.2.0' if profile=='nginx' else '1.1.0')
     provenance = {
         "sourceId": "https://github.com/" + source["repository"] + "/blob/" + source["commit"] + "/" + source["dockerfile"],
         "sourceType": "dockerfile", "contentHash": "sha256:" + source["dockerfileSha256"],
@@ -94,6 +94,8 @@ def unsigned_records(profile, metadata, now):
                  "backup": ["manifest.verify", "health.check", "volume.backup", "health.check"],
                  "restore": ["manifest.verify"] + ([] if profile in ("nginx", "uptime-kuma") else ["health.check"]) + restore[1:],
                  "uninstall": ["manifest.verify", "compose.down"]}
+    if profile == "uptime-kuma":
+        sequences["upgrade"] = ["manifest.verify", "volume.backup", "compose.pull", "compose.up", "health.check"]
     required = {"manifest.verify": ["manifestDigest", "requireReviewState"], "compose.pull": ["service", "imageDigest"],
                 "compose.up": ["service", "projectName", "composeArtifactDigest"], "compose.down": ["service", "projectName", "removeVolumes"],
                 "health.check": ["target"], "volume.backup": ["volume", "backupId"], "volume.restore": ["volume", "backupId"]}
@@ -110,7 +112,7 @@ def unsigned_records(profile, metadata, now):
             "capabilitySequence": sequence,
             "parameterContracts": [{"capability": capability, "requiredParameters": required[capability], "fixedParameters": fixed[capability]}
                                    for capability in dict.fromkeys(sequence)],
-            "requiresCheckpoint": operation == "restore", "provenance": provenance,
+            "requiresCheckpoint": operation == "restore" or (operation == "upgrade" and profile == "uptime-kuma"), "provenance": provenance,
             "reviewState": "signed",
         }
         compensation = {'install':['compose.down'], 'upgrade':['compose.down'],

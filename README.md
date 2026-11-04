@@ -339,6 +339,7 @@ The original Wazi deterministic Linux Docker Compose architecture remains the pr
 - [Phase 1–5 closeout ledger](docs/PHASE1_5_CLOSEOUT.md) — provisional progress estimates, selected Uptime Kuma source pin, and remaining acceptance dependencies.
 - [Phase 2–4 buildout handoff](docs/PHASE2_4_BUILDOUT.md) — measurement tooling, restricted runner, receipt signing and checkpoint implementation pending validation.
 - [Uptime Kuma image and runtime](docs/UPTIME_KUMA_BUILDOUT.md) — pinned image pipeline, reviewed adapter, encrypted volume checkpoints and remaining deployment dependencies.
+- [Lifecycle rollout](docs/LIFECYCLE_ROLLOUT.md) — qualified version transitions, canary waves and preapproved downgrade recovery implementation.
 - [Meta Hackathon 2026 Execution Plan](docs/HACKATHON_2026_EXECUTION_PLAN.md) — build priority, acceptance gates, schedule, missing requirements, demo script and issue list.
 - [Judging pillars and delivery rubric](docs/JUDGING_PILLARS.md) — Impact 30%, Meta AI Tooling 25%, Technical Depth & Execution 20%, Demo 25%; feature evidence, acceptance and demo readiness.
 - [Development environments](docs/DEVELOPMENT_ENVIRONMENTS.md) — agent connection discovery and verified Linux-host readiness.

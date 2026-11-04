@@ -70,8 +70,12 @@ func (r *PackageRegistry) Catalog() []map[string]any {
 	for _, key := range keys {
 		config := r.entries[key]
 		shape, _ := shapeFor(config.Profile, false)
+		operations := []string{"install", "upgrade", "backup", "restore", "uninstall"}
+		if config.RecoveryReleaseVersion != "" {
+			operations = append(operations, "downgrade")
+		}
 		result = append(result, map[string]any{"project": key, "profile": config.Profile, "applicationId": shape.App, "releaseVersion": config.ReleaseVersion,
-			"operations": []string{"install", "upgrade", "backup", "restore", "uninstall"}, "scope": "bounded pilot; no cross-version migration"})
+			"operations": operations, "scope": "operator-reviewed releases and explicitly configured migration paths"})
 	}
 	return result
 }
@@ -84,6 +88,13 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 	config, ok := b.Packages.entries[project]
 	if !ok {
 		return empty, fmt.Errorf("package instance not enabled")
+	}
+	downgrade := operation == "downgrade"
+	if downgrade {
+		if config.RecoveryReleaseVersion == "" || config.RecoveryProcedureVersion == "" {
+			return empty, fmt.Errorf("package downgrade policy unavailable")
+		}
+		operation = "restore"
 	}
 	actions := map[string]string{"install": "install", "upgrade": "upgrade", "backup": "backup", "restore": "destructive-storage", "uninstall": "uninstall"}
 	action, ok := actions[operation]
@@ -98,7 +109,12 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 	if procedureVersion == "" {
 		procedureVersion = "1.1.0"
 	}
-	releaseExpected := ReleaseExpectation{ApplicationID: shape.App, ReleaseVersion: config.ReleaseVersion, ProcedureID: "proc_" + operation + "_" + config.Profile, ProcedureVersion: procedureVersion, Operation: operation}
+	releaseVersion := config.ReleaseVersion
+	if downgrade {
+		releaseVersion = config.RecoveryReleaseVersion
+		procedureVersion = config.RecoveryProcedureVersion
+	}
+	releaseExpected := ReleaseExpectation{ApplicationID: shape.App, ReleaseVersion: releaseVersion, ProcedureID: "proc_" + operation + "_" + config.Profile, ProcedureVersion: procedureVersion, Operation: operation}
 	policy, err := FetchCapabilityPolicyBundle(ctx, b.Preflight.ControlPlaneURL, b.Preflight.TLSConfig, b.Preflight.CapabilityPolicy)
 	if err != nil {
 		return empty, err
@@ -177,7 +193,7 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 	now := time.Now().UTC()
 	created := now.Add(-time.Second).Format(time.RFC3339)
 	expires := now.Add(10 * time.Minute).Format(time.RFC3339)
-	artifactValue := map[string]any{"schemaVersion": "1.0.0", "artifactId": "art_" + id, "applicationId": shape.App, "releaseVersion": config.ReleaseVersion,
+	artifactValue := map[string]any{"schemaVersion": "1.0.0", "artifactId": "art_" + id, "applicationId": shape.App, "releaseVersion": releaseVersion,
 		"manifestDigest": release.Release.ManifestDigest, "renderer": map[string]any{"name": "wazi-compose-renderer", "version": "0.5.0", "inputsDigest": rendererInputs},
 		"composeDigest": fmt.Sprintf("sha256:%x", sha256.Sum256(compose)), "projectName": project, "services": []string{shape.Service}, "createdAt": created, "provenance": manifest["provenance"]}
 	artifact, err := canonicalPayload(artifactValue)
@@ -237,12 +253,12 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 	}
 	provenance, _ := objectValue(manifest["provenance"])
 	envelopeValue := map[string]any{"schemaVersion": "2.0.0", "envelopeId": "env_" + id, "tenantScope": b.TenantScope, "operation": operation,
-		"deploymentMode": "deterministic", "applicationId": shape.App, "releaseVersion": config.ReleaseVersion, "manifestDigest": release.Release.ManifestDigest, "manifestReviewState": manifest["reviewState"],
+		"deploymentMode": "deterministic", "applicationId": shape.App, "releaseVersion": releaseVersion, "manifestDigest": release.Release.ManifestDigest, "manifestReviewState": manifest["reviewState"],
 		"hostProfileRef": hostRef, "policyBundleRef": policyRef, "procedureRef": procedureRef, "composeArtifactRef": artifactRef,
 		"contributionBudgetRef": budgetRef, "managedVolumeQualificationRef": qualificationRef, "secretReferences": secretRefs,
 		"allowedCapabilities": unique, "forbiddenOperations": []string{"shell.exec", "volume.delete-without-checkpoint"},
 		"requiredApprovals": []string{action}, "verificationChecks": []any{map[string]any{"id": "package-readiness", "type": "health", "target": shape.Health}},
-		"rollbackStrategy": map[string]any{"supported": false, "checkpointRequired": operation == "restore"},
+		"rollbackStrategy": map[string]any{"supported": false, "checkpointRequired": operation == "restore" || (operation == "upgrade" && config.Profile == "uptime-kuma")},
 		"citedSources":     []any{map[string]any{"recordId": provenance["sourceId"], "contentHash": provenance["contentHash"]}}, "createdAt": created, "expiresAt": expires}
 	if rollbackProcedure != nil {
 		ref, err := contextRecordRef(rollbackRaw, "procedureId")
@@ -254,7 +270,7 @@ func (b *ContextBridge) Propose(ctx context.Context, project, operation, backupI
 		strategy["procedureRef"] = ref
 	}
 	checkpointID := backupID
-	if operation == "restore" {
+	if operation == "restore" || (operation == "upgrade" && config.Profile == "uptime-kuma") {
 		checkpointID = "bak_pre_" + id
 		envelopeValue["rollbackStrategy"].(map[string]any)["checkpoint"] = map[string]any{"backupId": checkpointID, "volume": shape.Volume}
 	}

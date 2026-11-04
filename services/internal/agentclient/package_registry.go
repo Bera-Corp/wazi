@@ -45,6 +45,7 @@ func NewPackageRegistry(configs []PackageInstanceConfig) (*PackageRegistry, erro
 		config.Runtime.AllowedManifests = cloneBoolMap(config.Runtime.AllowedManifests)
 		config.Runtime.ImageConfigDigests = cloneStringMap(config.Runtime.ImageConfigDigests)
 		config.SecretFiles = cloneStringMap(config.SecretFiles)
+		config.Transitions = append([]PackageTransition(nil), config.Transitions...)
 		registry.entries[project] = config
 	}
 	return registry, nil

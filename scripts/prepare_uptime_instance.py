@@ -32,7 +32,7 @@ def main():
     if not args.identity_file.startswith('/srv/wazi-runtime/secrets/'+project+'/'):
         raise ValueError('instance-specific-protected-identity-required')
     config = copy.deepcopy(json.loads(Path(args.template).read_text(encoding='utf-8')))
-    config.update(Profile='uptime-kuma', ReleaseVersion=manifest['version'], ProcedureVersion='1.2.0', BudgetDigest=args.budget_digest,
+    config.update(Profile='uptime-kuma', ReleaseVersion=manifest['version'], ProcedureVersion='1.3.0', BudgetDigest=args.budget_digest,
                   BudgetFile=args.budget_file, QualificationFile=args.qualification_file, SecretFiles={})
     config['BackupEncryption'] = {'Recipients':args.recipient,'IdentityFile':args.identity_file}
     runtime = config['Runtime']

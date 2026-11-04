@@ -61,34 +61,58 @@ func (b *DockerPackageBoundary) checkReleaseAnchor(p PreparedExecution, create b
 		return err
 	}
 	expected := map[string]string{"profile": b.config.Profile, "project": b.config.Runtime.Project, "manifestDigest": p.Binding().Release.ManifestDigest, "imageConfig": image}
-	path := filepath.Join(b.config.Runtime.StateDirectory, "instance-release.json")
-	raw, err := os.ReadFile(path)
+	actual, pending, err := b.readPackageAnchor()
 	if os.IsNotExist(err) && create {
-		raw, err := json.Marshal(expected)
-		if err != nil {
+		plan, _, parseErr := decodePrepared(p)
+		if parseErr != nil {
+			return parseErr
+		}
+		if plan.Operation != "install" {
+			return fmt.Errorf("missing release anchor requires explicit reconciliation")
+		}
+		raw, marshalErr := json.Marshal(expected)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		if err = writeExclusiveCheckpoint(filepath.Join(b.config.Runtime.StateDirectory, "instance-release.json"), raw); err != nil {
 			return err
 		}
-		if err := writeExclusiveCheckpoint(path, raw); err != nil {
-			return err
-		}
-		return syncCheckpointDirectory(filepath.Dir(path))
+		return syncCheckpointDirectory(b.config.Runtime.StateDirectory)
 	}
 	if err != nil {
-		return fmt.Errorf("instance data format has not been qualified")
+		return err
 	}
-	var actual map[string]string
-	if json.Unmarshal(raw, &actual) != nil || len(actual) != len(expected) {
-		return fmt.Errorf("instance release anchor invalid")
-	}
+	same := true
 	for key, value := range expected {
 		if actual[key] != value {
-			return fmt.Errorf("cross-version package change requires a separately qualified migration")
+			same = false
 		}
 	}
-	return nil
+	if same {
+		if pending != nil && pending.PlanDigest != p.Binding().PlanDigest {
+			return fmt.Errorf("unfinished migration requires its original job or approved recovery")
+		}
+		return nil
+	}
+	return b.admitPackageTransition(p, actual, expected, create)
+}
+
+func (b *DockerPackageBoundary) checkpointManifestDigest(p PreparedExecution) (string, error) {
+	anchor, pending, err := b.readPackageAnchor()
+	if err != nil {
+		return "", err
+	}
+	if pending != nil && pending.PlanDigest == p.Binding().PlanDigest {
+		return pending.From["manifestDigest"], nil
+	}
+	return anchor["manifestDigest"], nil
 }
 
 func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution, id, kind string) error {
+	checkpointDigest, err := b.checkpointManifestDigest(p)
+	if err != nil {
+		return err
+	}
 	path, err := b.checkpointPath(id, kind)
 	if err != nil {
 		return err
@@ -192,7 +216,7 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 	if err = f.Close(); err != nil {
 		return err
 	}
-	metadata := packageCheckpoint{Format: format, PayloadFormat: payloadFormat, Profile: b.config.Profile, Project: b.config.Runtime.Project, Tenant: p.TenantScope(), ManifestDigest: p.Binding().Release.ManifestDigest, BackupID: id,
+	metadata := packageCheckpoint{Format: format, PayloadFormat: payloadFormat, Profile: b.config.Profile, Project: b.config.Runtime.Project, Tenant: p.TenantScope(), ManifestDigest: checkpointDigest, BackupID: id,
 		PayloadDigest: fmt.Sprintf("sha256:%x", h.Sum(nil)), CreatedAt: time.Now().UTC().Format(time.RFC3339), Bytes: info.Size()}
 	raw, err := json.Marshal(metadata)
 	if err != nil {
@@ -230,6 +254,10 @@ func syncCheckpointDirectory(path string) error {
 }
 
 func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id string) (*os.File, packageCheckpoint, error) {
+	return b.verifiedCheckpointForDigest(p, id, p.Binding().Release.ManifestDigest)
+}
+
+func (b *DockerPackageBoundary) verifiedCheckpointForDigest(p PreparedExecution, id, expectedManifest string) (*os.File, packageCheckpoint, error) {
 	var record packageCheckpoint
 	kind := "backups"
 	if strings.HasPrefix(id, "bak_pre_") {
@@ -261,7 +289,7 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 	if err != nil {
 		return nil, record, err
 	}
-	if json.Unmarshal(raw, &record) != nil || record.Profile != b.config.Profile || record.Project != b.config.Runtime.Project || record.Tenant != p.TenantScope() || record.ManifestDigest != p.Binding().Release.ManifestDigest || record.BackupID != id || record.Bytes != info.Size() {
+	if json.Unmarshal(raw, &record) != nil || record.Profile != b.config.Profile || record.Project != b.config.Runtime.Project || record.Tenant != p.TenantScope() || record.ManifestDigest != expectedManifest || record.BackupID != id || record.Bytes != info.Size() {
 		return nil, record, fmt.Errorf("package checkpoint binding mismatch; cross-version restore requires a separately qualified migration")
 	}
 	expectedPayload := map[string]string{"postgresql": "postgres-custom", "mysql": "mysql-logical", "nginx": "nginx-config-json", "uptime-kuma": "volume-tar"}[b.config.Profile]
@@ -370,7 +398,11 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 		if !strings.HasPrefix(beforeID, "bak_pre_") || beforeID == id || checkpoint["volume"] != b.shape.Volume {
 			return fmt.Errorf("pre-restore checkpoint reference invalid")
 		}
-		before, beforeRecord, err := b.verifiedCheckpoint(p, beforeID)
+		beforeDigest, digestErr := b.checkpointManifestDigest(p)
+		if digestErr != nil {
+			return digestErr
+		}
+		before, beforeRecord, err := b.verifiedCheckpointForDigest(p, beforeID, beforeDigest)
 		if err != nil {
 			return fmt.Errorf("declared pre-restore checkpoint required: %w", err)
 		}

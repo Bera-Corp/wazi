@@ -50,9 +50,11 @@ payload and receipt. Application restoration is a separate step.
 
 ## Remaining code and owner dependencies
 
-- Cross-version migration and checkpoint-aware downgrade remain unimplemented;
-  the existing release anchor rejects unqualified version changes.
-- Canary coordination and the full lifecycle/platform matrix remain incomplete.
+- Uptime Kuma startup migration, checkpoint-aware downgrade and durable canary
+  coordination now have an initial implementation described in
+  [Lifecycle rollout](LIFECYCLE_ROLLOUT.md). Execution and validation remain pending.
+- Database-engine major migrations and the full lifecycle/platform matrix remain
+  incomplete; unqualified version changes continue to be rejected.
 - Existing pilot volumes plus Uptime Kuma need about 26.125 GiB, above the
   current 25 GiB application-volume reservation. Before enabling it live, the
   owner must choose capacity reallocation or retirement of an existing retained
