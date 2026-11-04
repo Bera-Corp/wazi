@@ -4,371 +4,92 @@
   <img src="services/internal/controlplane/assets/wazi-wordmark-open.png" alt="Wazi wordmark" width="620">
 </p>
 
-> **Wazi** means **open** in Swahili. Wazi is a curated marketplace and deployment platform that makes self-hosted open-source applications installable on a local server or user-owned VPS with an app-store-like experience.
-
-**Stage:** pre-MVP architecture and context-engineering baseline  
-**Primary target:** Linux x86_64 hosts using Docker Engine and Docker Compose  
-**Core rule:** deterministic manifests first; AI only resolves documented gaps under policy control.
-
-**Brand assets:** [download the wordmark and multi-resolution favicon package](services/internal/controlplane/assets/wazi-brand-assets.zip) · [view the asset guide](graphics/README.md) · [favicon source](services/internal/controlplane/assets/favicon.ico)
-
-## Product thesis
-
-Thousands of open-source applications can replace paid SaaS products, but adoption is blocked by installation, dependencies, domains, TLS, secrets, upgrades, backups, migrations, monitoring, and recovery. Wazi turns reviewed open-source applications into safe installable packages.
-
-A user should be able to:
-
-1. Browse verified open-source applications by category.
-2. Compare resource requirements and supported environments.
-3. Select a local host, home server, NAS, or VPS.
-4. Run an automated compatibility assessment.
-5. Approve the proposed changes.
-6. Install through a signed, reviewed deployment manifest.
-7. Receive health checks, backups, upgrades, rollback, and recovery support.
-8. Contribute privacy-preserving deployment feedback to improve packages and upstream projects.
-
-Wazi does **not** execute arbitrary GitHub repositories directly on customer hosts. Unknown repositories enter a controlled packaging pipeline. AI may create a candidate manifest, but production deployment requires schema validation, policy checks, isolated testing, vulnerability scanning, rollback verification, and human review.
-
-## Why context engineering is central
-
-The core technical problem is not generating shell commands. It is assembling the smallest accurate, current, authorized set of facts needed to make a safe deployment decision.
-
-Wazi treats context as a governed data product. Every material fact should have provenance, version scope, freshness, sensitivity, confidence, and review status.
-
-### Context classes
-
-| Class | Purpose | Examples |
-|---|---|---|
-| Policy context | Defines what is allowed | privilege limits, network exposure, approvals, licensing rules |
-| Canonical application context | Defines the application | release, images, ports, volumes, dependencies, health checks |
-| Environment context | Describes the target host | OS, architecture, RAM, storage, ports, filesystem, Docker version |
-| Procedural context | Defines known workflows | install, upgrade, backup, restore, rollback, uninstall |
-| Episodic context | Captures prior outcomes | successful cases, failures, remediations, timing, compatibility |
-| Session context | Tracks the current run | selected app, current step, approvals, evidence, pending rollback |
-
-These context classes remain separate. They are retrieved and assembled into a typed execution envelope rather than copied into one uncontrolled prompt.
-
-## Context lifecycle
-
-```text
-Upstream docs + manifests + policies + host observations + deployment evidence
-                                  |
-                                  v
-                         ingestion and hashing
-                                  |
-                                  v
-                    normalization and validation
-                                  |
-                                  v
-            provenance, freshness and sensitivity labels
-                                  |
-                                  v
-                    policy filtering and redaction
-                                  |
-                                  v
-                  compatibility filters and retrieval
-                                  |
-                                  v
-                    ranking and context compression
-                                  |
-                                  v
-                     typed execution context envelope
-                                  |
-                                  v
-             deterministic resolver or constrained AI planner
-                                  |
-                                  v
-                  policy decision and approval gates
-                                  |
-                                  v
-                    typed capability execution
-                                  |
-                                  v
-              verification, rollback and evidence capture
-                                  |
-                                  v
-                candidate knowledge promotion workflow
-```
-
-## Design principles
-
-1. **Deterministic before generative.** Reuse signed manifests and reviewed procedures whenever possible.
-2. **Retrieve, do not stuff.** Use only context relevant to the app, version, host, operation, and policy domain.
-3. **Evidence over confidence.** Trust provenance and test results, not model fluency.
-4. **Typed context and output.** AI output must validate against a deployment-plan schema before evaluation.
-5. **No secrets in model context.** Models receive secret references and constraints, never values.
-6. **Every mutation is gated.** Package installation, port exposure, deletion, migration, upgrade, and rollback require explicit policy decisions.
-7. **Learning requires promotion.** Knowledge moves through `observed -> candidate -> tested -> reviewed -> signed -> stable`.
-8. **Context expires.** Host observations, vulnerabilities, compatibility claims, and version facts have freshness windows.
-9. **Failures are reusable evidence.** Failed deployments are stored separately as redacted diagnostic cases.
-10. **No generic root shell.** The host agent exposes narrow allowlisted capabilities.
-
-## MVP scope
-
-- Curated self-hosted web applications.
-- Linux hosts only.
-- x86_64 first; arm64 later.
-- Docker Engine and Docker Compose.
-- Local server and bring-your-own-VPS deployment.
-- Single-node applications.
-- Host pairing and preflight checks.
-- Signed manifests.
-- Secret generation and injection outside AI context.
-- Health checks.
-- Backup and restore verification.
-- Upgrade and rollback workflows.
-- Consent-based redacted telemetry.
-- Five to ten launch applications.
-
-### Out of scope
-
-- Arbitrary unreviewed repository execution.
-- Kubernetes.
-- Windows and macOS native packaging.
-- Multi-node high availability.
-- Fully managed hosting in the first release.
-- AI-generated unrestricted shell commands.
-- Raw customer logs used as shared training data.
-- Automatic promotion of one successful installation into the stable catalogue.
-
-## Architecture
-
-```text
-Web client
-   |
-Control plane API
-   |-- catalogue and manifest registry
-   |-- host and deployment records
-   |-- approvals and audit
-   |-- context engine
-   |-- policy engine
-   |-- planner gateway
-   |
-Mutually authenticated host agent
-   |-- host inventory probes
-   |-- Docker Compose adapter
-   |-- reverse-proxy adapter
-   |-- backup and restore adapter
-   |-- health checks
-   |-- evidence and rollback reporting
-```
-
-### Recommended stack
-
-- **Frontend:** React, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query.
-- **Control plane:** Go for APIs, orchestration, policy enforcement, and agent communication.
-- **Context processing:** Python workers for extraction, classification, evaluation, and AI integration.
-- **Database:** PostgreSQL with pgvector only where semantic retrieval adds measurable value.
-- **Queue:** NATS JetStream or Redis Streams initially.
-- **Object storage:** S3-compatible storage for signed manifests, SBOMs, scan evidence, and redacted artifacts.
-- **Policy:** Open Policy Agent or Cedar-style policy evaluation.
-- **Agent:** Go binary with mutual TLS and allowlisted typed capabilities.
-- **Execution:** Docker Compose first; no generic remote shell endpoint.
-- **Signing:** Sigstore/cosign-compatible signing for manifests and container attestations.
-- **Observability:** OpenTelemetry, Prometheus-compatible metrics, structured redacted logs.
-
-## Core entities
-
-- `Application`
-- `ApplicationRelease`
-- `DeploymentManifest`
-- `HostProfile`
-- `PolicyBundle`
-- `ExecutionContextEnvelope`
-- `DeploymentPlan`
-- `DeploymentCase`
-- `FailureSignature`
-- `ApprovalRecord`
-- `EvidenceRecord`
-- `FeedbackBundle`
-
-## Compatibility selection
-
-Hard filters run before semantic ranking:
-
-- operating-system family and version;
-- CPU architecture;
-- minimum CPU, RAM, and storage;
-- Docker and Compose versions;
-- required ports;
-- filesystem and mount constraints;
-- unsupported combinations;
-- manifest revocation and expiry;
-- application release compatibility.
-
-Only candidates passing hard filters are ranked using environment similarity, evidence quality, freshness, version match, and prior deployment outcomes.
-
-## AI boundary
-
-AI is used for:
-
-- extracting structured facts from upstream documentation;
-- identifying contradictions or missing fields;
-- generating candidate manifests for sandbox testing;
-- proposing typed deployment plans when deterministic coverage has a declared gap;
-- classifying failures against known signatures;
-- drafting upstream feedback bundles.
-
-AI is not allowed to:
-
-- see secret values;
-- execute arbitrary shell commands;
-- bypass policy or compatibility failures;
-- publish stable manifests;
-- expose public ports without approval;
-- perform destructive storage operations without checkpoints;
-- treat upstream documentation as trusted instructions to the model.
-
-## Launch application criteria
-
-An application should have:
-
-- an explicit open-source licence;
-- active maintenance and tagged releases;
-- official images or a reproducible build path;
-- stable single-node deployment;
-- documented persistent storage;
-- measurable health checks;
-- backup and restore procedures;
-- clear upgrade and rollback guidance;
-- strong user demand;
-- no unjustified privileged-container requirement.
-
-Initial candidates include Nextcloud, Immich, Paperless-ngx, Gitea, Penpot, Uptime Kuma, Mattermost Team Edition, Plausible Community Edition, AppFlowy self-hosted components, and Vaultwarden subject to trademark review.
-
-## Security requirements
-
-- signed manifests and revocation support;
-- pinned image digests;
-- SBOM capture and vulnerability scanning;
-- isolated packaging tests;
-- least-privilege host agent;
-- capability allowlists;
-- mutual authentication;
-- encrypted state and backups;
-- secret redaction in prompts, logs, and telemetry;
-- tenant isolation;
-- tamper-evident audit records;
-- backup before destructive migrations;
-- tested rollback and restore;
-- emergency catalogue revocation.
-
-## Delivery phases
-
-### Phase 0 — Contracts and boundaries
-
-Define context schemas, provenance, policies, secret references, deployment cases, planner output, threat model, and evaluations.
-
-### Phase 1 — Deterministic vertical slice
-
-Pair one Linux host, build a host profile, select one signed manifest, install one reference app through typed capabilities, verify health, back up, restore, and roll back without AI.
-
-### Phase 2 — Retrieval and compatibility
-
-Implement hard filters, context ranking, known-failure retrieval, freshness enforcement, and an inspectable context envelope.
-
-### Phase 3 — Controlled AI packaging
-
-Add documentation extraction, candidate manifest generation, sandbox execution, policy validation, diagnosis, and human review.
-
-### Phase 4 — Lifecycle operations
-
-Add upgrades, migrations, backups, restore verification, rollback, canary manifests, and revocation.
-
-### Phase 5 — Private alpha
-
-Launch five to ten applications across local and VPS paths, collect opt-in telemetry, and measure reliability.
-
-## Initial quality gates
-
-| Metric | Gate |
-|---|---:|
-| First-attempt success for stable packages | >= 90% on supported matrix |
-| Rollback success | >= 95% for reversible actions |
-| Restore verification | 100% for backup-supported packages |
-| Secret values exposed to AI | 0 |
-| Uncited material actions | 0 |
-| Arbitrary shell execution | 0 |
-| Schema-valid planner output after retry | >= 99% |
-| Deterministic deployments by alpha end | >= 80% |
-| False-compatible decisions | < 2% |
-
-## First vertical-slice definition of done
-
-- A Linux VPS pairs securely with the control plane.
-- The agent reports a redacted typed host profile.
-- A signed application manifest is retrieved.
-- Compatibility is decided from typed facts.
-- The UI shows the exact context used.
-- The plan contains only allowlisted capabilities.
-- The application installs through Docker Compose.
-- Health checks pass.
-- Evidence is stored.
-- Backup and restore are verified.
-- Rollback or uninstall succeeds.
-- The deployment case is normalized without secrets.
-- An unsupported environment is correctly rejected.
-
-## Repository map
-
-- `docs/CONTEXT_ENGINEERING_PLAN.md` — context architecture and lifecycle.
-- `docs/ARCHITECTURE.md` — service boundaries and data flow.
-- `docs/MVP_ROADMAP.md` — phased implementation plan.
-- `docs/THREAT_MODEL.md` — threats, trust boundaries, and controls.
-- `docs/BACKLOG.md` — initial implementation epics.
-- `schemas/` — typed contracts.
-- `context/` — policies and example context records.
-- `catalog/` — application package examples.
-- `prompts/` — constrained planner interfaces.
-- `services/` — service responsibilities.
-
-## Difficulty and potential
-
-- **MVP engineering difficulty:** 8/10.
-- **Commercial potential under the curated scope:** 78/100.
-- **Commercial potential for a universal “install any repository” promise:** 42/100.
-
-The defensible product is not the open-source application itself. It is verified packaging, compatibility intelligence, secure deployment, lifecycle operations, evidence, support, and trust.
-
-## Updated unified product and hackathon planning (October 2026)
-
-The original Wazi deterministic Linux Docker Compose architecture remains the pre-MVP deployment baseline. The broader Wazi product vision and the focused Meta hackathon scope are documented separately:
-
-- [Wazi Unified Master Plan](docs/WAZI_MASTER_PLAN.md) — full research-based product strategy and long-term architecture.
-- [Phase 3 and 4 completion plan](docs/PHASE3_4_COMPLETION_PLAN.md) — evidence gates and dependency order for controlled packaging and lifecycle operations.
-- [Current Phase 2–5 code checkpoint](docs/BUILDOUT_90_2026-11-05.md) — provisional 90% Phase 2–4 code estimates, remaining adapters, and owner-deferred independent review.
-- [Private alpha operations](docs/PHASE5_ALPHA_OPERATIONS.md) — cohort metrics, receipt import, support workflows and the private progress view.
-- [Phase 1–5 closeout ledger](docs/PHASE1_5_CLOSEOUT.md) — provisional progress estimates, selected Uptime Kuma source pin, and remaining acceptance dependencies.
-- [Phase 2–4 buildout handoff](docs/PHASE2_4_BUILDOUT.md) — measurement tooling, restricted runner, receipt signing and checkpoint implementation pending validation.
-- [Uptime Kuma image and runtime](docs/UPTIME_KUMA_BUILDOUT.md) — pinned image pipeline, reviewed adapter, encrypted volume checkpoints and remaining deployment dependencies.
-- [Lifecycle rollout](docs/LIFECYCLE_ROLLOUT.md) — qualified version transitions, canary waves and preapproved downgrade recovery implementation.
-- [Linux integration status](docs/LINUX_INTEGRATION_2026-11-04.md) — live deployment evidence, current code estimates and owner-approved test allocation.
-- [Meta Hackathon 2026 Execution Plan](docs/HACKATHON_2026_EXECUTION_PLAN.md) — build priority, acceptance gates, schedule, missing requirements, demo script and issue list.
-- [Judging pillars and delivery rubric](docs/JUDGING_PILLARS.md) — Impact 30%, Meta AI Tooling 25%, Technical Depth & Execution 20%, Demo 25%; feature evidence, acceptance and demo readiness.
-- [Development environments](docs/DEVELOPMENT_ENVIRONMENTS.md) — agent connection discovery and verified Linux-host readiness.
-- [Wazi Nodes and Fabric](docs/WAZI_NODES_PLAN.md) — own-hardware compute, resource contribution, qualification and phased buildout.
-- [Three-minute film workspace](video/README.md) — transcript, motion direction, voiceover, timing and an evolving inspiration inbox.
-- [Wazi Installer and Store Bridge](docs/WAZI_INSTALLER_AND_STORE_BRIDGE.md) — researched future native desktop installation and external-store distribution paths.
-- [Preview & Insider Program](docs/PREVIEW_AND_INSIDER_PROGRAM.md) — future optional preview release channels, granular telemetry consent and developer bug feedback.
-
-These capabilities are **proposed**; their appearance in documentation does not imply that software is implemented or externally certified. Review [LICENSE-DECISION.md](LICENSE-DECISION.md) before public distribution.
-
-## Worlds and S-Prints (experimental)
-
-The planned Worlds area packages environments, skills, action/model adapters,
-planners and evaluators for compatible simulation or world-model runtimes.
-[The feature and buildout plan](docs/WAZI_SPRINTS_PLAN.md) maps the research
-into acceptance gates alongside Apps, Compute and Agents.
-
-Implemented locally: experimental schemas and an offline resolver with a
-synthetic environment + navigation + planner example. It checks interfaces,
-dependency pins, resources and permissions. Model execution, installation,
-marketplace UI and measured model gains remain planned.
-
-```powershell
-.\scripts\validate.ps1
-.\.venv\Scripts\python.exe scripts/sprints.py context/worlds/simulation-composition.json
-```
-
-See [the Phase 0 follow-up review](docs/PHASE_0_REVIEW_2026-10-29.md) for
-confirmed improvements, additional fixes and remaining completion blockers.
+**Wazi means open in Swahili.** Wazi helps you discover, package and operate open-source applications on your own server. Signed packages, compatibility checks and explicit approvals connect the catalog to a private deployment workbench.
+
+**Current stage: private alpha buildout.** Linux pilots have recorded deployment evidence. Phase 2–4 code coverage is provisionally estimated at 90%; this is not a measured acceptance score. Alpha reliability, restore verification and platform qualification still need evidence. See the [buildout checkpoint](docs/BUILDOUT_90_2026-11-05.md) and [live Linux integration record](docs/LINUX_INTEGRATION_2026-11-04.md).
+
+[Download logos and favicons](services/internal/controlplane/assets/wazi-brand-assets.zip) | [Brand asset guide](graphics/README.md)
+
+## Try the interface locally
+
+The preview shows the actual overview, workbench, catalog and alpha progress pages. It binds only to your computer, rejects deployment actions and does not install applications. An empty progress view means no evidence has been supplied; it is not a successful alpha run.
+
+Install Git and Python **3.11**, then clone the repository:
+
+~~~sh
+git clone https://github.com/Bera-Corp/wazi.git
+cd wazi
+~~~
+
+**Windows PowerShell**
+
+~~~powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe scripts/ui_preview.py
+~~~
+
+**Linux or macOS**
+
+~~~sh
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python scripts/ui_preview.py
+~~~
+
+Open [Alpha progress](http://127.0.0.1:3688/alpha), [Workbench](http://127.0.0.1:3688/context), [Catalog](http://127.0.0.1:3688/apps) or [Overview](http://127.0.0.1:3688/). Stop the server with Ctrl+C. If the port is busy, add `--port 3689` and use that port in the URL. Preview sign-in and private host operations require a configured live service.
+
+The preview creates a local catalog database under `artifacts/ui-preview/`. It does not connect to the VPS. To display exported alpha evidence, use `--snapshot PATH` with the report JSON described in the [alpha operations guide](docs/PHASE5_ALPHA_OPERATIONS.md).
+
+## Use a real host
+
+The qualified deployment target is **Linux x86_64 with Docker Engine and Compose**. Windows/WSL2 and macOS preparation code does not establish native deployment qualification. The browser preview works independently of that qualification.
+
+A live deployment needs a configured control plane and agent, paired device identity, CA and client certificates, signed packages, an approved resource budget and an operator session. Application changes follow the configured policy and approval flow. The repository is not a one-command production installer.
+
+For an existing authorized development host, follow [Development environments](docs/DEVELOPMENT_ENVIRONMENTS.md) and its linked deployment records. Configure `.env.local` from the repository template using SSH key **paths**, never private key contents. The owner's configured Windows connection can then be checked with:
+
+~~~powershell
+.\scripts\ssh-dev.ps1 -Check
+~~~
+
+That helper targets the documented development host; it is not a general VPS installer. Keep credentials, keys, operator codes and local evidence databases out of Git.
+
+The normal product journey is: browse a package, choose a qualified host, inspect compatibility and the proposed plan, approve the change, then follow execution and health. Backups, recovery and upgrade actions require their own supported package procedures. A catalog entry alone does not prove that an application is qualified or installed.
+
+## Work on the code
+
+Use Python 3.11 with the pinned dependencies above. Go service development uses **Go 1.23**, as declared in `services/go.mod`. Docker is needed for actual runtime qualification, not for the UI preview.
+
+Contract validation, from the repository root:
+
+~~~powershell
+.\.venv\Scripts\python.exe scripts/validate.py
+~~~
+
+On Linux or macOS use `.venv/bin/python` instead. Go service checks run from the module directory:
+
+~~~sh
+cd services
+go test ./...
+go build ./cmd/...
+~~~
+
+Native Linux qualification and release CI remain separate from Windows checks. Running these commands does not establish live deployment, restore or security acceptance. See the [roadmap](docs/MVP_ROADMAP.md) for the remaining gates.
+
+## Find the right documentation
+
+| Need | Read |
+|---|---|
+| Understand components and trust boundaries | [Architecture](docs/ARCHITECTURE.md), [context engineering](docs/CONTEXT_ENGINEERING_PLAN.md) |
+| See current implementation scope and gaps | [Buildout checkpoint](docs/BUILDOUT_90_2026-11-05.md), [roadmap](docs/MVP_ROADMAP.md), [backlog](docs/BACKLOG.md) |
+| Record cohorts, reliability and support work | [Phase 5 alpha operations](docs/PHASE5_ALPHA_OPERATIONS.md) |
+| Connect to the authorized development host | [Development environments](docs/DEVELOPMENT_ENVIRONMENTS.md) |
+| Inspect recorded live outcomes | [Phase 1 evidence](docs/PHASE1_LIVE_EVIDENCE.md), [Phase 2 evidence](docs/PHASE2_LIVE_EVIDENCE.md) |
+| Prepare the demonstration | [Judging pillars](docs/JUDGING_PILLARS.md), [video workspace](video/README.md) |
+
+## Branding and licensing
+
+Use the approved wordmark for Wazi branding and the W app icon for favicons. The [graphics guide](graphics/README.md) describes the supplied transparent PNGs, SVGs and icon sizes; the [downloadable package](services/internal/controlplane/assets/wazi-brand-assets.zip) keeps them together.
+
+Wazi's public distribution license is still pending; see [LICENSE-DECISION.md](LICENSE-DECISION.md). Upstream applications retain their own licenses. Do not treat catalog inclusion as permission to redistribute their code or images.

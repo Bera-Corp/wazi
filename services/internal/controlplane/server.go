@@ -157,6 +157,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/deployments", s.handlePilotDeployment)
 	mux.HandleFunc("GET /v1/deployments/{jobID}", s.handlePilotDeploymentStatus)
 	s.registerContextRoutes(mux)
+	s.registerAlphaRoutes(mux)
 	s.registerPackageCandidateRoutes(mux)
 	return mux
 }

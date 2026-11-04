@@ -11,31 +11,31 @@
     <link rel="icon" href="/assets/favicon.ico" />
     <link rel="stylesheet" href="/assets/tokens.css" />
     <link rel="stylesheet" href="/assets/catalog.css" />
+    <link rel="stylesheet" href="/assets/workspace.css" />
     <script src="/assets/catalog.js" defer></script>
   </head>
   <body>
     <a class="skip" href="#main">Skip to applications</a>
-    <header class="topbar">
-      <div class="bar">
-        <a class="brand" href="/apps" aria-label="Wazi application library"
+    <header class="topbar wazi-topbar">
+      <div class="bar wazi-topbar-inner">
+        <a class="brand wazi-brand" href="/apps" aria-label="Wazi application library"
           ><img src="/assets/wordmark.png" alt="Wazi" width="132" height="55"
         /></a>
-        <nav aria-label="Main">
+        <nav class="wazi-nav" aria-label="Main">
           <a href="/apps" id="library-nav">Application library</a
           ><a href="/dashboard" id="dashboard-nav">My workspace</a>
         </nav>
-        <a class="signin" href="/auth/login" id="signin">Sign in with GitHub</a
+        <a class="signin wazi-session" href="/auth/login" id="signin">Sign in with GitHub</a
         ><span id="identity" hidden></span>
       </div>
     </header>
-    <main id="main">
+    <main id="main" class="catalog-page wazi-page">
       <section id="library" aria-labelledby="library-title">
-        <div class="intro">
+        <div class="intro wazi-page-heading">
           <div>
-            <h1 id="library-title">Good software.<br />Shared know-how.</h1>
+            <h1 id="library-title">Application library</h1>
             <p>
-              Find a project. Reuse a verified setup.<br />Help the next person
-              get it running.
+              Find a project, inspect its setup, and see what was tested.
             </p>
           </div>
           <aside>
@@ -47,7 +47,8 @@
             <a href="#applications">Explore the library</a>
           </aside>
         </div>
-        <form id="filters" class="filters" role="search">
+        <form id="filters" class="filters" role="search" aria-label="Filter applications">
+          <div class="filter-primary">
           <label class="search"
             >Find an application<input
               id="search"
@@ -66,7 +67,12 @@
               <option value="windows-wsl2">Windows / WSL2</option>
               <option value="macos-desktop">macOS Docker</option>
             </select></label
-          ><label
+          >
+          </div>
+          <details class="filter-more">
+            <summary>More filters</summary>
+            <div class="filter-secondary">
+          <label
             >Application version<input
               id="release"
               name="release"
@@ -95,9 +101,11 @@
               <option value="stars">GitHub stars</option>
             </select></label
           >
+            </div>
+          </details>
         </form>
         <div class="results-heading">
-          <h2 id="applications">Application library</h2>
+          <h2 id="applications">Explore applications</h2>
           <span id="count" role="status" aria-live="polite"
             >Loading projects</span
           >
@@ -113,11 +121,13 @@
         </p>
       </section>
       <section id="workspace" hidden aria-labelledby="workspace-title">
-        <div class="workspace-heading">
-          <h1 id="workspace-title">Your workspace</h1>
-          <p>Applications on your hosts. Contributions for everyone.</p>
+        <div class="workspace-heading wazi-page-heading">
+          <div>
+            <h1 id="workspace-title">Your workspace</h1>
+            <p>Applications on your hosts. Contributions for everyone.</p>
+          </div>
         </div>
-        <nav class="tabs" aria-label="Workspace">
+        <nav class="tabs" aria-label="Workspace sections">
           <button data-tab="applications" type="button">My applications</button
           ><button data-tab="hosts" type="button">My hosts</button
           ><button data-tab="installations" type="button">Installations</button
@@ -196,7 +206,7 @@
           </p>
           <a href="/apps">Browse applications</a>
         </div>
-        <button type="button" id="logout" hidden>Sign out</button>
+        <button type="button" class="workspace-signout" id="logout" hidden>Sign out</button>
       </section>
       <section id="details" hidden aria-labelledby="detail-title">
         <button id="close-detail" type="button">Back to applications</button>

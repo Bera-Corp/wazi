@@ -184,7 +184,8 @@ class Application:
                     self.response(200, (ROOT / "web/index.html").read_bytes(), "text/html; charset=utf-8")
                 elif not write and path.startswith("/assets/"):
                     assets = {"catalog.css": ROOT / "web/catalog.css", "catalog.js": ROOT / "web/catalog.js",
-                              "tokens.css": BRAND / "tokens.css", "wordmark.png": BRAND / "wazi-wordmark-open.png", "favicon.ico": BRAND / "favicon.ico"}
+                              "tokens.css": BRAND / "tokens.css", "workspace.css": BRAND / "workspace.css",
+                              "wordmark.png": BRAND / "wazi-wordmark-open.png", "favicon.ico": BRAND / "favicon.ico"}
                     name = path.removeprefix("/assets/")
                     if name not in assets:
                         raise LookupError()

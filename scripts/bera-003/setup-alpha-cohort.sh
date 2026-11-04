@@ -19,6 +19,8 @@ def private(path,value):
 cohort=root/'alpha-cohort.json'
 apps=['org.gitea.gitea','org.postgresql.postgresql','com.mysql.mysql','org.nginx.nginx','pet.kuma.uptime']
 if not cohort.exists():private(cohort,{'tenantScope':runtime['TenantScope'],'applications':apps})
+target=root/'alpha-target.json'
+if not target.exists():private(target,{'target':'vps'})
 def cli(*args):
     raw=subprocess.check_output(prefix+['python3','-I',str(release/'scripts/alpha_ops.py'),'--database',str(root/'alpha.sqlite'),*args],timeout=30)
     return json.loads(raw)

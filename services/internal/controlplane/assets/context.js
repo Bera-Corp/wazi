@@ -214,6 +214,7 @@
     sessionTimer = window.setInterval(update, 15000);
   }
   async function api(path, body) {
+    const sessionAtStart = csrf;
     const headers = {};
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json';
@@ -228,6 +229,7 @@
       body: body === undefined ? undefined : JSON.stringify(body)
     });
     const text = await response.text();
+    if (csrf !== sessionAtStart) throw new Error('The session changed while this request was pending.');
     let value;
     try { value = JSON.parse(text); }
     catch { throw new Error('Service did not return a context response.'); }
@@ -364,19 +366,7 @@
     }
   }
 
-  setSessionControls(false);
-  setSessionState('Session closed', 'closed');
-  el('login').addEventListener('submit', event => {
-    event.preventDefault();
-    run(async () => {
-      const code = el('code').value;
-      el('code').value = '';
-      el('code').disabled = true;
-      el('login').querySelector('button').disabled = true;
-      const value = await api('/v1/context-sessions/exchange', {code});
-      csrf = value.csrf;
-      setSessionControls(true);
-      armSessionExpiry(value.expiresIn);
+  async function loadWorkspace() {
       el('catalog-state').textContent = 'Loading enabled application instances…';
       el('catalog-state').dataset.state = 'loading';
       let catalog;
@@ -406,6 +396,36 @@
         el('candidate-state').dataset.state = 'error';
       }
       setStatus(hasCatalog ? 'Operator session open.' : 'Session open. No application instance is enabled.', 'success');
+  }
+  setSessionControls(false);
+  setSessionState('Session closed', 'closed');
+  if (document.body.dataset.mode !== 'preview') {
+    (async () => {
+      try {
+        const value = await api('/v1/context-session');
+        const remaining = Math.floor((Date.parse(value.expiresAt) - Date.now()) / 1000);
+        if (!value.csrf || !Number.isFinite(remaining) || remaining <= 0) return;
+        csrf = value.csrf;
+        setSessionControls(true);
+        armSessionExpiry(remaining + ' seconds');
+        await loadWorkspace();
+      } catch (error) {
+        if (csrf) setStatus(error.message || 'The workspace could not be loaded.', 'error');
+      }
+    })();
+  }
+  el('login').addEventListener('submit', event => {
+    event.preventDefault();
+    run(async () => {
+      const code = el('code').value;
+      el('code').value = '';
+      el('code').disabled = true;
+      el('login').querySelector('button').disabled = true;
+      const value = await api('/v1/context-sessions/exchange', {code});
+      csrf = value.csrf;
+      setSessionControls(true);
+      armSessionExpiry(value.expiresIn);
+      await loadWorkspace();
     }, 'Opening the operator session…').finally(() => {
       if (!csrf) {
         el('code').disabled = false;

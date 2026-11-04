@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Open the Wazi workbench, inspect private alpha evidence and check the control plane.">
+  <title>Wazi | Workspace overview</title>
+  <link rel="icon" href="/assets/favicon.ico">
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/base.css">
+  <link rel="stylesheet" href="/assets/status.css">
+  <link rel="stylesheet" href="/assets/workspace.css">
+</head>
+<body>
+  <a class="overview-skip" href="#main">Skip to workspace</a>
+  <header class="wazi-topbar">
+    <div class="wazi-topbar-inner">
+      <a class="wazi-brand" href="/" aria-label="Wazi workspace home"><img src="/assets/wazi-wordmark-open.png" width="132" height="50" alt="Wazi"></a>
+      <nav class="wazi-nav" aria-label="Workspace">
+        <a href="/" aria-current="page">Overview</a>
+        <a href="/context">Operate</a>
+        <a href="/alpha">Alpha progress</a>
+        <a href="/context#package-studio-title">Packages</a>
+      </nav>
+      <span class="wazi-session">Private workspace</span>
+    </div>
+  </header>
+  <main id="main" class="wazi-page overview-page">
+    <div class="wazi-page-heading overview-heading">
+      <div>
+        <h1>Workspace overview</h1>
+        <p>Operate your software and follow the evidence behind each release.</p>
+      </div>
+      <div class="wazi-actions"><a class="wazi-button" href="/context">Open workbench</a></div>
+    </div>
+    <div class="overview-layout">
+      <section class="overview-tools" aria-labelledby="tools-title">
+        <div class="overview-section-heading"><h2 id="tools-title">Choose your next task</h2><p>One workspace for operations, release evidence and package preparation.</p></div>
+        <a class="overview-destination" href="/context">
+          <div><h3>Operate an application</h3><p>Inspect a qualified instance, review its plan and follow execution.</p></div>
+          <span class="overview-destination-label">Workbench</span>
+        </a>
+        <a class="overview-destination" href="/alpha">
+          <div><h3>Review alpha progress</h3><p>See local and VPS coverage, measured outcomes and support work.</p></div>
+          <span class="overview-destination-label">Progress</span>
+        </a>
+        <a class="overview-destination" href="/context#package-studio-title">
+          <div><h3>Prepare a package release</h3><p>Bring together the candidate, qualification result and signed release.</p></div>
+          <span class="overview-destination-label">Packages</span>
+        </a>
+      </section>
+      <section class="overview-service" aria-labelledby="service-title">
+        <div class="overview-section-heading"><h2 id="service-title">Service access</h2><p>The control plane is responding. Instance state stays in the private workbench.</p></div>
+        <dl class="overview-service-list">
+          <div><dt>Control plane</dt><dd>Responding</dd></div>
+          <div><dt>Pairing and inventory</dt><dd>Authentication required</dd></div>
+          <div><dt>Application execution</dt><dd><strong id="pilot-state">Not configured</strong></dd></div>
+          <div><dt>Alpha observations</dt><dd>Private session required</dd></div>
+        </dl>
+        <a class="wazi-button-secondary overview-health" href="/healthz">Check service health</a>
+      </section>
+    </div>
+    <aside class="overview-access-note"><h2>Start with a private session</h2><p>Open the workbench with a one-use operator code. Your host, approved instances and recorded evidence are loaded after sign-in.</p><a href="/context">Open live context inspector</a></aside>
+    <footer class="overview-footer"><p>Host inventory requires a paired device identity. Changes remain subject to the configured policy and approvals.</p></footer>
+  </main>
+</body>
+</html>

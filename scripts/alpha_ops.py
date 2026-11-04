@@ -52,6 +52,7 @@ def proofs(value):
 class Ledger:
     def __init__(self,path):
         path=Path(path)
+        self.path=path
         if path.is_symlink():raise ValueError("ledger-symlink-forbidden")
         if os.name=="posix":os.umask(0o077)
         self.db=sqlite3.connect(path,timeout=15)
@@ -62,6 +63,7 @@ class Ledger:
         CREATE TABLE IF NOT EXISTS observations(tenant TEXT, id TEXT, trial TEXT, kind TEXT, attempt INTEGER, digest TEXT, body BLOB, recorded TEXT,
           PRIMARY KEY(tenant,id), UNIQUE(tenant,trial,kind,attempt));
         CREATE TABLE IF NOT EXISTS tickets(tenant TEXT,id TEXT,body BLOB,state TEXT,PRIMARY KEY(tenant,id));
+        CREATE TABLE IF NOT EXISTS ticket_metadata(tenant TEXT,id TEXT,created TEXT,PRIMARY KEY(tenant,id));
         CREATE TABLE IF NOT EXISTS support_events(tenant TEXT,id TEXT,ticket TEXT,digest TEXT,body BLOB,recorded TEXT,PRIMARY KEY(tenant,id));
         """)
         self.db.commit()
@@ -115,7 +117,8 @@ class Ledger:
                 if bytes(old[0])!=raw:raise ValueError("conflicting-support-ticket")
                 return False
             if self.db.execute("SELECT count(*) FROM tickets WHERE tenant=?",(value["tenantScope"],)).fetchone()[0]>=10000:raise ValueError("support-capacity")
-            self.db.execute("INSERT INTO tickets VALUES(?,?,?,?)",(value["tenantScope"],value["ticketId"],raw,"open"))
+            self.db.execute("INSERT INTO tickets(tenant,id,body,state) VALUES(?,?,?,?)",(value["tenantScope"],value["ticketId"],raw,"open"))
+            self.db.execute("INSERT INTO ticket_metadata VALUES(?,?,?)",(value["tenantScope"],value["ticketId"],utc()))
         return True
     def transition(self,value):
         closed(value,"eventId tenantScope ticketId from to evidenceDigests")
@@ -135,7 +138,9 @@ class Ledger:
     def report(self,tenant,min_samples=20):
         private_identifier(tenant)
         if type(min_samples) is not int or not 1<=min_samples<=10000:raise ValueError("sample-bound")
-        rows=[strict_json(row[0]) for row in self.db.execute("SELECT body FROM observations WHERE tenant=? ORDER BY trial,kind,attempt",(tenant,))]
+        stored=list(self.db.execute("SELECT body,recorded FROM observations WHERE tenant=? ORDER BY rowid",(tenant,)))
+        rows=[strict_json(row[0]) for row in stored]
+        rows.sort(key=lambda event:(event['trialId'],event['kind'],event['attempt']))
         final={};first={}
         for event in rows:
             key=(event["trialId"],event["kind"]);final[key]=event
@@ -145,7 +150,7 @@ class Ledger:
             rate=n/d if d else None
             passed=(rate<threshold if strict else rate<=threshold) if maximum and rate is not None else rate>=threshold if rate is not None else False
             metrics[name]={"numerator":n,"denominator":d,"rate":rate,"threshold":threshold,
-                           "state":"not-measured" if not d else "insufficient-samples" if d<min_samples else "pass" if passed else "fail"}
+                           "state":"not-measured" if not d else "fail" if not passed else "insufficient-samples" if d<min_samples else "pass"}
         for kind,name,threshold in (("deployment","firstAttemptSuccess",.9),("rollback","rollbackSuccess",.95),("restore","restoreVerification",1),("planner","plannerSchemaAfterRetry",.99)):
             selected=[e for e in (first if kind=="deployment" else final).values() if e["kind"]==kind]
             metric(name,sum(e["outcome"] in ("success","valid") for e in selected),len(selected),threshold)
@@ -167,8 +172,26 @@ class Ledger:
                 if {(target,"deployment"),(target,"restore")}<=seen:releases.setdefault((app,release),set()).add(target)
         complete={app for (app,release),targets in releases.items() if targets=={"local","vps"}}
         tickets=[dict(row) for row in self.db.execute("SELECT state,count(*) AS count FROM tickets WHERE tenant=? GROUP BY state",(tenant,))]
+        names={item['applicationId']:item['name'] for item in strict_json((Path(__file__).resolve().parents[1]/'community/seeds.json').read_bytes())}
+        cohort=[]
+        recent=[dict(strict_json(row['body']),recordedAt=row['recorded']) for row in stored[-20:]][::-1]
+        for app, in self.db.execute('SELECT app FROM curated WHERE tenant=? ORDER BY app',(tenant,)):
+            observations=[strict_json(row['body']) for row in stored if strict_json(row['body'])['applicationId']==app]
+            latest=observations[-1]['releaseDigest'] if observations else None
+            targets={}
+            for target in ('local','vps'):
+                qualified=any(application==app and release==latest and {(target,'deployment'),(target,'restore')}<=seen for (application,release,observed),seen in coverage.items())
+                targets[target]='observed' if qualified else 'not-recorded'
+            cohort.append({'applicationId':app,'name':names.get(app,app),'releaseDigest':latest,'targets':targets,'observations':len(observations),'sameReleaseReady':app in complete})
+        support=[]
+        for row in self.db.execute('SELECT t.id,t.body,t.state,m.created FROM tickets t LEFT JOIN ticket_metadata m ON m.tenant=t.tenant AND m.id=t.id WHERE t.tenant=? ORDER BY t.rowid DESC LIMIT 100',(tenant,)):
+            support.append(dict(strict_json(row['body']),state=row['state'],createdAt=row['created']))
+        complete={item['applicationId'] for item in cohort if all(state=='observed' for state in item['targets'].values())}
+        for item in cohort:item['sameReleaseReady']=item['applicationId'] in complete
         return {"schemaVersion":"1.0.0","basis":"operator-recorded-evidence-references","generatedAt":utc(),"minimumSamples":min_samples,
                 "observations":len(rows),"metrics":metrics,"appsWithSameReleaseLocalAndVpsRecovery":sorted(complete),"support":tickets,
+                "cohort":cohort,"recentObservations":recent,"supportTickets":support,
+                "feedbackPolicy":{"scope":"alpha-support","automaticSharing":False,"requiresExplicitConsent":True},
                 "alphaThresholdsMet":len(complete)>=5 and all(m["state"]=="pass" for m in metrics.values()),
                 "independentAssurance":False}
     def feedback(self,tenant,ticket_id,consent=False):
@@ -177,6 +200,84 @@ class Ledger:
         if not row:raise ValueError("support-ticket-not-found")
         value=strict_json(row[0])
         return {key:value[key] for key in ("applicationId","releaseDigest","environment","category","severity","evidenceDigests")}|{"state":row[1],"scope":"owner-approved-file-export-only","sent":False}
+
+
+def queue_evidence(queue,job_id,tenant):
+    private_identifier(tenant)
+    if not re.fullmatch(r'job_[A-Za-z0-9_-]{1,96}',job_id):raise ValueError('invalid-job-id')
+    queue=Path(queue);documents=[]
+    for part in ('requests','results'):
+        path=queue/part/(job_id+'.json')
+        if path.is_symlink() or path.resolve().parent!=queue.resolve()/part or not path.is_file() or path.stat().st_size>4<<20:raise ValueError('terminal-job-receipt-required')
+        documents.append(strict_json(path.read_bytes()))
+    job,result=documents;snapshot=result.get('operation') or {};operation=snapshot.get('Operation') or {};identity=operation.get('identity') or {};envelope=job['envelope']
+    expected={'jobId':job_id,'caseId':job['caseId'],'tenantScope':tenant,'applicationId':envelope['applicationId'],'manifestDigest':envelope['manifestDigest'],
+              'hostId':envelope['hostProfileRef']['recordId'],'envelopeId':envelope['envelopeId'],'envelopeDigest':validate.canonical_digest(envelope),
+              'operation':job['plan']['operation'],'planDigest':validate.canonical_digest(job['plan'])}
+    if envelope['tenantScope']!=tenant or job['jobId']!=job_id or any(identity.get(key)!=value for key,value in expected.items()):raise ValueError('job-receipt-scope-mismatch')
+    return job,result,operation,'sha256:'+hashlib.sha256(canonical(result)).hexdigest()
+
+
+def configure(ledger,value):
+    """Configure one private target; never infer runtime qualification."""
+    closed(value,'tenantScope applications environment target')
+    checked(value);private_identifier(value['tenantScope']);environment(value['environment'])
+    if value['target'] not in ('local','vps'):raise ValueError('invalid-alpha-target')
+    apps=value['applications']
+    if not isinstance(apps,list) or not 5<=len(apps)<=10 or len(set(apps))!=len(apps):raise ValueError('five-to-ten-curated-apps-required')
+    for app in apps:identifier(app)
+    payloads={'alpha-cohort.json':{'tenantScope':value['tenantScope'],'applications':apps},
+              'alpha-environment.json':value['environment'],'alpha-target.json':{'target':value['target']}}
+    directory=ledger.path.parent
+    # Validate all existing files before creating anything. Configuration never
+    # silently changes the environment attached to observations in this ledger.
+    for name,payload in payloads.items():
+        path=directory/name
+        if path.is_symlink():raise ValueError('configuration-symlink-forbidden')
+        if path.exists() and (path.stat().st_size>65536 or strict_json(path.read_bytes())!=payload):raise ValueError('alpha-configuration-conflict')
+    ledger.curate(value['tenantScope'],apps)
+    for name,payload in payloads.items():
+        path=directory/name
+        if not path.exists():
+            descriptor=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+            with os.fdopen(descriptor,'wb') as output:output.write(canonical(payload))
+    return {'state':'configured','applications':len(apps),'target':value['target'],'runtimeQualificationGranted':False}
+
+
+def private_action(ledger,tenant,request,queue,configuration):
+    """Owner-authenticated support and receipt intake; cannot execute a job."""
+    checked(request)
+    action=request.get('action');configuration=Path(configuration)
+    if action=='feedback-export':
+        closed(request,'action requestId ticketId consent');private_identifier(request['requestId'])
+        return {'state':'export-prepared','feedback':ledger.feedback(tenant,request['ticketId'],request['consent']),'sent':False}
+    if action not in ('open-ticket','transition-ticket','import-job'):raise ValueError('unknown-alpha-action')
+    fields={'open-ticket':'action requestId jobId category severity','transition-ticket':'action requestId ticketId from to jobId','import-job':'action requestId jobId trialId attempt deterministic interventions'}
+    closed(request,fields[action]);private_identifier(request['requestId'])
+    job,result,operation,proof=queue_evidence(queue,request['jobId'],tenant)
+    observed=environment(strict_json((configuration/'alpha-environment.json').read_bytes()))
+    ledger.scope(tenant,job['envelope']['applicationId'])
+    if action=='open-ticket':
+        identity='ticket_'+hashlib.sha256((tenant+':'+request['requestId']).encode()).hexdigest()[:32]
+        value={'schemaVersion':'1.0.0','ticketId':identity,'tenantScope':tenant,'applicationId':job['envelope']['applicationId'],'releaseDigest':job['envelope']['manifestDigest'],
+               'environment':observed,'category':request['category'],'severity':request['severity'],'evidenceDigests':[proof]}
+        created=ledger.ticket(value)
+        return {'state':'ticket-created' if created else 'already-recorded','ticketId':identity}
+    if action=='transition-ticket':
+        row=ledger.db.execute('SELECT body FROM tickets WHERE tenant=? AND id=?',(tenant,request['ticketId'])).fetchone()
+        if not row:raise ValueError('support-ticket-not-found')
+        ticket=strict_json(row[0])
+        if ticket['applicationId']!=job['envelope']['applicationId'] or ticket['environment']!=observed:raise ValueError('support-evidence-application-or-environment-mismatch')
+        snapshot=result.get('operation') or {}
+        if request['to'] in ('resolved','closed') and (operation.get('state')!='completed' or result.get('state')!='completed' or snapshot.get('RecoveryRequired') or snapshot.get('PendingIntent')):raise ValueError('successful-bound-evidence-required-to-resolve')
+        value={'eventId':request['requestId'],'tenantScope':tenant,'ticketId':request['ticketId'],'from':request['from'],'to':request['to'],'evidenceDigests':[proof]}
+        changed=ledger.transition(value)
+        return {'state':'ticket-updated' if changed else 'already-recorded','ticketId':request['ticketId']}
+    target=strict_json((configuration/'alpha-target.json').read_bytes())
+    closed(target,'target')
+    mapping={'schemaVersion':'1.0.0','jobs':{request['jobId']:{key:request[key] for key in ('trialId','attempt','deterministic','interventions')}}}
+    result=import_queue(ledger,queue,tenant,observed,target['target'],mapping)
+    return dict(result,state='observation-recorded' if result['imported'] else 'no-new-observation')
 
 
 def dashboard(report):
@@ -222,7 +323,7 @@ def import_queue(ledger,queue,tenant,observed,target,mapping):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument("--database",required=True);sub=parser.add_subparsers(dest="action",required=True)
-    for name in ("curate","record","ticket","transition"):
+    for name in ("configure","curate","record","ticket","transition"):
         sub.add_parser(name).add_argument("--input",required=True)
     report=sub.add_parser("report");report.add_argument("--tenant",required=True);report.add_argument("--minimum-samples",type=int,default=20);report.add_argument("--html-output")
     export=sub.add_parser("feedback");export.add_argument("--tenant",required=True);export.add_argument("--ticket",required=True);export.add_argument("--consent",action="store_true");export.add_argument("--output",required=True)
@@ -230,11 +331,12 @@ def main():
     for name in ("queue","tenant","environment","target","mapping"):ingest.add_argument("--"+name,required=True)
     args=parser.parse_args();ledger=Ledger(args.database)
     try:
-        if args.action in ("curate","record","ticket","transition"):
+        if args.action in ("configure","curate","record","ticket","transition"):
             path=Path(args.input)
             if path.is_symlink() or path.stat().st_size>65536:raise ValueError("bounded-regular-input-required")
             value=strict_json(path.read_bytes())
-            if args.action=="curate":
+            if args.action=="configure":result=configure(ledger,value)
+            elif args.action=="curate":
                 closed(value,"tenantScope applications");ledger.curate(value["tenantScope"],value["applications"]);result={"curated":True}
             else:result={"recorded":getattr(ledger,args.action)(value)}
         elif args.action=="report":

@@ -1,0 +1,42 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: brand · redesign: full · scope: app · nav: shared workspace bar · signature: task and service access ledger · states: configured, unconfigured · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: S, replaced the generic coming-soon screen with the actual Wazi workbench and alpha destinations */
+:root {
+  --overview-surface: var(--color-paper);
+  --overview-rule: var(--color-rule);
+  --overview-muted: var(--color-ink-2);
+  --overview-soft: var(--color-paper-2);
+}
+html, body { overflow-x: clip; }
+.overview-skip { position: absolute; inset-inline-start: var(--space-lg); inset-block-start: var(--space-sm); z-index: var(--z-tooltip); transform: translateY(-180%); background: var(--color-paper); color: var(--color-ink); padding: var(--space-sm) var(--space-md); }
+.overview-skip:focus-visible { transform: translateY(0); outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.overview-heading h1 { font-size: var(--text-3xl); line-height: 1.15; text-wrap: balance; }
+.overview-heading p { margin-block-start: var(--space-sm); max-width: 60ch; color: var(--overview-muted); }
+.overview-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--space-xl); align-items: start; margin-block-start: var(--space-xl); }
+.overview-tools, .overview-service { min-width: 0; }
+.overview-section-heading { padding-block-end: var(--space-lg); border-bottom: 1px solid var(--overview-rule); }
+.overview-section-heading h2 { font-size: var(--text-lg); line-height: 1.35; }
+.overview-section-heading p { color: var(--overview-muted); max-width: 58ch; margin-block-start: var(--space-xs); }
+.overview-destination { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); min-height: 112px; padding: var(--space-lg) var(--space-md); border-bottom: 1px solid var(--overview-rule); text-decoration: none; color: var(--color-ink); transition: background-color var(--dur-micro) var(--ease-out); }
+.overview-destination:hover { background: var(--overview-soft); }
+.overview-destination:active { background: var(--color-paper-3); }
+.overview-destination:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.overview-destination h3 { font-size: var(--text-md); line-height: 1.4; }
+.overview-destination p { margin-block-start: var(--space-xs); max-width: 48ch; color: var(--overview-muted); }
+.overview-destination-label { color: var(--color-accent); font-size: var(--text-sm); white-space: nowrap; flex: none; }
+.overview-service-list { margin: 0; }
+.overview-service-list > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: baseline; gap: var(--space-md); padding-block: var(--space-lg); border-bottom: 1px solid var(--overview-rule); }
+.overview-service-list dt { color: var(--overview-muted); }
+.overview-service-list dd { margin: 0; text-align: end; font-weight: 500; }
+.overview-service-list strong { font-weight: 500; }
+.overview-health { margin-block-start: var(--space-lg); }
+.overview-access-note { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; gap: var(--space-lg); align-items: center; padding-block: var(--space-xl); margin-block-start: var(--space-xl); border-top: 1px solid var(--overview-rule); border-bottom: 1px solid var(--overview-rule); }
+.overview-access-note h2 { font-size: var(--text-lg); line-height: 1.35; }
+.overview-access-note p { color: var(--overview-muted); max-width: 65ch; }
+.overview-access-note a { font-size: var(--text-sm); color: var(--color-accent); min-height: 44px; display: inline-flex; align-items: center; white-space: nowrap; }
+.overview-access-note a:focus-visible, .overview-health:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.overview-footer { padding-block: var(--space-lg) var(--space-xl); color: var(--color-muted); font-size: var(--text-sm); }
+.overview-footer p { max-width: 75ch; }
+@media (max-width: 70rem) { .overview-layout { gap: var(--space-lg); } .overview-access-note { grid-template-columns: minmax(0, 1fr); gap: var(--space-md); } }
+@media (max-width: 52rem) { .overview-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-xl); } .overview-destination { padding-inline: 0; } .overview-destination-label { display: none; } }
+@media (max-width: 26rem) { .overview-service-list > div { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs); } .overview-service-list dd { text-align: start; } }
+@media (prefers-reduced-motion: reduce) { .overview-destination { transition: none; } }

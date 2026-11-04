@@ -93,8 +93,8 @@ function render() {
   }
   for (const app of selected) {
     const row = node("article", undefined, "app");
-    const heading = node("div");
-    heading.append(node("div", app.category, "category"), node("h3", app.name));
+    const heading = node("div", undefined, "app-identity");
+    heading.append(node("h3", app.name), node("div", app.category, "category"));
     const popularity = app.github
       ? Intl.NumberFormat(undefined, {
           notation: "compact",
@@ -104,7 +104,7 @@ function render() {
     row.append(
       heading,
       node("div", popularity, "stars"),
-      node("p", app.description),
+      node("p", app.description, "app-description"),
     );
     const packages = recipesFor(app);
     const specific = values.environment || values.release || values.operation;
@@ -130,6 +130,7 @@ function render() {
       packages.length ? "View setup" : "View project",
     );
     button.type = "button";
+    button.className = "app-action";
     button.dataset.application = app.applicationId;
     button.setAttribute("aria-label", button.textContent + " for " + app.name);
     button.addEventListener("click", () => {
@@ -408,6 +409,9 @@ async function load() {
     const p = parameters();
     for (const el of byId("filters").elements)
       if (el.name && p.has(el.name)) el.value = p.get(el.name);
+    byId("filters").querySelector(".filter-more").open = [
+      "release", "operation", "availability", "sort",
+    ].some((name) => p.get(name) && !(name === "sort" && p.get(name) === "name"));
     route();
   } catch (error) {
     byId("results").replaceChildren();

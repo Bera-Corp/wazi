@@ -341,3 +341,4 @@ This file contains a growing ruleset that improves over time. **At session start
 267. [UX] Clear newly added private progress views on session expiry and reject responses from an earlier session — otherwise an asynchronous refresh can repopulate a closed-session screen.
 268. [CODE] Validate private tenant and job IDs with their private contract instead of public catalog identifiers — live tenant IDs contain uppercase timestamp characters and must never be normalized.
 269. [CODE] Carry read-only health-job support through queue admission as well as proposal generation — legacy transports require approvals for every job and must only exempt schema-valid, strictly read-only health plans.
+270. [TOOL] Resolve brand asset implementation filenames with rg --files before reading them — the embedded asset handler lives in brand_assets.go rather than brand.go.

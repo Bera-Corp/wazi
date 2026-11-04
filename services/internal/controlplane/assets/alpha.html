@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Track Wazi private alpha evidence, local and VPS recovery coverage, observations and support work.">
+  <title>Wazi | Private alpha</title>
+  <link rel="icon" href="/assets/favicon.ico">
+  <link rel="stylesheet" href="/assets/tokens.css"><link rel="stylesheet" href="/assets/base.css"><link rel="stylesheet" href="/assets/alpha.css"><link rel="stylesheet" href="/assets/workspace.css">
+  <script src="/alpha.js" defer></script>
+</head>
+<body data-mode="live">
+  <a class="wazi-skip" href="#main">Skip to alpha progress</a>
+  <header class="wazi-topbar"><div class="wazi-topbar-inner">
+    <a class="wazi-brand" href="/" aria-label="Wazi overview"><img src="/assets/wazi-wordmark-open.png" alt="Wazi" width="112" height="46"></a>
+    <nav class="wazi-nav" aria-label="Private workspace"><a href="/">Overview</a><a href="/context">Operate</a><a href="/alpha" aria-current="page">Alpha progress</a><a href="/context#package-studio-title">Packages</a></nav>
+    <span id="alpha-session" class="wazi-session" role="status">Session closed</span>
+  </div></header>
+  <main id="main" class="wazi-page alpha-page">
+    <div id="preview-notice" class="alpha-preview" hidden>Read-only preview. Figures are from a captured pilot ledger; actions require a connected private workspace.</div>
+    <div class="wazi-page-heading"><div><h1>Private alpha</h1><p>See what is proven, what is missing, and what needs attention.</p></div><div class="wazi-actions"><button id="alpha-reload" class="wazi-button-secondary" type="button" disabled>Refresh evidence</button><button id="alpha-signout" class="wazi-button-secondary" type="button" hidden>End session</button></div></div>
+    <section id="alpha-connect" class="wazi-panel alpha-connect" aria-labelledby="connect-title">
+      <div><h2 id="connect-title">Connect your private workspace</h2><p>Use the same operator session as the application workbench.</p></div>
+      <form id="alpha-login" class="alpha-connect-form"><label class="wazi-field" for="alpha-code">One-use operator code<input id="alpha-code" name="code" type="password" autocomplete="off" required spellcheck="false"></label><button class="wazi-button" type="submit">Open workspace</button></form>
+      <p class="wazi-help">Issue a one-use code through your configured operator API. Your keys stay outside this page.</p>
+    </section>
+    <p id="alpha-message" class="alpha-message" role="status" aria-live="polite">Connect to load your cohort and measured evidence.</p>
+    <div id="alpha-error" class="wazi-error" role="alert" hidden></div>
+    <div id="alpha-content" hidden>
+      <section class="alpha-summary" aria-label="Cohort summary">
+        <div><span class="alpha-summary-label">Curated applications</span><strong id="cohort-total">—</strong><span>in this alpha cohort</span></div>
+        <div><span class="alpha-summary-label">Local and VPS recovery</span><strong id="cohort-ready">—</strong><span>apps with matching-release evidence</span></div>
+        <div><span class="alpha-summary-label">Recorded observations</span><strong id="observation-total">—</strong><span>failures and retries stay visible</span></div>
+        <div><span class="alpha-summary-label">Open support work</span><strong id="support-total">—</strong><span>open or triaged issues</span></div>
+      </section>
+      <nav class="alpha-tabs" aria-label="Alpha views"><a href="/alpha?view=readiness" data-view="readiness" aria-current="page">Release readiness</a><a href="/alpha?view=observations" data-view="observations">Observations</a><a href="/alpha?view=support" data-view="support">Support</a></nav>
+      <section id="view-readiness" class="alpha-view">
+        <div class="alpha-ledger-grid">
+          <section class="wazi-panel alpha-ledger"><div class="wazi-panel-heading"><div><h2>Evidence coverage</h2><p class="wazi-help">Deployment and restore must match the release and environment.</p></div><span id="coverage-status" class="wazi-badge">Evidence needed</span></div><div class="alpha-table-scroll" tabindex="0" role="region" aria-label="Application evidence coverage"><table class="wazi-table alpha-coverage"><thead><tr><th scope="col">Application</th><th scope="col">Release evidence</th><th scope="col">Local</th><th scope="col">VPS</th></tr></thead><tbody id="coverage-rows"></tbody></table></div><div id="coverage-empty" class="wazi-empty" hidden><h3>No cohort configured</h3><p>Configure five to ten applications in the private alpha ledger.</p></div></section>
+          <aside class="alpha-next"><h2>Close the next gap</h2><p id="next-gap">Load evidence to see the next useful step.</p><a class="wazi-button" href="/context">Open application workbench</a><details><summary>How evidence reaches this view</summary><p>Run an approved operation, then record its job ID in Observations. Reuse a trial ID for retries. Coverage appears after matching deployment and restore results.</p></details><p class="wazi-help">Observed is a recorded result, not a promise of platform compatibility.</p></aside>
+        </div>
+        <section class="alpha-quality" aria-labelledby="quality-title"><div class="alpha-section-heading"><div><h2 id="quality-title">Reliability measures</h2><p>Missing observations never count as passes.</p></div><span id="sample-note" class="wazi-help"></span></div><div class="alpha-measures" id="measure-rows"></div></section>
+      </section>
+      <section id="view-observations" class="alpha-view" hidden>
+        <div class="alpha-section-heading"><div><h2>Recorded observations</h2><p>See attempts as they happened. A successful retry keeps the first failure.</p></div><button id="toggle-import" class="wazi-button-secondary" type="button">Record a job</button></div>
+        <form id="import-form" class="wazi-panel alpha-form" hidden><h3>Record an actual operation</h3><div class="alpha-form-grid"><label class="wazi-field">Job ID<input name="jobId" required placeholder="job_…" autocomplete="off"></label><label class="wazi-field">Trial ID<input name="trialId" required placeholder="trial_monitoring_setup" autocomplete="off"><small>Use the same ID for retries of the same task.</small></label><label class="wazi-field">Attempt<input name="attempt" type="number" min="1" max="10" value="1" required></label><label class="wazi-field">Human interventions<input name="interventions" type="number" min="0" max="10000" value="0" required></label></div><label class="alpha-check"><input name="deterministic" type="checkbox" checked> This operation used a deterministic plan.</label><div class="wazi-actions"><button class="wazi-button" type="submit">Record observation</button><span class="wazi-help">Reads the private job receipt. It does not run the job.</span></div></form>
+        <section class="wazi-panel"><div class="alpha-table-scroll" tabindex="0" role="region" aria-label="Recent cohort observations"><table class="wazi-table alpha-observations"><thead><tr><th>Application</th><th>Operation</th><th>Result</th><th>Attempt</th><th>Target</th><th>Captured</th></tr></thead><tbody id="observation-rows"></tbody></table></div><div id="observation-empty" class="wazi-empty" hidden><h3>No observations recorded</h3><p>Record a completed or failed deployment, restore or rollback job.</p></div></section>
+      </section>
+      <section id="view-support" class="alpha-view" hidden>
+        <div class="alpha-section-heading"><div><h2>Support work</h2><p>Keep issues tied to an application release and its returned evidence.</p></div><button id="toggle-ticket" class="wazi-button-secondary" type="button">Open an issue</button></div>
+        <form id="ticket-form" class="wazi-panel alpha-form" hidden><h3>Open an evidence-backed issue</h3><div class="alpha-form-grid"><label class="wazi-field">Related job ID<input name="jobId" required placeholder="job_…" autocomplete="off"></label><label class="wazi-field">Category<select name="category"><option value="installation">Installation</option><option value="backup">Backup</option><option value="restore">Restore</option><option value="rollback">Rollback</option><option value="compatibility">Compatibility</option><option value="usability">Usability</option><option value="metadata">Metadata</option></select></label><label class="wazi-field">Severity<select name="severity"><option value="P2">P2 — normal</option><option value="P1">P1 — high</option><option value="P0">P0 — critical</option><option value="P3">P3 — low</option></select></label></div><div class="wazi-actions"><button class="wazi-button" type="submit">Create issue</button><span class="wazi-help">Only release metadata and evidence hashes are recorded.</span></div></form>
+        <div id="support-rows" class="alpha-support-list"></div><div id="support-empty" class="wazi-panel wazi-empty" hidden><h3>No support issues</h3><p>Open an issue from an actual job when something needs attention.</p></div>
+        <section id="ticket-detail" class="wazi-panel alpha-ticket-detail" hidden><div class="wazi-panel-heading"><div><h3 id="ticket-detail-title">Issue details</h3><p id="ticket-detail-meta" class="wazi-help"></p></div><button id="close-ticket-detail" class="wazi-button-secondary" type="button">Close details</button></div><div class="wazi-panel-body"><form id="transition-form" class="alpha-form-grid"><label class="wazi-field">Next status<select id="next-ticket-state" name="to"></select></label><label class="wazi-field">Evidence job ID<input name="jobId" required autocomplete="off" placeholder="job_…"><small>Resolving or closing needs a successful bound operation.</small></label><button class="wazi-button-secondary" type="submit">Update status</button></form><div class="alpha-feedback"><h3>Prepare upstream feedback</h3><p>Download a redacted file for review. Nothing is sent automatically.</p><label class="alpha-check"><input id="feedback-consent" type="checkbox"> I approve preparing this issue’s redacted feedback file.</label><button id="feedback-download" class="wazi-button-secondary" type="button" disabled>Download feedback file</button></div></div></section>
+      </section>
+      <footer class="wazi-footer"><span id="ledger-updated">Evidence not yet loaded</span><span>Private observations. No automatic sharing.</span></footer>
+    </div>
+    <noscript><p class="wazi-error">Enable JavaScript to load the private ledger and use its forms. This page does not execute application operations.</p></noscript>
+  </main>
+</body>
+</html>

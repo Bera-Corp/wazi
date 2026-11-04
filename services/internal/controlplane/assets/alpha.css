@@ -1,0 +1,59 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: brand · scope: app · signature: release readiness ledger · states: loading, empty, error, populated · nav: compact route bar · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S5 R5 V4 · weakest: E, measured ratios and missing evidence replace decorative completion charts */
+.alpha-preview { padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-lg); background: var(--color-warning-wash); color: var(--color-warning); border-radius: var(--radius-input); font-size: 14px; }
+.alpha-connect { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: var(--space-md) var(--space-xl); padding: var(--space-lg); }
+.alpha-connect p { margin: var(--space-xs) 0 0; color: var(--color-muted); }
+.alpha-connect > .wazi-help { grid-column: 1/-1; }
+.alpha-connect-form { display: flex; align-items: flex-end; gap: var(--space-sm); }
+.alpha-connect-form label { flex: 1; min-width: 0; }
+.alpha-message { min-height: 1lh; margin: var(--space-md) 0; color: var(--color-muted); font-size: 14px; }
+.alpha-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-block: 1px solid var(--color-rule); padding-block: var(--space-lg); gap: var(--space-lg); margin: var(--space-lg) 0 var(--space-xl); }
+.alpha-summary > div { display: grid; gap: var(--space-2xs); padding-inline: var(--space-lg); border-right: 1px solid var(--color-rule); }
+.alpha-summary > div:first-child { padding-left: 0; }
+.alpha-summary > div:last-child { border-right: 0; }
+.alpha-summary-label { color: var(--color-ink-2); font-size: 14px; }
+.alpha-summary strong { font: 600 2rem/1.3 var(--font-display); font-variant-numeric: tabular-nums; }
+.alpha-summary span:last-child { color: var(--color-muted); font-size: 14px; }
+.alpha-tabs { display: flex; gap: var(--space-lg); border-bottom: 1px solid var(--color-rule); margin-bottom: var(--space-lg); }
+.alpha-tabs a { display: inline-flex; align-items: center; min-height: 48px; color: var(--color-muted); text-decoration: none; border-bottom: 2px solid var(--color-clear); font-size: 14px; font-weight: 500; white-space: nowrap; }
+.alpha-tabs a[aria-current="page"] { color: var(--color-accent-deep); border-color: var(--color-accent); }
+.alpha-tabs a:hover { color: var(--color-ink); }
+.alpha-ledger-grid { display: grid; grid-template-columns: minmax(0,2.7fr) minmax(0,1fr); gap: var(--gap-columns); align-items: start; }
+.alpha-ledger .wazi-panel-heading p { margin: var(--space-xs) 0 0; }
+.alpha-table-scroll { overflow-x: auto; border-radius: var(--radius-card); }
+.alpha-coverage .app-name { display: block; font-weight: 600; color: var(--color-ink); }
+.alpha-coverage .app-id, .alpha-release { display: block; color: var(--color-muted); margin-top: var(--space-2xs); font-size: 13px; }
+.alpha-release { max-width: 22ch; overflow-wrap: anywhere; }
+.alpha-next { padding: var(--space-md) 0 var(--space-md) var(--space-sm); }
+.alpha-next p { color: var(--color-muted); margin: var(--space-sm) 0 var(--space-lg); }
+.alpha-next .wazi-button { white-space: normal; text-align: center; width: 100%; }
+.alpha-next details { margin-top: var(--space-lg); font-size: 14px; }
+.alpha-next summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--color-ink-2); }
+.alpha-next .wazi-help { margin-bottom: 0; }
+.alpha-quality { margin-top: var(--space-xl); }
+.alpha-section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-lg); margin-bottom: var(--space-lg); }
+.alpha-section-heading p { margin: var(--space-xs) 0 0; color: var(--color-muted); }
+.alpha-measures { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border: 1px solid var(--color-rule); border-radius: var(--radius-card); overflow: clip; background: var(--color-surface); }
+.alpha-measure { padding: var(--space-lg); border-right: 1px solid var(--color-rule); border-bottom: 1px solid var(--color-rule); }
+.alpha-measure:nth-child(3n) { border-right: 0; }
+.alpha-measure:nth-last-child(-n+3) { border-bottom: 0; }
+.alpha-measure h3 { font: 500 14px/1.4 var(--font-body); color: var(--color-ink-2); margin: 0 0 var(--space-sm); }
+.alpha-measure-main { display: flex; align-items: baseline; gap: var(--space-xs); margin-bottom: var(--space-sm); font-variant-numeric: tabular-nums; }
+.alpha-measure-main strong { font: 600 1.7rem/1.3 var(--font-display); }
+.alpha-measure-main span { color: var(--color-muted); font-size: 14px; }
+.alpha-measure-target { display: block; font-size: 14px; color: var(--color-muted); margin-top: var(--space-sm); }
+.alpha-form { padding: var(--space-lg); margin-bottom: var(--space-lg); }
+.alpha-form h3 { margin-bottom: var(--space-lg); }
+.alpha-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: var(--space-lg); }
+.alpha-check { display: flex; align-items: flex-start; gap: var(--space-sm); min-height: 44px; margin-block: var(--space-md); font-size: 14px; }
+.alpha-check input { flex: none; margin: var(--space-2xs) 0 0; width: 18px; height: 18px; accent-color: var(--color-accent); cursor: pointer; }
+.alpha-support-list { display: grid; gap: var(--space-sm); }
+.alpha-ticket { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: var(--space-lg); padding: var(--space-md) var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-rule); border-radius: var(--radius-card); }
+.alpha-ticket p { margin: var(--space-2xs) 0 0; font-size: 14px; color: var(--color-muted); }
+.alpha-ticket-detail { margin-top: var(--space-lg); }
+.alpha-feedback { padding-top: var(--space-lg); margin-top: var(--space-lg); border-top: 1px solid var(--color-rule); }
+.alpha-feedback p { color: var(--color-muted); margin: var(--space-xs) 0; }
+.alpha-feedback .wazi-button-secondary { margin-top: var(--space-xs); }
+.alpha-view[aria-busy="true"] { opacity: .65; }
+@media (max-width: 60rem) { .alpha-ledger-grid { grid-template-columns: minmax(0,1fr); } .alpha-next { padding: var(--space-lg) 0; border-bottom: 1px solid var(--color-rule); } .alpha-next .wazi-button { width: auto; } .alpha-connect { grid-template-columns: minmax(0,1fr); } .alpha-summary { grid-template-columns: repeat(2,minmax(0,1fr)); } .alpha-summary > div:nth-child(2) { border: 0; } .alpha-measures { grid-template-columns: repeat(2,minmax(0,1fr)); } .alpha-measure:nth-child(n) { border-right: 1px solid var(--color-rule); border-bottom: 1px solid var(--color-rule); } .alpha-measure:nth-child(2n) { border-right: 0; } .alpha-measure:last-child { border-bottom: 0; } }
+@media (max-width: 40rem) { .alpha-connect-form { flex-direction: column; align-items: stretch; } .alpha-summary { gap: var(--space-lg) var(--space-sm); } .alpha-summary > div { padding-inline: 0; border: 0; } .alpha-summary strong { font-size: 1.7rem; } .alpha-tabs { gap: var(--space-md); } .alpha-section-heading { flex-direction: column; } .alpha-form-grid { grid-template-columns: minmax(0,1fr); } .alpha-measures { grid-template-columns: minmax(0,1fr); } .alpha-measure:nth-child(n) { border-right: 0; } .alpha-ticket { grid-template-columns: minmax(0,1fr) auto; gap: var(--space-sm); padding: var(--space-md); } .alpha-ticket .wazi-button-secondary { grid-column: 1/-1; justify-self: start; } .alpha-table-scroll { overflow: clip; } .alpha-coverage thead, .alpha-observations thead { position: absolute; width: 1px; height: 1px; overflow: clip; clip-path: inset(50%); } .alpha-coverage tbody, .alpha-coverage tr, .alpha-observations tbody, .alpha-observations tr { display: block; } .alpha-coverage tr, .alpha-observations tr { padding: var(--space-md); border-bottom: 1px solid var(--color-rule); } .alpha-coverage td, .alpha-observations td { display: flex; justify-content: space-between; gap: var(--space-sm); padding: var(--space-xs) 0; border: 0; } .alpha-coverage td:first-child, .alpha-observations td:first-child { display: block; } .alpha-coverage td::before, .alpha-observations td::before { content: attr(data-label); color: var(--color-muted); } .alpha-coverage td:first-child::before, .alpha-observations td:first-child::before { display: none; } }

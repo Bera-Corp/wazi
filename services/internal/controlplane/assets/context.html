@@ -10,31 +10,26 @@
   <link rel="stylesheet" href="/assets/tokens.css">
   <link rel="stylesheet" href="/assets/base.css">
   <link rel="stylesheet" href="/assets/context.css">
+  <link rel="stylesheet" href="/assets/workspace.css">
   <script src="/context.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand-link" href="/" aria-label="Wazi home">
-        <img src="/assets/wazi-wordmark-open.png" alt="Wazi">
-      </a>
-      <span class="brand-divider" aria-hidden="true"></span>
-      <div class="topbar-title">
-        <h1>Application workbench</h1>
-        <p>Private pilot</p>
-      </div>
-      <div id="session-state" class="session-state" data-state="closed" role="status" aria-live="polite">Session closed</div>
+  <a class="skip-link" href="#main">Skip to workbench</a>
+  <header class="wazi-topbar">
+    <div class="wazi-topbar-inner">
+      <a class="wazi-brand" href="/" aria-label="Wazi home"><img src="/assets/wazi-wordmark-open.png" alt="Wazi" width="112" height="46"></a>
+      <nav class="wazi-nav" aria-label="Workspace">
+        <a href="/">Overview</a><a href="/context" aria-current="page">Operate</a><a href="/alpha">Alpha progress</a><a href="/context#package-studio-title">Packages</a>
+      </nav>
+      <div id="session-state" class="wazi-session session-state" data-state="closed" role="status" aria-live="polite">Session closed</div>
     </div>
   </header>
-
-  <main class="workbench-shell">
-    <div class="page-intro">
-      <div>
-        <h2>Operate a qualified app</h2>
-        <p>Inspect the current host and signed context, review the exact plan, then approve or submit a job. Retrieval acceptance is separate from execution approval.</p>
-      </div>
-      <aside class="evidence-note">Only returned service state is shown here. No model call or background execution is implied.</aside>
+  <main id="main" class="wazi-page workbench-shell">
+    <div class="wazi-page-heading">
+      <div><h1>Application workbench</h1><p>Prepare an operation. Review its evidence. Approve the exact plan.</p></div>
+      <a class="wazi-button-secondary" href="/alpha">View alpha progress</a>
     </div>
+    <div class="operation-heading"><h2>Operate a qualified app</h2><p>Retrieval acceptance is separate from execution approval.</p></div>
 
     <p id="status" class="status-line" data-state="idle" role="status" aria-live="polite">Open an operator session to load the private application catalog.</p>
 
@@ -42,7 +37,6 @@
       <aside class="workflow-rail" aria-label="Operation setup">
         <section class="panel">
           <div class="panel-header">
-            <span class="step-index" aria-hidden="true">01</span>
             <div class="panel-heading">
               <h2>Open an operator session</h2>
               <p>One-use code, 15-minute session</p>
@@ -57,11 +51,7 @@
               <button type="submit">Open session</button>
             </form>
           </div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <span class="step-index" aria-hidden="true">02</span>
+          <div class="panel-header operation-setup">
             <div class="panel-heading">
               <h2>Choose an operation</h2>
               <p>Current catalog and host checks</p>
@@ -100,7 +90,6 @@
 
         <section id="result" class="panel result-panel" hidden>
           <div class="panel-header">
-            <span class="step-index" aria-hidden="true">03</span>
             <div class="panel-heading">
               <h2>Selection and evidence</h2>
               <p>Review the observed context and proposed steps</p>
@@ -110,11 +99,11 @@
           <div class="result-body">
             <div class="result-grid">
               <div>
-                <p class="section-kicker">Observed facts</p>
+                <h3 class="section-kicker">Observed facts</h3>
                 <dl id="facts"></dl>
               </div>
               <div>
-                <p class="section-kicker">Plan steps</p>
+                <h3 class="section-kicker">Plan steps</h3>
                 <ol id="steps" class="step-list"></ol>
               </div>
             </div>
@@ -131,7 +120,6 @@
 
         <section class="panel">
           <div class="panel-header">
-            <span class="step-index" aria-hidden="true">04</span>
             <div class="panel-heading">
               <h2>Approve and observe execution</h2>
               <p>Approval is bound to the exact reviewed plan</p>
@@ -144,10 +132,12 @@
               <button id="approve-run" type="button" disabled>Approve and run</button>
               <button id="deploy" class="button-secondary" type="button" disabled>Submit approved job</button>
             </div>
+            <div class="job-lookup">
             <label class="label-spaced" for="job-id">Job ID
               <input id="job-id" autocomplete="off" disabled>
             </label>
             <button id="refresh" class="button-secondary" type="button" disabled>Refresh status</button>
+            </div>
             <p id="progress-summary" class="timeline-summary" data-state="empty" role="status" aria-live="polite">No job has been submitted in this session.</p>
             <ol id="progress-events" class="timeline" aria-label="Returned execution events"></ol>
             <p id="empty-events" class="empty-events">Execution events appear after a job response is returned.</p>
@@ -160,14 +150,15 @@
       </div>
     </div>
 
-    <section class="panel package-studio" aria-labelledby="package-studio-title">
-      <div class="panel-header">
-        <span class="step-index" aria-hidden="true">05</span>
+    <p class="evidence-note">Only returned service state is shown here. No model call or background execution is implied.</p>
+
+    <details class="panel package-studio">
+      <summary class="package-studio-summary">
         <div class="panel-heading">
           <h2 id="package-studio-title">Package release workflow</h2>
           <p>Import a cited candidate, attach signed sandbox evidence, review it, then register its signed release</p>
         </div>
-      </div>
+      </summary>
       <div class="package-studio-body">
         <div class="candidate-intake">
           <p id="candidate-state" class="catalog-state" data-state="idle" role="status" aria-live="polite">Open a maintainer session to load tenant candidates.</p>
@@ -211,7 +202,7 @@
           </details>
         </div>
       </div>
-    </section>
+    </details>
 
     <details class="panel advanced-panel">
       <summary>Advanced: inspect or submit a typed job</summary>
@@ -235,11 +226,15 @@
     </details>
     <details class="panel">
       <summary>Private alpha progress</summary>
+      <div class="details-body">
       <p>Track measured reliability and support work. Missing observations do not count as passes.</p>
+      <p><a href="/alpha">Open alpha dashboard</a></p>
       <button id="alpha-refresh" class="button-secondary" type="button" disabled>Refresh alpha progress</button>
       <p id="alpha-summary" role="status" aria-live="polite">Open a private session to view your cohort.</p>
       <table><thead><tr><th>Measure</th><th>Result</th><th>Observations</th></tr></thead><tbody id="alpha-metrics"></tbody></table>
+      </div>
     </details>
+    <footer class="workbench-footer"><span>Wazi private workspace</span><a href="/alpha">Alpha readiness and support</a></footer>
   </main>
 </body>
 </html>

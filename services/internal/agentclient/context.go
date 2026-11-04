@@ -270,6 +270,26 @@ func (b *ContextBridge) Handler() http.Handler {
 		raw, err := b.Worker.Call(r.Context(), map[string]any{"action": "alpha-report", "tenantScope": b.TenantScope})
 		respond(w, raw, err)
 	})
+	mux.HandleFunc("POST /contexts/alpha-actions", func(w http.ResponseWriter, r *http.Request) {
+		raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16384))
+		var request map[string]any
+		if err != nil || json.Unmarshal(raw, &request) != nil || request == nil {
+			respond(w, nil, fmt.Errorf("invalid alpha request"))
+			return
+		}
+		value, err := b.Worker.Call(r.Context(), map[string]any{"action": "alpha-action", "tenantScope": b.TenantScope, "queueDirectory": b.QueueDirectory, "request": request})
+		if err == nil {
+			var result struct{ State string }
+			if json.Unmarshal(value, &result) == nil && result.State == "rejected" {
+				w.Header().Set("Content-Type", "application/json")
+				w.Header().Set("Cache-Control", "no-store")
+				w.WriteHeader(422)
+				_, _ = w.Write(value)
+				return
+			}
+		}
+		respond(w, value, err)
+	})
 	mux.HandleFunc("POST /contexts/propose", func(w http.ResponseWriter, r *http.Request) {
 		raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 4096))
 		if err != nil {

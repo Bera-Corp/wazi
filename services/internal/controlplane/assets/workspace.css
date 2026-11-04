@@ -1,0 +1,78 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: brand · redesign: full · scope: app · nav: compact Wazi route bar · signature: release readiness ledger · states: loading, empty, error, populated · axes: light/grotesk-sans/chromatic-green · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S5 R5 V4 · weakest: E, sparse pilot evidence stays visibly unmeasured rather than filling the workspace with invented charts */
+:root {
+  --color-paper: oklch(98% 0.004 155); --color-paper-2: oklch(96% 0.006 155); --color-paper-3: oklch(93% 0.011 155);
+  --color-ink: oklch(23% 0.02 155); --color-ink-2: oklch(38% 0.02 155); --color-muted: oklch(45% 0.018 155);
+  --color-graphite: oklch(25% 0.045 156); --color-graphite-ink: oklch(98% 0.004 150); --color-graphite-muted: oklch(85% 0.018 150);
+  --color-rule: oklch(88% 0.009 155); --color-rule-2: oklch(78% 0.014 155); --color-input-edge: oklch(59% 0.014 155);
+  --color-accent: oklch(47% 0.12 151); --color-accent-deep: oklch(38% 0.11 151); --color-accent-wash: oklch(95% 0.025 151); --color-accent-ink: oklch(99% 0.003 150);
+  --color-focus: oklch(46% 0.13 151); --color-focus-on-dark: oklch(83% 0.1 150); --color-surface: oklch(100% 0 0);
+  --color-warning: oklch(42% 0.08 70); --color-warning-wash: oklch(96% 0.025 70); --color-error: oklch(43% 0.13 28); --color-error-wash: oklch(95% 0.025 28);
+  --color-disabled: oklch(93% 0.006 155); --color-clear: transparent;
+  --container: 1440px; --gutter: 32px; --gap-columns: 24px;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif; --font-display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --radius-card: 8px; --radius-input: 6px; --control-height: 44px;
+  --workspace-shadow: 0 1px 2px oklch(23% 0.02 155 / 0.04);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-width: 320px; overflow-x: clip; }
+html { scrollbar-color: var(--color-muted) var(--color-paper); scroll-padding-top: var(--space-xl); }
+body { margin: 0; background: var(--color-paper); color: var(--color-ink); font: 16px/1.55 var(--font-body); -webkit-font-smoothing: antialiased; caret-color: var(--color-accent); }
+::selection { background: var(--color-accent-wash); color: var(--color-ink); }
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; }
+button, a, input, select, textarea, summary { -webkit-tap-highlight-color: var(--color-clear); }
+:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+h1, h2, h3 { min-width: 0; overflow-wrap: break-word; text-wrap: balance; font-family: var(--font-display); color: var(--color-ink); font-weight: 600; letter-spacing: -0.025em; }
+h1 { margin: 0; font-size: 2rem; line-height: 1.2; }
+h2 { margin: 0; font-size: 1.25rem; line-height: 1.35; }
+h3 { margin: 0; font-size: 1.05rem; line-height: 1.4; }
+p { text-wrap: pretty; }
+.wazi-topbar { background: var(--color-graphite); color: var(--color-graphite-ink); border-bottom: 1px solid var(--color-graphite); }
+.wazi-topbar-inner { display: flex; align-items: center; min-height: 80px; gap: var(--space-lg); max-width: var(--container); padding-inline: var(--gutter); margin-inline: auto; }
+.wazi-brand { display: flex; align-items: center; flex: none; text-decoration: none; min-height: 48px; }
+.wazi-brand img { width: 112px; height: 46px; object-fit: contain; }
+.wazi-nav { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
+.wazi-nav a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: var(--space-sm); color: var(--color-graphite-muted); font: 500 14px/1.3 var(--font-body); white-space: nowrap; text-decoration: none; border-bottom: 2px solid var(--color-clear); }
+.wazi-nav a:hover { color: var(--color-graphite-ink); }
+.wazi-nav a:active { opacity: .8; }
+.wazi-nav a[aria-current="page"] { color: var(--color-graphite-ink); border-bottom-color: var(--color-focus-on-dark); }
+.wazi-topbar :focus-visible { outline-color: var(--color-focus-on-dark); }
+.wazi-session { margin-left: auto; color: var(--color-graphite-muted); font-size: 14px; white-space: nowrap; }
+.wazi-page { max-width: var(--container); margin-inline: auto; padding: var(--space-xl) var(--gutter) var(--space-2xl); }
+.wazi-page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-lg); margin-bottom: var(--space-xl); }
+.wazi-page-heading p { margin: var(--space-xs) 0 0; max-width: 65ch; color: var(--color-muted); }
+.wazi-actions { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+.wazi-button, .wazi-button-secondary { display: inline-flex; justify-content: center; align-items: center; min-height: var(--control-height); gap: var(--space-xs); padding: var(--space-xs) var(--space-lg); border: 1px solid var(--color-accent); border-radius: var(--radius-input); background: var(--color-accent); color: var(--color-accent-ink); font: 600 14px/1.4 var(--font-body); text-decoration: none; white-space: nowrap; cursor: pointer; transition: background-color var(--dur-micro), opacity var(--dur-micro); }
+.wazi-button:hover { background: var(--color-accent-deep); border-color: var(--color-accent-deep); }
+.wazi-button-secondary { background: var(--color-surface); color: var(--color-ink); border-color: var(--color-rule-2); }
+.wazi-button-secondary:hover { background: var(--color-paper-2); }
+.wazi-button:active, .wazi-button-secondary:active { opacity: .8; }
+.wazi-button:disabled, .wazi-button-secondary:disabled { opacity: .55; cursor: not-allowed; background: var(--color-disabled); color: var(--color-ink-2); border-color: var(--color-rule); }
+.wazi-button[aria-busy="true"], .wazi-button-secondary[aria-busy="true"] { cursor: progress; }
+.wazi-field { display: grid; gap: var(--space-xs); color: var(--color-ink-2); font-size: 14px; }
+.wazi-field input, .wazi-field select, .wazi-field textarea { width: 100%; min-width: 0; min-height: var(--control-height); padding: var(--space-xs) var(--space-sm); border: 1px solid var(--color-input-edge); border-radius: var(--radius-input); background: var(--color-surface); color: var(--color-ink); }
+.wazi-field textarea { min-height: 100px; resize: vertical; }
+.wazi-field input:disabled, .wazi-field select:disabled { opacity: .55; cursor: not-allowed; background: var(--color-disabled); }
+.wazi-field small, .wazi-help { color: var(--color-muted); font-size: 14px; line-height: 1.5; min-height: 1lh; }
+.wazi-panel { background: var(--color-surface); border: 1px solid var(--color-rule); border-radius: var(--radius-card); box-shadow: var(--workspace-shadow); }
+.wazi-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); padding: var(--space-lg); border-bottom: 1px solid var(--color-rule); }
+.wazi-panel-body { padding: var(--space-lg); }
+.wazi-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.wazi-table th { font-weight: 500; color: var(--color-muted); background: var(--color-paper-2); text-align: left; }
+.wazi-table th, .wazi-table td { padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--color-rule); vertical-align: middle; }
+.wazi-table tr:last-child td { border-bottom: 0; }
+.wazi-table td { font-variant-numeric: tabular-nums; }
+.wazi-badge { display: inline-flex; align-items: center; padding: var(--space-2xs) var(--space-xs); border-radius: var(--radius-input); background: var(--color-paper-2); color: var(--color-ink-2); font-size: 14px; line-height: 1.4; }
+.wazi-badge[data-state="pass"], .wazi-badge[data-state="observed"] { background: var(--color-accent-wash); color: var(--color-accent-deep); }
+.wazi-badge[data-state="fail"] { background: var(--color-error-wash); color: var(--color-error); }
+.wazi-badge[data-state="insufficient-samples"] { background: var(--color-warning-wash); color: var(--color-warning); }
+.wazi-empty { padding: var(--space-xl) var(--space-lg); color: var(--color-muted); text-align: left; }
+.wazi-empty h2, .wazi-empty h3 { margin-bottom: var(--space-xs); }
+.wazi-error { padding: var(--space-md); color: var(--color-error); background: var(--color-error-wash); border-radius: var(--radius-input); }
+.wazi-footer { display: flex; justify-content: space-between; align-items: center; gap: var(--space-lg); flex-wrap: wrap; margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-rule); color: var(--color-muted); font-size: 14px; }
+.wazi-skip { position: absolute; inset: var(--space-sm) auto auto var(--space-sm); transform: translateY(-200%); padding: var(--space-sm); background: var(--color-surface); color: var(--color-ink); z-index: var(--z-sticky-nav); }
+.wazi-skip:focus-visible { transform: none; }
+@media (max-width: 60rem) { .wazi-topbar-inner { flex-wrap: wrap; gap: var(--space-xs) var(--space-lg); padding-block: var(--space-sm); } .wazi-nav { order: 3; width: 100%; } .wazi-page-heading { flex-direction: column; } }
+@media (max-width: 40rem) { :root { --gutter: 16px; } .wazi-page { padding-top: var(--space-lg); } h1 { font-size: 1.7rem; } .wazi-nav { gap: 0; } .wazi-nav a { padding-inline: var(--space-xs); } .wazi-panel-heading, .wazi-panel-body { padding: var(--space-md); } .wazi-table th, .wazi-table td { padding-inline: var(--space-md); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }

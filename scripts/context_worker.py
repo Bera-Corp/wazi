@@ -126,13 +126,20 @@ def record_terminal(store, payload):
 
 def dispatch(store, payload, alpha_path=None):
     action = payload["action"]
-    if action == "alpha-report":
+    if action in ("alpha-report", "alpha-action"):
         if alpha_path is None:
             raise ValueError("alpha-ledger-path-not-configured")
-        from alpha_ops import Ledger
+        from alpha_ops import Ledger, private_action
         ledger=Ledger(alpha_path)
         try:
-            return ledger.report(payload["tenantScope"])
+            if action=='alpha-report':return ledger.report(payload["tenantScope"])
+            try:
+                return private_action(ledger,payload['tenantScope'],payload['request'],payload['queueDirectory'],Path(alpha_path).parent)
+            except (ValueError,KeyError,FileNotFoundError) as error:
+                import re
+                reason=str(error)
+                if not re.fullmatch(r'[a-z0-9-]{1,100}',reason):reason='invalid-alpha-request'
+                return {'state':'rejected','reason':reason}
         finally:
             ledger.close()
     if action == "retrieve":

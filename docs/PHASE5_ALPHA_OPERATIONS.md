@@ -50,6 +50,20 @@ deployment. The importer performs no network requests and does not execute jobs.
 
 ## Metrics and private dashboard
 
+The dedicated private page is /alpha. It shares navigation, typography and
+branding with the overview and workbench. Open it through the existing private
+HTTPS connection, then exchange an operator-issued one-use code. An unexpired
+cookie session can move between /context and /alpha without entering another
+code. End session clears that browser session; expiry clears private results.
+The public catalog does not expose this ledger.
+
+Readiness shows the five-app cohort, exact release digests, local/VPS recovery
+coverage and measured reliability. Observations retains the latest twenty
+records. Support offers receipt-backed ticket creation, evidence-bound state
+changes and explicit-consent local feedback downloads. All actions display the
+actual service response. Preview mode disables writes and labels supplied
+snapshot data; absent data remains empty.
+
 report --tenant TENANT emits numerator, denominator, threshold and state for
 each metric. --html-output FILE writes an exclusive offline private dashboard.
 The existing private workbench also exposes Refresh alpha progress through
@@ -60,6 +74,8 @@ Thresholds follow the roadmap: first-attempt success >=90%, rollback >=95%,
 restore verification 100%, schema-valid planner output after retry >=99%,
 deterministic deployments >=80%, false-compatible decisions strictly <2%, and
 zero secret exposure, uncited material actions or arbitrary shell execution.
+An observed threshold violation is shown as a failure immediately, even before
+the minimum sample count is reached. Passing a small sample remains insufficient.
 First-attempt results remain failures even if a retry succeeds. Planner results
 use the final attempt. Historical safety findings cannot be cleared by later
 successes. Defaults require twenty observations per measure; change the reporting
@@ -84,6 +100,33 @@ Every change requires evidence and is durable/idempotent.
 feedback --tenant TENANT --ticket ID --consent --output FILE produces a local
 feedback file that omits tenant and ticket identities. Nothing is sent upstream.
 Sending or posting remains a separate explicit owner instruction.
+
+## Configure a private local target
+
+Run the CLI as the account that owns the private context database. Choose a
+private directory outside the checkout; create it with owner-only access. Use
+the same directory as the configured context database so the worker can find
+alpha.sqlite and its configuration. Do not point the public catalog at it.
+
+~~~sh
+python scripts/alpha_ops.py --database PRIVATE_DIRECTORY/alpha.sqlite configure --input PRIVATE_CONFIGURATION.json
+~~~
+
+The input has exactly tenantScope, applications (five to ten IDs), environment
+(the existing exact platform descriptor) and target (local or vps). Obtain the
+descriptor from that host's qualification record; do not copy a Linux descriptor
+onto a desktop. This command records configuration and grants no qualification.
+It creates alpha-cohort.json, alpha-environment.json and alpha-target.json with
+exclusive owner-only writes. Conflicting existing configuration is rejected.
+On Windows, restrict the directory ACL to the runtime account; POSIX mode bits
+alone do not establish Windows privacy. The VPS setup helper supplies the
+equivalent configuration from its existing qualified runtime.
+
+The browser import form takes a terminal job ID, explicit trial ID, attempt,
+intervention count and deterministic attribution. Tenant, application, release,
+host environment and receipt digest come from protected server state. It never
+submits or re-executes the referenced job. Ticket resolution and closure require
+a successful matching application/environment receipt without pending recovery.
 
 ## Open alpha work
 
