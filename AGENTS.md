@@ -321,3 +321,5 @@ This file contains a growing ruleset that improves over time. **At session start
 247. [TEST] Explicitly close fixture SQLite connections as well as production connections — transaction context managers leave Windows test database handles open.
 248. [TOOL] Verify exact security progress-unit enums and enumerate documentation paths before tool calls — descriptive labels and assumed README locations are not executable tool contracts.
 249. [TOOL] Submit attack-path records only for reportable or deferred validated candidates — suppressed candidates are terminal validation outcomes and the workbench rejects them in attack-path batches.
+250. [PROCESS] Include the repository context, schemas, and releases trees in Bera-003 native qualification archives — service tests load fixtures outside the Go module, including Phase 1 and Phase 2 release records.
+251. [TOOL] Print and retain the session ID from every nested exec command that yields, then poll it before dependent work — omitting the ID makes asynchronous completion unauditable.

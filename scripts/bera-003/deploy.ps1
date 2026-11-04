@@ -24,12 +24,17 @@ foreach ($name in @('deploy.sh','live_checks.py')) {
     $content = [IO.File]::ReadAllText($path).Replace(([char]13).ToString(), '').TrimEnd() + [char]10
     [IO.File]::WriteAllText($path,$content,$utf8)
 }
-$manifest = @(Get-ChildItem -LiteralPath services -Recurse -File | Sort-Object FullName | ForEach-Object {
+$sourceRoots = @('services','scripts/bera-003','context','schemas','releases')
+$sourceFiles = @()
+foreach ($sourceRoot in $sourceRoots) {
+    $sourceFiles += Get-ChildItem -LiteralPath (Join-Path $repoRoot $sourceRoot) -Recurse -File
+}
+$manifest = @($sourceFiles | Sort-Object FullName | ForEach-Object {
     [ordered]@{path=$_.FullName.Substring($repoRoot.Length+1).Replace('\','/');sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()}
 })
 $manifest | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $evidence 'source-manifest.json') -Encoding utf8
 $archive = Join-Path $evidence 'source.tar.gz'
-& tar --exclude=__pycache__ -czf $archive services scripts/bera-003
+& tar --exclude=__pycache__ -czf $archive services scripts/bera-003 context schemas releases
 if ($LASTEXITCODE -ne 0) { throw 'Source archive failed.' }
 $archiveHash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLower()
 $remote = "/home/$($connection.WAZI_DEV_SSH_USER)/wazi-live/runs/$stamp"
