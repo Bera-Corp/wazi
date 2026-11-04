@@ -2,6 +2,9 @@
 
 Status: implementation in progress, 4 November 2026. Testing, bug hunting,
 security review, live execution and acceptance are deferred by the owner.
+The later [Linux integration authorization](LINUX_INTEGRATION_2026-11-04.md)
+supersedes that deferral for the current VPS work; the original statement
+records the boundary at this document's creation.
 The requested 90% target is a buildout target; no acceptance percentage is
 increased merely because a source file has been added.
 

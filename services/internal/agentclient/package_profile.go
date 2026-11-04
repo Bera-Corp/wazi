@@ -122,7 +122,7 @@ func NewDockerPackageBoundary(config PackageInstanceConfig, artifact []byte) (*D
 		return nil, err
 	}
 	r := config.Runtime
-	if config.ApplicationStorageBudgetMb <= 0 || config.ApplicationStorageBudgetMb > 25600 {
+	if config.ApplicationStorageBudgetMb <= 0 || config.ApplicationStorageBudgetMb > 27648 {
 		return nil, fmt.Errorf("package requires the approved aggregate application-storage reservation")
 	}
 	if r.TenantScope == "" || r.HostID == "" || r.RuntimeUID <= 0 ||

@@ -55,10 +55,11 @@ payload and receipt. Application restoration is a separate step.
   [Lifecycle rollout](LIFECYCLE_ROLLOUT.md). Execution and validation remain pending.
 - Database-engine major migrations and the full lifecycle/platform matrix remain
   incomplete; unqualified version changes continue to be rejected.
-- Existing pilot volumes plus Uptime Kuma need about 26.125 GiB, above the
-  current 25 GiB application-volume reservation. Before enabling it live, the
-  owner must choose capacity reallocation or retirement of an existing retained
-  volume. The code does not raise the current limit.
+- On 4 November the owner authorized 27 GiB of application reservations,
+  11 GiB shared cache/checkpoints and the existing 10 GiB reserve within the
+  total 48 GiB cap. Revision 3 records this decision. PostgreSQL and Uptime
+  Kuma must run sequentially under the unchanged 3 GiB / 4 CPU runtime cap;
+  the owner approved temporary PostgreSQL stops with data preserved.
 - Independent maintainer review, eligible Meta provider access/spend cap,
   runtime/off-host recovery identities and Mac access remain dependencies.
 - Testing and review are deferred by the owner. These files have not been run

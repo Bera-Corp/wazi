@@ -18,7 +18,7 @@ go vet ./...
 GOOS=windows go vet ./...
 test -z "$(gofmt -l .)"
 mkdir -p ../bin
-for name in controlplane pilot-agent agent recordtool; do
+for name in controlplane pilot-agent agent recordtool backup-keygen; do
   go build -trimpath -buildvcs=false -o "../bin/wazi-$name" "./cmd/$name"
 done
 cd ..
@@ -37,7 +37,7 @@ for suite in validate test_adversarial test_sprints test_secret_scan test_render
 done
 python3 -m unittest discover -s community -t . -p 'test_*.py' -v
 python3 scripts/secret_scan.py
-sha256sum bin/wazi-controlplane bin/wazi-pilot-agent bin/wazi-agent bin/wazi-recordtool > binary-sha256.txt
+sha256sum bin/wazi-controlplane bin/wazi-pilot-agent bin/wazi-agent bin/wazi-recordtool bin/wazi-backup-keygen > binary-sha256.txt
 python3 - <<'PY'
 import datetime,json,pathlib
 identity=json.loads(pathlib.Path('source-identity.json').read_text(encoding='utf-8-sig'))

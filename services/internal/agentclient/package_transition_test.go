@@ -27,6 +27,21 @@ func TestTransitionPolicyRequiresAdmittedReleasesAndQualification(t *testing.T) 
 	}
 }
 
+func TestUptimeAdmissionRequiresSequentialPostgresWithinOwnerCap(t *testing.T) {
+	shape, err := shapeFor("uptime-kuma", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	apps := []runningPackageResource{{Project: "wazi-gitea-phase1", Memory: 1024 * 1024 * 1024, NanoCPUs: 2e9}, {Project: "wazi-postgresql-02", Memory: 384 * 1024 * 1024, NanoCPUs: 5e8}, {Project: "wazi-mysql-02", Memory: 768 * 1024 * 1024, NanoCPUs: 5e8}, {Project: "wazi-nginx-02", Memory: 128 * 1024 * 1024, NanoCPUs: 25e7}}
+	if err := packageCapacityCheck(3072*1024*1024, 4, apps, "wazi-uptime-kuma-01", shape); err == nil {
+		t.Fatal("five applications exceeded approved runtime cap")
+	}
+	sequential := []runningPackageResource{apps[0], apps[2], apps[3]}
+	if err := packageCapacityCheck(3072*1024*1024, 4, sequential, "wazi-uptime-kuma-01", shape); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestPendingTransitionSurvivesReopenAndRejectsAnotherPlan(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("directory durability qualified on Linux")

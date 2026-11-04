@@ -31,7 +31,7 @@ before=hashes()
 if not before or not (state/'queue/requests').is_dir() or not (state/'queue/results').is_dir():raise SystemExit('established runtime journal and queue required')
 release.mkdir(mode=0o755,exist_ok=False)
 os.chmod(release,0o755)
-for name in ('wazi-controlplane','wazi-pilot-agent','wazi-agent','wazi-recordtool'):
+for name in ('wazi-controlplane','wazi-pilot-agent','wazi-agent','wazi-recordtool','wazi-backup-keygen'):
     shutil.copyfile(source/'bin'/name,release/name);os.chmod(release/name,0o555)
 for name in ('scripts','schemas','community'):
     shutil.copytree(source/name,release/name,ignore=shutil.ignore_patterns('__pycache__','.hallmark'))

@@ -1,0 +1,85 @@
+{
+  "kind": "owner-authorized-reallocation-proposal",
+  "hostId": "host_bera-003",
+  "currentOwnerBudget": {
+    "cpuCores": 4,
+    "ramMb": 4096,
+    "storageMb": 40960
+  },
+  "proposedOwnerBudget": {
+    "cpuCores": 4.5,
+    "ramMb": 4096,
+    "storageMb": 49152
+  },
+  "protectedSystemReserve": {
+    "cpuCores": 0.5,
+    "ramMb": 512,
+    "storageMb": 10240
+  },
+  "allocations": [
+    {
+      "role": "application",
+      "resources": {
+        "cpuCores": 3.25,
+        "ramMb": 2432,
+        "storageMb": 27648
+      }
+    },
+    {
+      "role": "backup-helper",
+      "resources": {
+        "cpuCores": 0.25,
+        "ramMb": 256,
+        "storageMb": 4096
+      }
+    },
+    {
+      "role": "restore-helper",
+      "resources": {
+        "cpuCores": 0.25,
+        "ramMb": 256,
+        "storageMb": 4096
+      }
+    },
+    {
+      "role": "runtime-overhead",
+      "resources": {
+        "cpuCores": 0.25,
+        "ramMb": 320,
+        "storageMb": 3072
+      }
+    }
+  ],
+  "aggregateRuntimeLimit": {
+    "cpuCores": 4,
+    "ramMb": 3072
+  },
+  "packages": {
+    "gitea": {
+      "cpuCores": 2,
+      "ramMb": 1024,
+      "volumeMb": 20480
+    },
+    "postgresql": {
+      "cpuCores": 0.5,
+      "ramMb": 384,
+      "volumeMb": 2048
+    },
+    "mysql": {
+      "cpuCores": 0.5,
+      "ramMb": 768,
+      "volumeMb": 2048
+    },
+    "nginx": {
+      "cpuCores": 0.25,
+      "ramMb": 128,
+      "volumeMb": 128
+    },
+    "uptime-kuma": {
+      "cpuCores": 0.5,
+      "ramMb": 512,
+      "volumeMb": 2048
+    }
+  },
+  "scope": "Owner approved 4 November 2026: 27 GiB applications, 11 GiB shared cache/checkpoints, 10 GiB reserve within 48 GiB total. PostgreSQL and Uptime Kuma are tested sequentially; all five applications must not run concurrently under the unchanged 4 CPU/3 GiB runtime cap. No volume deletion authorized."
+}
