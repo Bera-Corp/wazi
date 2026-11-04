@@ -336,6 +336,7 @@ The original Wazi deterministic Linux Docker Compose architecture remains the pr
 
 - [Wazi Unified Master Plan](docs/WAZI_MASTER_PLAN.md) — full research-based product strategy and long-term architecture.
 - [Phase 3 and 4 completion plan](docs/PHASE3_4_COMPLETION_PLAN.md) — evidence gates and dependency order for controlled packaging and lifecycle operations.
+- [Phase 1–5 closeout ledger](docs/PHASE1_5_CLOSEOUT.md) — provisional progress estimates, selected Uptime Kuma source pin, and remaining acceptance dependencies.
 - [Meta Hackathon 2026 Execution Plan](docs/HACKATHON_2026_EXECUTION_PLAN.md) — build priority, acceptance gates, schedule, missing requirements, demo script and issue list.
 - [Judging pillars and delivery rubric](docs/JUDGING_PILLARS.md) — Impact 30%, Meta AI Tooling 25%, Technical Depth & Execution 20%, Demo 25%; feature evidence, acceptance and demo readiness.
 - [Development environments](docs/DEVELOPMENT_ENVIRONMENTS.md) — agent connection discovery and verified Linux-host readiness.

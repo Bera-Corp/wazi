@@ -36,15 +36,21 @@ See the detailed [Phase 3 workflow](PHASE3_CANDIDATE_WORKFLOW.md),
 
 ### Gate 1 — Freeze the supported journey and evidence contract
 
-Choose one maintained, permissively licensed package and one pinned release
-for the end-to-end exercise. Record the beneficiary, the task they need to
-complete, a repeatable baseline, supported host matrix, rollback point and
-evidence locations. Keep proposed, implemented, locally verified, CI verified
-and live states distinct.
+Use Uptime Kuma as the first new catalog adapter and end-to-end candidate.
+The upstream 2.5.9 release resolves to
+df601c58d9205562f34cfe5ef35264b341019d19, reports an MIT license, and publishes
+dist.tar.gz with SHA-256
+f979084bbc74dc80a142d91d09b807f0a4ed52c06830c0e44c36adc9e77c064b. Record the
+beneficiary task, repeatable baseline, supported host matrix, rollback point,
+resource and network policy, and evidence locations in the scope card. Build a
+Wazi image from pinned source; do not use the mutable upstream :2 image tag.
+Keep proposed, implemented, locally verified, CI verified and live states
+distinct.
 
 **Acceptance:** an owner-reviewed scope card names the package, exact source
 digests, beneficiary, baseline method, supported platforms, policy profile and
-success/failure evidence for every later gate.
+success/failure evidence for every later gate. The current pin and closeout
+dependencies are recorded in [the Phase 1–5 closeout ledger](PHASE1_5_CLOSEOUT.md).
 
 **Pillars:** Impact 30% uses a measured task and honest sample limits. Demo 25%
 gets a stable, narrow story before backend work expands.
