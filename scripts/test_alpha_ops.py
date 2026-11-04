@@ -26,6 +26,12 @@ class AlphaTests(unittest.TestCase):
         report=self.ledger.report("tenant_a")
         self.assertFalse(report["alphaThresholdsMet"])
         self.assertTrue(all(m["state"]=="not-measured" for m in report["metrics"].values()))
+    def test_private_tenant_identity_preserves_uppercase_timestamp(self):
+        tenant="tenant_live_20261030T064834Z"
+        self.ledger.curate(tenant,self.apps)
+        value=event("job_live");value["tenantScope"]=tenant;self.ledger.record(value)
+        self.assertEqual(self.ledger.report(tenant)["observations"],1)
+        self.assertEqual(self.ledger.report(tenant.lower())["observations"],0)
     def test_retry_does_not_rewrite_first_attempt_success(self):
         first=event("first",outcome="failure");self.ledger.record(first)
         retry=dict(first,eventId="retry",attempt=2,outcome="success");self.ledger.record(retry)

@@ -31,6 +31,12 @@ TRANSITIONS={"open":{"triaged"},"triaged":{"resolved","open"},"resolved":{"close
 def utc():return dt.datetime.now(dt.timezone.utc).isoformat()
 
 
+def private_identifier(value):
+    if not isinstance(value,str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}",value):
+        raise ValueError("invalid-private-identifier")
+    return value
+
+
 def checked(value):
     raw=canonical(value)
     if len(raw)>65536 or "wazi-secret-scan: allow" in raw.decode("ascii") or scan_text(raw.decode("ascii")):
@@ -61,7 +67,7 @@ class Ledger:
         self.db.commit()
     def close(self):self.db.close()
     def curate(self,tenant,apps):
-        identifier(tenant)
+        private_identifier(tenant)
         if not isinstance(apps,list) or not 5<=len(apps)<=10 or len(set(apps))!=len(apps):raise ValueError("five-to-ten-curated-apps-required")
         for app in apps:identifier(app)
         with self.db:
@@ -69,12 +75,12 @@ class Ledger:
             if current and current!=set(apps):raise ValueError("curation-is-immutable-create-new-alpha-cohort")
             self.db.executemany("INSERT OR IGNORE INTO curated VALUES(?,?)",[(tenant,app) for app in apps])
     def scope(self,tenant,app):
-        identifier(tenant);identifier(app)
+        private_identifier(tenant);identifier(app)
         if not self.db.execute("SELECT 1 FROM curated WHERE tenant=? AND app=?",(tenant,app)).fetchone():raise ValueError("app-not-curated-for-tenant")
     def record(self,event):
         closed(event,"schemaVersion eventId trialId tenantScope applicationId releaseDigest environment target kind outcome attempt deterministic interventions elapsedMs evidenceDigests")
         if event["schemaVersion"]!="1.0.0":raise ValueError("observation-version")
-        self.scope(event["tenantScope"],event["applicationId"]);identifier(event["eventId"]);identifier(event["trialId"])
+        self.scope(event["tenantScope"],event["applicationId"]);private_identifier(event["eventId"]);private_identifier(event["trialId"])
         sha(event["releaseDigest"]);environment(event["environment"]);proofs(event["evidenceDigests"])
         if event["target"] not in ("local","vps") or event["kind"] not in KINDS or event["outcome"] not in KINDS[event["kind"]]:raise ValueError("observation-kind-or-outcome")
         if event["kind"] in ("compatibility","safety") and event["attempt"]!=1:raise ValueError("audit-decisions-are-not-retriable")
@@ -100,7 +106,7 @@ class Ledger:
     def ticket(self,value):
         closed(value,"schemaVersion ticketId tenantScope applicationId releaseDigest environment category severity evidenceDigests")
         if value["schemaVersion"]!="1.0.0":raise ValueError("support-version")
-        self.scope(value["tenantScope"],value["applicationId"]);identifier(value["ticketId"]);sha(value["releaseDigest"])
+        self.scope(value["tenantScope"],value["applicationId"]);private_identifier(value["ticketId"]);sha(value["releaseDigest"])
         environment(value["environment"]);proofs(value["evidenceDigests"]);raw=checked(value)
         if value["category"] not in CATEGORIES or value["severity"] not in ("P0","P1","P2","P3"):raise ValueError("support-classification")
         with self.db:
@@ -113,7 +119,7 @@ class Ledger:
         return True
     def transition(self,value):
         closed(value,"eventId tenantScope ticketId from to evidenceDigests")
-        identifier(value["tenantScope"]);identifier(value["ticketId"]);identifier(value["eventId"]);proofs(value["evidenceDigests"])
+        private_identifier(value["tenantScope"]);private_identifier(value["ticketId"]);private_identifier(value["eventId"]);proofs(value["evidenceDigests"])
         raw=checked(value);digest=hashlib.sha256(raw).hexdigest()
         with self.db:
             self.db.execute("BEGIN IMMEDIATE")
@@ -127,7 +133,7 @@ class Ledger:
             self.db.execute("INSERT INTO support_events VALUES(?,?,?,?,?,?)",(value["tenantScope"],value["eventId"],value["ticketId"],digest,raw,utc()))
         return True
     def report(self,tenant,min_samples=20):
-        identifier(tenant)
+        private_identifier(tenant)
         if type(min_samples) is not int or not 1<=min_samples<=10000:raise ValueError("sample-bound")
         rows=[strict_json(row[0]) for row in self.db.execute("SELECT body FROM observations WHERE tenant=? ORDER BY trial,kind,attempt",(tenant,))]
         final={};first={}
@@ -180,7 +186,7 @@ def dashboard(report):
 
 def import_queue(ledger,queue,tenant,observed,target,mapping):
     """Import protected local receipts with explicit trial/retry attribution."""
-    environment(observed);identifier(tenant);closed(mapping,"schemaVersion jobs")
+    environment(observed);private_identifier(tenant);closed(mapping,"schemaVersion jobs")
     if mapping["schemaVersion"]!="1.0.0" or target not in ("local","vps") or not isinstance(mapping["jobs"],dict) or len(mapping["jobs"])>1000:raise ValueError("queue-import-policy-invalid")
     queue=Path(queue)
     if queue.is_symlink() or not queue.is_dir():raise ValueError("private-queue-directory-required")
