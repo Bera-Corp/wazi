@@ -23,7 +23,7 @@ its result is deliberately left for the later validation pass.
 | 1 | 90% | All five closure gates for the bounded Gitea pilot are recorded as accepted. | Independent-human quorum, automatic certificate renewal, and automatic application recovery. |
 | 2 | 70% | Offline retrieval; live Gitea, PostgreSQL, MySQL, and Nginx package journeys; native qualification. | Correctly staged fresh registry/revocation publication, paired beneficiary baseline, Immich lifecycle, and a real authorized Meta model run. |
 | 3 | 40% | Tenant-scoped candidate, receipt-validation, review/promotion, catalog, and workbench foundations. | Isolated runner, genuine signed receipt, independent review, signed publication, install, and live workbench acceptance. |
-| 4 | 30% | Local age-encrypted PostgreSQL/MySQL checkpoint implementation and regressions. | MySQL disposable-database preflight, Nginx checkpoint coverage, protected live identities, off-host restore, lifecycle matrix, and platform qualification. |
+| 4 | 30% | Local age-encrypted PostgreSQL/MySQL checkpoint implementation and regressions. | MySQL preflight acceptance, Nginx checkpoint coverage, protected live identities, off-host restore, lifecycle matrix, and platform qualification. |
 | 5 | 20% | Existing private pilot, catalog, and consent-bound contribution foundations. | Five to ten qualified applications across local/VPS paths, support workflow, and measured alpha reliability gates. |
 
 The Phase 1 pilot is accepted within its explicitly bounded scope. The 90%
@@ -77,9 +77,10 @@ qualification before this candidate can execute.
 - Provider credentials, model selection, spending approval, and expanded
   Immich capacity are not provisioned by this ledger. No real call or
   additional live capacity use is authorized here.
-- The owner asked to postpone testing and review. No local tests or review
-  were run for this closeout update; the GitHub workflow result above remains
-  for the later validation pass.
+- The owner asked to postpone testing and review. MySQL disposable-schema
+  preflight is now implemented in the working tree, but has not been tested,
+  reviewed, or used for a live restore. The GitHub run above covers the
+  earlier main commit and its result remains for the later validation pass.
 - The owner’s hands-on pass is pending. After the candidate is available in
   the workbench, exercise catalog discovery, inspect source and environment
   evidence, review/approve the candidate, follow install progress, confirm

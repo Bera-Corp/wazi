@@ -119,6 +119,8 @@ func run(args []string) error {
 			err = contracts.ValidateProcedure(raw)
 		case record["listId"] != nil:
 			err = contracts.ValidateRevocationRecord(raw)
+		case record["qualificationId"] != nil:
+			err = contracts.ValidateCandidateQualification(raw)
 		default:
 			return fmt.Errorf("unsupported signed record type")
 		}
@@ -126,7 +128,7 @@ func run(args []string) error {
 			return err
 		}
 		verifyRecord := verify.VerifyRecord
-		if record["listId"] != nil {
+		if record["listId"] != nil || record["qualificationId"] != nil {
 			verifyRecord = verify.VerifySignedRecord
 		}
 		if err := verifyRecord(raw, policy); err != nil {

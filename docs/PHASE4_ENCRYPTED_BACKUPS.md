@@ -3,7 +3,7 @@
 ## Scope and status
 
 This change adds an offline encrypted checkpoint path for the reviewed
-PostgreSQL and MySQL package profiles. It does not configure keys on Bera-003,
+PostgreSQL, MySQL and Nginx package profiles. It does not configure keys on Bera-003,
 encrypt existing checkpoints, prove recovery from an off-host copy, or close
 Phase 4 live acceptance.
 
@@ -11,18 +11,22 @@ New database backups stream their database output through age encryption into
 a private checkpoint file with an .age suffix. The sidecar identifies the
 format as age-v1, records the database payload format, and binds the SHA-256
 digest to the ciphertext. PostgreSQL uses its custom dump format; MySQL uses a
-logical SQL dump. Nginx configuration checkpoints retain their existing JSON
-format.
+logical SQL dump. New Nginx configuration checkpoints encrypt the existing JSON
+payload with payloadFormat nginx-config-json. Older Nginx .dump JSON records
+remain readable. This extension is implementation-only and awaits validation.
 
 Restore verifies the checkpoint bindings and ciphertext digest, then decrypts
 and authenticates the entire file into a private temporary file before it
 mutates database state. Plaintext is bounded by the reviewed storage limit and
 the temporary file is removed after use. PostgreSQL additionally runs
 pg_restore --list against the staged plaintext before dropping or recreating
-the target database. The MySQL path does not yet import into a disposable
-database as a semantic preflight; a failed import can leave a partial target
-restore. Its pre-restore checkpoint remains available for an explicitly
-approved recovery, but automatic rollback is not claimed.
+the target database. MySQL now imports into a uniquely named disposable
+database before it drops or recreates the target. A rejected import or failed
+cleanup returns before target mutation. This is an implementation change only:
+the disposable-schema permission model and failure cases still need the later
+test/review pass. A failure during the actual target import can still leave a
+partial restore; the pre-restore checkpoint remains available for an
+explicitly approved recovery, and automatic rollback is not claimed.
 
 Older PostgreSQL and MySQL .dump checkpoints remain readable for
 compatibility. New database backup operations fail closed unless the instance
@@ -73,12 +77,13 @@ checkpoint sidecar digest detects accidental changes to the stored bytes.
   rejected before target mutation.
 - Test recovery using the off-host recipient and document measured restore
   time and any manual steps.
-- Add a disposable-database MySQL import preflight before describing malformed
-  dump handling as non-destructive.
+- Exercise the disposable-database MySQL import preflight and prove failed
+  imports and cleanup failures leave the target database unchanged.
 
-The code currently preserves legacy checkpoint compatibility and adds local
-regressions for age round trips and pre-mutation rejection. No live encrypted
-database backup or restore has been performed.
+The code preserves legacy checkpoint compatibility and adds local regressions
+for age round trips and pre-mutation rejection. The MySQL disposable-database
+preflight is implemented in the current working tree but has not been tested
+or reviewed. No live encrypted database backup or restore has been performed.
 
 The 3 Nov adversarial pass corrected the encrypted checkpoint size bound to
 include age authentication tags for every 64 KiB plaintext chunk. Boundary

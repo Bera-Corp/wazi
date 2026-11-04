@@ -2,7 +2,9 @@ package agentclient
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -47,7 +49,7 @@ func (b *DockerPackageBoundary) checkpointPath(id, kind string) (string, error) 
 		return "", fmt.Errorf("package checkpoint directory must be private")
 	}
 	extension := ".dump"
-	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" {
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" {
 		extension = ".age"
 	}
 	return filepath.Join(root, id+extension), nil
@@ -91,7 +93,7 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 	if err != nil {
 		return err
 	}
-	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" {
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" {
 		legacyPath := strings.TrimSuffix(path, ".age") + ".dump"
 		if _, err := os.Lstat(legacyPath); err == nil {
 			return fmt.Errorf("legacy package checkpoint identity is retained; choose a new identity")
@@ -115,6 +117,8 @@ func (b *DockerPackageBoundary) backup(ctx context.Context, p PreparedExecution,
 		format, payloadFormat = "age-v1", "mysql-logical"
 		recipients, err = parsePackageAgeRecipients(b.config.BackupEncryption.Recipients)
 	case "nginx":
+		format, payloadFormat = "age-v1", "nginx-config-json"
+		recipients, err = parsePackageAgeRecipients(b.config.BackupEncryption.Recipients)
 	default:
 		return fmt.Errorf("package checkpoint profile is not supported")
 	}
@@ -231,14 +235,14 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 		return nil, record, err
 	}
 	info, err := os.Lstat(path)
-	if os.IsNotExist(err) && (b.config.Profile == "postgresql" || b.config.Profile == "mysql") {
+	if os.IsNotExist(err) && (b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx") {
 		legacyPath := strings.TrimSuffix(path, ".age") + ".dump"
 		if legacyInfo, legacyErr := os.Lstat(legacyPath); legacyErr == nil {
 			path, info, err = legacyPath, legacyInfo, nil
 		}
 	}
 	maxBytes := int64(b.shape.Storage) * 1024 * 1024
-	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" {
+	if b.config.Profile == "postgresql" || b.config.Profile == "mysql" || b.config.Profile == "nginx" {
 		maxBytes = packageAgeCiphertextLimit(maxBytes)
 	}
 	if err != nil || !info.Mode().IsRegular() || info.Size() > maxBytes {
@@ -255,7 +259,7 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 	if json.Unmarshal(raw, &record) != nil || record.Profile != b.config.Profile || record.Project != b.config.Runtime.Project || record.Tenant != p.TenantScope() || record.ManifestDigest != p.Binding().Release.ManifestDigest || record.BackupID != id || record.Bytes != info.Size() {
 		return nil, record, fmt.Errorf("package checkpoint binding mismatch; cross-version restore requires a separately qualified migration")
 	}
-	expectedPayload := map[string]string{"postgresql": "postgres-custom", "mysql": "mysql-logical"}[b.config.Profile]
+	expectedPayload := map[string]string{"postgresql": "postgres-custom", "mysql": "mysql-logical", "nginx": "nginx-config-json"}[b.config.Profile]
 	if expectedPayload != "" && record.Format == "age-v1" && record.PayloadFormat != expectedPayload {
 		return nil, record, fmt.Errorf("encrypted checkpoint payload format mismatch")
 	}
@@ -283,6 +287,45 @@ func (b *DockerPackageBoundary) verifiedCheckpoint(p PreparedExecution, id strin
 		return nil, record, err
 	}
 	return file, record, nil
+}
+
+func (b *DockerPackageBoundary) preflightMySQLImport(ctx context.Context, restoreFile *os.File) error {
+	var nonce [16]byte
+	if _, err := rand.Read(nonce[:]); err != nil {
+		return fmt.Errorf("MySQL checkpoint preflight identity could not be created")
+	}
+	database := "wazi_preflight_" + hex.EncodeToString(nonce[:])
+	cleanup := func() error {
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+		defer cancel()
+		_, err := b.client(cleanupCtx, "mysql", nil, nil,
+			"--defaults-extra-file=/run/secrets/client.conf",
+			"--execute", "DROP DATABASE IF EXISTS "+database)
+		return err
+	}
+	if _, err := b.client(ctx, "mysql", nil, nil,
+		"--defaults-extra-file=/run/secrets/client.conf",
+		"--execute", "CREATE DATABASE "+database); err != nil {
+		if cleanupErr := cleanup(); cleanupErr != nil {
+			return fmt.Errorf("MySQL checkpoint preflight setup and cleanup failed")
+		}
+		return fmt.Errorf("MySQL checkpoint preflight database could not be created")
+	}
+	if _, err := b.client(ctx, "mysql", restoreFile, nil,
+		"--defaults-extra-file=/run/secrets/client.conf", database); err != nil {
+		if cleanupErr := cleanup(); cleanupErr != nil {
+			return fmt.Errorf("MySQL checkpoint import preflight and cleanup failed")
+		}
+		return fmt.Errorf("MySQL checkpoint import preflight failed")
+	}
+	if _, err := restoreFile.Seek(0, io.SeekStart); err != nil {
+		_ = cleanup()
+		return err
+	}
+	if err := cleanup(); err != nil {
+		return fmt.Errorf("MySQL checkpoint preflight database cleanup failed")
+	}
+	return nil
 }
 
 func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution, id string, compose []byte) error {
@@ -367,12 +410,15 @@ func (b *DockerPackageBoundary) restore(ctx context.Context, p PreparedExecution
 		if record.Format != "age-v1" && record.Format != "mysql-logical" {
 			return fmt.Errorf("checkpoint format mismatch")
 		}
+		if err = b.preflightMySQLImport(ctx, restoreFile); err != nil {
+			return err
+		}
 		if _, err = b.client(ctx, "mysql", nil, nil, "--defaults-extra-file=/run/secrets/client.conf", "--execute", "DROP DATABASE wazi; CREATE DATABASE wazi"); err != nil {
 			return err
 		}
 		_, err = b.client(ctx, "mysql", restoreFile, nil, "--defaults-extra-file=/run/secrets/client.conf", "wazi")
 	case "nginx":
-		if record.Format != "nginx-config-json" {
+		if record.Format != "nginx-config-json" && record.Format != "age-v1" {
 			return fmt.Errorf("checkpoint format mismatch")
 		}
 		var data map[string]string
