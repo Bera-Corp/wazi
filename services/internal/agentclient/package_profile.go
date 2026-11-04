@@ -270,6 +270,9 @@ func (b *DockerPackageBoundary) render(manifestRaw []byte) ([]byte, error) {
 	if b.config.Profile == "mysql" {
 		expected = map[string]string{"MYSQL_DATABASE": "wazi", "MYSQL_USER": "wazi", "MYSQL_PASSWORD_FILE": "/run/secrets/password", "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/root-password"}
 	}
+	if b.config.Profile == "uptime-kuma" {
+		expected = map[string]string{"UPTIME_KUMA_DB_TYPE": "sqlite", "TMPDIR": "/app/data", "SQLITE_TMPDIR": "/app/data"}
+	}
 	if len(entries) != len(expected) {
 		return nil, fmt.Errorf("package environment surface mismatch")
 	}

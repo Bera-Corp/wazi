@@ -1,0 +1,43 @@
+{
+  "candidateDigest": "sha256:7b6bb1eab06ffd435f5d3f7de1d525a7f2801af9b2d5409f3b2b9315633e820f",
+  "completedAt": "2026-11-04T20:30:23Z",
+  "isolation": {
+    "cpuMilli": 1000,
+    "liveVolumeAccess": false,
+    "network": "deny-egress",
+    "privileged": false,
+    "ramMb": 512,
+    "storageMb": 256,
+    "syntheticProject": true
+  },
+  "qualificationId": "qual_f46e4fe8897443a8b77eaa3e25838717",
+  "result": "passed",
+  "runnerId": "bera003-uptime-local-suite",
+  "runnerVersion": "1.0.1",
+  "schemaVersion": "1.0.0",
+  "startedAt": "2026-11-04T20:30:11Z",
+  "suiteDigest": "sha256:b66a27444787c29df0e74eea8dd880914beed95f6dc391b63a9b06a2684c5717",
+  "tenantScope": "tenant_live_20261030T064834Z",
+  "tests": [
+    {
+      "result": "passed",
+      "testId": "candidate-profile"
+    },
+    {
+      "result": "passed",
+      "testId": "startup-http"
+    },
+    {
+      "result": "passed",
+      "testId": "sqlite-created"
+    },
+    {
+      "result": "passed",
+      "testId": "restart-http"
+    },
+    {
+      "result": "passed",
+      "testId": "synthetic-file-persistence"
+    }
+  ]
+}

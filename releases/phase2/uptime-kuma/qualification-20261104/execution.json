@@ -1,0 +1,8 @@
+{
+  "candidateDigest": "sha256:7b6bb1eab06ffd435f5d3f7de1d525a7f2801af9b2d5409f3b2b9315633e820f",
+  "completedAt": "2026-11-04T20:30:23Z",
+  "failureReason": null,
+  "policyDigest": "sha256:7a8bc7eb538084c547b0ffe2d610700f06c373dc797a3e8db02aebe0e6fbd839",
+  "state": "completed",
+  "suiteImage": "sha256:55ec1b755770efb7e00b02b893b0004667c5f531a56e73b80c7458f7ff5ce95b"
+}

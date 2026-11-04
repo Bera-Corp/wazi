@@ -8,6 +8,8 @@ import http from 'node:http';
 const ids = ['candidate-profile', 'startup-http', 'sqlite-created', 'restart-http', 'synthetic-file-persistence'];
 const results = new Map(ids.map(id => [id, 'failed']));
 let child;
+let applicationOutput = '';
+let failure = '';
 async function stop() {
   if (!child || !child.pid || child.exitCode !== null) return;
   const current = child;
@@ -19,8 +21,11 @@ async function stop() {
 }
 function start() {
   child = spawn('/usr/local/bin/node', ['/app/server/server.js'], {
-    cwd: '/app', env: { ...process.env, DATA_DIR: '/work/data' }, stdio: 'ignore',
+    cwd: '/app', env: { ...process.env, DATA_DIR: '/work/data', TMPDIR: '/work/data', SQLITE_TMPDIR: '/work/data', UPTIME_KUMA_DB_TYPE: 'sqlite' }, stdio: ['ignore','pipe','pipe'],
   });
+  const capture = chunk => { applicationOutput = (applicationOutput + chunk.toString()).slice(-8192); };
+  child.stdout.on('data', capture);
+  child.stderr.on('data', capture);
   // Spawn errors become a failed readiness result rather than raw output.
   child.on('error', () => {});
 }
@@ -65,10 +70,12 @@ try {
   results.set('restart-http', 'passed');
   if (await readFile('/work/data/wazi-synthetic-marker', 'utf8') !== 'wazi-synthetic-state') throw new Error('persistence');
   results.set('synthetic-file-persistence', 'passed');
-} catch {
+} catch (error) {
+  failure = String(error.code || error.message).slice(0,128);
   // Only closed result identifiers cross the runner boundary.
 } finally {
   await stop();
+  if ([...results.values()].some(value => value !== 'passed')) process.stderr.write(JSON.stringify({ failure, applicationOutput }));
   process.stdout.write(JSON.stringify({ tests: ids.map(testId => ({ testId, result: results.get(testId) })) }));
   process.exitCode = [...results.values()].every(value => value === 'passed') ? 0 : 1;
 }

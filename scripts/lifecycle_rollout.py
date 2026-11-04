@@ -104,7 +104,7 @@ def transport(policy):
         data=validate.canonical_bytes(job) if method=='POST' else None
         req=urllib.request.Request(origin.rstrip('/')+route,data=data,method=method)
         req.add_header('Content-Type','application/json')
-        req.add_header('Authorization','Bearer '+os.environ[policy['credentialEnvironment']])
+        req.add_header('X-Wazi-Operator-Token',os.environ[policy['credentialEnvironment']])
         try:
             with opener.open(req,timeout=30) as response:
                 raw=response.read((1<<20)+1)
@@ -159,6 +159,9 @@ def tick(plan,state,request):
     response=request(target['targetId'],'GET',job)
     if response is None:
         request(target['targetId'],'POST',job)
+        return state
+    if response.get('jobId') != job['jobId']:
+        state.update(phase='blocked',blockedJob=job['jobId'],reason='job-response-identity-mismatch')
         return state
     outcome=observe(response)
     if outcome=='waiting':

@@ -50,8 +50,8 @@ def unsigned_records(profile, metadata, now):
     version = source["upstreamVersion"]
     if version.count(".") == 1:
         version += ".0"
-    version += "+wazi.2" if profile == 'nginx' else "+wazi.1"
-    procedure_version='1.3.0' if profile=='uptime-kuma' else ('1.2.0' if profile=='nginx' else '1.1.0')
+    version += "+wazi.3" if profile=='uptime-kuma' else ('+wazi.2' if profile=='nginx' else '+wazi.1')
+    procedure_version='1.5.0' if profile=='uptime-kuma' else ('1.2.0' if profile=='nginx' else '1.1.0')
     provenance = {
         "sourceId": "https://github.com/" + source["repository"] + "/blob/" + source["commit"] + "/" + source["dockerfile"],
         "sourceType": "dockerfile", "contentHash": "sha256:" + source["dockerfileSha256"],
@@ -69,6 +69,8 @@ def unsigned_records(profile, metadata, now):
         ]
         if profile == "mysql":
             environment.append({"service": shape["service"], "name": "MYSQL_ROOT_PASSWORD_FILE", "secretRef": "secret://mysql/root-password"})
+    if profile == 'uptime-kuma':
+        environment = [{'service':shape['service'],'name':name,'default':value} for name,value in [('UPTIME_KUMA_DB_TYPE','sqlite'),('TMPDIR','/app/data'),('SQLITE_TMPDIR','/app/data')]]
     manifest = {
         "schemaVersion": "1.0.0", "appId": source["applicationId"],
         "name": profile.title() + " (bounded Wazi pilot)", "version": version,

@@ -32,6 +32,11 @@ func packageRenderFixture(t *testing.T, profile string) (*DockerPackageBoundary,
 	release["ports"] = []any{map[string]any{"service": shape.Service, "hostPort": json.Number(fmt.Sprint(shape.Port)), "containerPort": json.Number(fmt.Sprint(shape.ContainerPort)), "exposure": "loopback"}}
 	release["healthCheck"] = map[string]any{"type": map[string]string{"postgresql": "postgresql-authenticated", "mysql": "mysql-authenticated", "nginx": "nginx-config-and-http", "uptime-kuma": "http"}[profile], "target": shape.Health}
 	entries := []any{}
+	if profile == "uptime-kuma" {
+		for name, value := range map[string]string{"UPTIME_KUMA_DB_TYPE": "sqlite", "TMPDIR": "/app/data", "SQLITE_TMPDIR": "/app/data"} {
+			entries = append(entries, map[string]any{"service": shape.Service, "name": name, "default": value})
+		}
+	}
 	secrets := map[string]string{}
 	if profile == "postgresql" || profile == "mysql" {
 		prefix := "POSTGRES"

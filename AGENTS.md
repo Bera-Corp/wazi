@@ -330,3 +330,6 @@ This file contains a growing ruleset that improves over time. **At session start
 256. [PROCESS] Build Uptime Kuma images through the same pinned-source, image-provenance, transport-attestation and reviewed-runtime path as Gitea — the owner explicitly requested the existing reference-image approach.
 257. [TOOL] Scope scripted release-version substitutions to the proposal function — catalog responses use config.ReleaseVersion and do not share the proposal's local releaseVersion variable.
 258. [CODE] Decode planStep parameters with decodeStep before accessing typed capability fields — planStep.Parameters contains raw JSON, while executable Step.Parameters is the tagged union.
+259. [CODE] Give restricted Uptime Kuma SQLite migrations an explicitly writable temporary directory within the managed data volume — a read-only default temporary directory makes upstream table migrations fail during startup.
+260. [CODE] Use X-Wazi-Operator-Token for private deployment API orchestration — the control plane does not accept Bearer authorization for this operator interface.
+261. [TOOL] Trim line endings from serialized DPAPI SecureString files before ConvertTo-SecureString — Set-Content adds a trailing newline that the hexadecimal decoder rejects.

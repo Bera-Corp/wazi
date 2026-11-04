@@ -1,6 +1,7 @@
 import copy
 import datetime as dt
 import unittest
+from unittest import mock
 
 import lifecycle_rollout as rollout
 
@@ -61,6 +62,23 @@ class RolloutTests(unittest.TestCase):
         rollout.tick(self.plan,self.state,request)
         self.assertEqual(posts,['job_canary_backup'])
         self.assertEqual(self.state['action'],1)
+
+    def test_wrong_job_receipt_blocks_progress(self):
+        rollout.tick(self.plan,self.state,lambda target,method,job:response({'jobId':'job_other'},'completed'))
+        self.assertEqual(self.state['phase'],'blocked')
+        self.assertEqual(self.state['action'],0)
+
+    def test_transport_uses_controlplane_operator_header(self):
+        policy={'caFile':'ca','certificateFile':'cert','keyFile':'key','targets':{'canary':'https://localhost:9443'},'credentialEnvironment':'WAZI_ROLLOUT_CREDENTIAL'}
+        reply=mock.MagicMock()
+        reply.__enter__.return_value.read.return_value=b'{"jobId":"job_check"}'
+        opener=mock.Mock()
+        opener.open.return_value=reply
+        with mock.patch.object(rollout.ssl,'create_default_context'), mock.patch.object(rollout.urllib.request,'build_opener',return_value=opener), mock.patch.dict(rollout.os.environ,{'WAZI_ROLLOUT_CREDENTIAL':'synthetic'}):
+            rollout.transport(policy)('canary','GET',{'jobId':'job_check'})
+        headers=dict(opener.open.call_args.args[0].header_items())
+        self.assertEqual(headers.get('X-wazi-operator-token'),'synthetic')
+        self.assertNotIn('Authorization',headers)
 
 
 if __name__=='__main__': unittest.main()
