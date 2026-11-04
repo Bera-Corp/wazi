@@ -147,3 +147,11 @@ The tested runtime versions and live acceptance receipts are recorded in
 [the Phase 2 evidence matrix](PHASE2_LIVE_EVIDENCE.md). The context upgrade
 preserves the Gitea runtime allocation and application volumes; its systemd
 drop-ins and agent configuration have retained rollback copies.
+
+The Bera-003 deploy procedure archives the service, context examples, root
+schemas and release fixtures, then runs native tests, race checks, vet and
+format validation before installing a build. It keeps timestamped copies of
+the active unit and Phase 2 context drop-in. When that drop-in is present, the
+procedure updates only its control-plane binary path and preserves its
+approval, policy and pilot flags. It polls the private HTTPS health endpoint
+after restart before reporting deployment success.

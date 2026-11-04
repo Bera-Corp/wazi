@@ -324,3 +324,4 @@ This file contains a growing ruleset that improves over time. **At session start
 250. [PROCESS] Include the repository context, schemas, and releases trees in Bera-003 native qualification archives — service tests load fixtures outside the Go module, including Phase 1 and Phase 2 release records.
 251. [TOOL] Print and retain the session ID from every nested exec command that yields, then poll it before dependent work — omitting the ID makes asynchronous completion unauditable.
 252. [TOOL] Apply core.autocrlf=false and core.eol=lf directly to Git archive generation and verify the extracted Go source retains LF before native deployment — Windows archive export can otherwise convert the module and stop the Linux gofmt gate.
+253. [PROCESS] Inspect systemctl cat and update the active Bera-003 systemd drop-in alongside the base unit — the Phase 2 ExecStart override keeps the older binary active when only the base unit changes.

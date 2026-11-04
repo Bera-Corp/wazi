@@ -28,8 +28,16 @@ account=wazi-controlplane-dev
 config=/etc/wazi-controlplane-dev
 state=/var/lib/wazi-controlplane-dev
 release="/opt/wazi-dev/releases/$run_id"
+unit=/etc/systemd/system/wazi-controlplane-dev.service
+dropin=/etc/systemd/system/wazi-controlplane-dev.service.d/80-phase2-context.conf
 if ! id "$account" >/dev/null 2>&1; then
   useradd --system --home-dir "$state" --no-create-home --shell /usr/sbin/nologin "$account"
+fi
+if [ -f "$unit" ]; then
+  install -m 0600 -o wazi-dev -g wazi-dev "$unit" "$run_dir/wazi-controlplane-dev.service.before"
+fi
+if [ -f "$dropin" ]; then
+  install -m 0600 -o wazi-dev -g wazi-dev "$dropin" "$run_dir/80-phase2-context.conf.before"
 fi
 install -d -o root -g root -m 0755 /opt/wazi-dev /opt/wazi-dev/releases "$release"
 install -m 0555 "$run_dir/bin/wazi-controlplane" "$run_dir/bin/wazi-agent" "$release/"
@@ -87,10 +95,58 @@ TimeoutStopSec=15
 [Install]
 WantedBy=multi-user.target
 UNIT
+if [ -f "$dropin" ]; then
+  python3 - "$dropin" <<'PY'
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+path = Path(sys.argv[1])
+original = path.read_text(encoding="utf-8")
+pattern = re.compile(r"(?m)^(ExecStart=)/opt/wazi-dev/[^\s]+/wazi-controlplane(?=[ \t])")
+updated, count = pattern.subn(r"\1/opt/wazi-dev/current/wazi-controlplane", original)
+if count != 1:
+    raise SystemExit("expected one Phase 2 ExecStart override; refusing to change it")
+if updated != original:
+    before = path.stat()
+    temporary = path.with_name(path.name + ".next")
+    try:
+        with temporary.open("w", encoding="utf-8", newline="\n") as output:
+            output.write(updated)
+        os.chmod(temporary, stat.S_IMODE(before.st_mode))
+        os.chown(temporary, before.st_uid, before.st_gid)
+        os.replace(temporary, path)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+PY
+fi
 systemd-analyze verify /etc/systemd/system/wazi-controlplane-dev.service
 systemctl daemon-reload
 systemctl restart wazi-controlplane-dev.service
 systemctl is-active wazi-controlplane-dev.service
+python3 - <<'PY'
+import ssl
+import time
+import urllib.request
+
+context = ssl.create_default_context(cafile="/etc/wazi-controlplane-dev/server-ca.crt")
+last_error = "no response"
+for _ in range(30):
+    try:
+        with urllib.request.urlopen("https://127.0.0.1:9443/healthz", context=context, timeout=2) as response:
+            if response.status == 200:
+                print("private API ready: HTTP 200")
+                break
+            last_error = "HTTP " + str(response.status)
+    except Exception as error:
+        last_error = str(error)
+    time.sleep(1)
+else:
+    raise SystemExit("private API did not become ready: " + last_error)
+PY
 ROOT
 printf 'DEPLOY_RUN=%s\n' "$run_id"
 printf 'LOOPBACK_ENDPOINT=https://127.0.0.1:9443\n'

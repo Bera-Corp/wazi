@@ -43,7 +43,7 @@ $remoteCheck = 'umask 077; mkdir -p ''{0}''; test "$(hostname)" = ''bera-003''' 
 if ($LASTEXITCODE -ne 0) { throw 'Remote staging failed.' }
 & scp @common -P "$sshPort" $archive ('{0}:{1}/source.tar.gz' -f $destination,$remote)
 if ($LASTEXITCODE -ne 0) { throw 'Upload failed.' }
-& ssh @common -p "$sshPort" $destination "set -eu; cd '$remote'; echo '$archiveHash  source.tar.gz' | sha256sum -c -; tar -xzf source.tar.gz; bash scripts/bera-003/deploy.sh '$stamp'" 2>&1 | Tee-Object -FilePath (Join-Path $evidence 'deploy.log')
+& ssh @common -p "$sshPort" $destination "set -eu; cd '$remote'; echo '$archiveHash  source.tar.gz' | sha256sum -c -; tar -xzf source.tar.gz; bash -n scripts/bera-003/deploy.sh; bash scripts/bera-003/deploy.sh '$stamp'" 2>&1 | Tee-Object -FilePath (Join-Path $evidence 'deploy.log')
 $result = $LASTEXITCODE
 [ordered]@{run=$stamp;remote=$remote;sourceArchiveSha256=$archiveHash;exitCode=$result} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'deployment.json') -Encoding utf8
 Write-Output "Evidence: $evidence"
