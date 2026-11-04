@@ -338,3 +338,4 @@ This file contains a growing ruleset that improves over time. **At session start
 264. [PROCESS] Defer the independent reviewer step during the current Phase 2–5 buildout as directed by the owner — keep owner approval, signatures and runtime checks, and do not describe deferred independent review as completed.
 265. [CODE] Treat equality with a health deadline as expired and use atomic counters in concurrent HTTP fixtures — coarse Windows clocks can otherwise permit an extra zero-timeout probe.
 266. [TOOL] Bootstrap the repository import path before importing community modules from a directly executed scripts test — Python places the script directory, not the repository root, first on sys.path.
+267. [UX] Clear newly added private progress views on session expiry and reject responses from an earlier session — otherwise an asynchronous refresh can repopulate a closed-session screen.

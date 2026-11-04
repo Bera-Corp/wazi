@@ -82,6 +82,8 @@
     el('empty-events').hidden = false;
     el('empty-events').textContent = 'Execution events appear after a job response is returned.';
     el('progress').textContent = '';
+    el('alpha-metrics').replaceChildren();
+    el('alpha-summary').textContent = 'Open a private session to view your cohort.';
     clearCandidateData();
   }
   function clearCandidateData() {
@@ -566,7 +568,9 @@
     el('candidate-state').dataset.state = 'error';
   });
   el('alpha-refresh').onclick = () => run(async () => {
+    const session = csrf;
     const value = await api('/v1/alpha-report');
+    if (!csrf || csrf !== session) throw new Error('The private session changed. Refresh after signing in.');
     const labels = {firstAttemptSuccess:'First-attempt deployment',rollbackSuccess:'Rollback success',restoreVerification:'Restore verification',plannerSchemaAfterRetry:'Planner schema after retry',deterministicDeployments:'Deterministic deployments',falseCompatible:'False-compatible decisions','secret-exposure':'Secret exposure','uncited-action':'Uncited actions','arbitrary-shell':'Arbitrary shell execution'};
     el('alpha-metrics').replaceChildren();
     for (const [name, metric] of Object.entries(value.metrics)) {
