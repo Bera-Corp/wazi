@@ -16,6 +16,22 @@ type runningPackageResource struct {
 	Memory, NanoCPUs int64
 }
 
+func packageSharedPoolCheck(applicationMb, usedKiB, hardKiB, checkpointMb int64) error {
+	var expectedKiB int64
+	switch applicationMb {
+	case 25600:
+		expectedKiB = 13 * 1024 * 1024
+	case 27648:
+		expectedKiB = 11 * 1024 * 1024
+	default:
+		return fmt.Errorf("unrecognized application/shared storage allocation")
+	}
+	if hardKiB != expectedKiB || usedKiB < 0 || checkpointMb <= 0 || hardKiB-usedKiB < (checkpointMb+256)*1024 {
+		return fmt.Errorf("shared checkpoint/cache pool has insufficient enforced headroom")
+	}
+	return nil
+}
+
 func packageCapacityCheck(memory int64, cpus float64, existing []runningPackageResource, project string, shape packageShape) error {
 	// One serial helper plus the bounded agent/daemon allowance. Stopped
 	// application instances retain storage but do not reserve running RAM/CPU.
@@ -75,9 +91,11 @@ func (b *DockerPackageBoundary) verifyCapacity(ctx context.Context) error {
 		return fmt.Errorf("shared storage quota cannot be verified")
 	}
 	var pool struct{ UsedKiB, HardKiB int64 }
-	if json.Unmarshal(capacity.Bytes(), &pool) != nil || pool.HardKiB != 13*1024*1024 || pool.UsedKiB < 0 ||
-		pool.HardKiB-pool.UsedKiB < int64(b.shape.Storage+256)*1024 {
-		return fmt.Errorf("shared checkpoint/cache pool has insufficient enforced headroom")
+	if json.Unmarshal(capacity.Bytes(), &pool) != nil {
+		return fmt.Errorf("shared checkpoint/cache pool report is invalid")
+	}
+	if err := packageSharedPoolCheck(b.config.ApplicationStorageBudgetMb, pool.UsedKiB, pool.HardKiB, int64(b.shape.Storage)); err != nil {
+		return err
 	}
 	raw, err := b.core.run(ctx, nil, nil, "ps", "--filter", "status=running", "--format", "{{.ID}}")
 	if err != nil {

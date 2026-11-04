@@ -127,7 +127,9 @@ elif mode=='cleanup-synthetic-first-instance':
     job=json.loads((evidence/(project+'-backup-approved-job.json')).read_bytes())
     assert job['artifact']['projectName']==project and job['envelope']['operation']=='backup'
     backup=next(step['parameters']['backupId'] for step in job['plan']['steps'] if step['capability']=='volume.backup')
-    file=pathlib.Path('/srv/wazi-runtime/phase2')/project/'backups'/(backup+'.dump')
+    package=next(p for p in config['Packages'] if p['Runtime']['Project']==project)
+    extension='.age' if package.get('BackupEncryption',{}).get('Recipients') else '.dump'
+    file=pathlib.Path('/srv/wazi-runtime/phase2')/project/'backups'/(backup+extension)
     metadata=json.loads(file.with_name(file.name+'.json').read_bytes())
     with file.open('rb') as handle: payload='sha256:'+hashlib.file_digest(handle,'sha256').hexdigest()
     assert metadata['PayloadDigest']==payload and metadata['Project']==project and metadata['Tenant']==runtime['TenantScope']
@@ -149,7 +151,7 @@ elif mode=='bootstrap':
 elif mode=='publish':
     revocation=json.loads((source/'revocation-list.json').read_bytes())
     publications=[]
-    for profile in ('postgresql','mysql','nginx'):
+    for profile in ('postgresql','mysql','nginx','uptime-kuma'):
         folder=source/'releases/phase2'/profile
         for name in ['manifest']+[path.stem for path in sorted(folder.glob('procedure-*.json'))]:
             record=json.loads((folder/(name+'.json')).read_bytes())
@@ -203,7 +205,7 @@ elif mode in ('propose','execute','expect-readiness-failure'):
         observed=result['operation']
         assert observed['Operation']['state']=='failed' and not observed['RecoveryRequired']
         assert not any(event['kind']=='mutation-intent' for event in observed['Operation']['events'])
-        assert not (pathlib.Path('/srv/wazi-runtime/phase2')/project/'backups'/(backup+'.dump')).exists()
+        assert not any((pathlib.Path('/srv/wazi-runtime/phase2')/project/'backups'/(backup+extension)).exists() for extension in ('.age','.dump'))
     else:
         assert result.get('state')=='completed',(result.get('state'),result.get('detail'),result.get('operation'))
     print(json.dumps({'project':project,'operation':operation,'jobId':job['jobId'],'state':result['state'],'seconds':round(time.monotonic()-started,2),'completedAt':datetime.datetime.now(datetime.timezone.utc).isoformat()}))

@@ -333,3 +333,4 @@ This file contains a growing ruleset that improves over time. **At session start
 259. [CODE] Give restricted Uptime Kuma SQLite migrations an explicitly writable temporary directory within the managed data volume — a read-only default temporary directory makes upstream table migrations fail during startup.
 260. [CODE] Use X-Wazi-Operator-Token for private deployment API orchestration — the control plane does not accept Bearer authorization for this operator interface.
 261. [TOOL] Trim line endings from serialized DPAPI SecureString files before ConvertTo-SecureString — Set-Content adds a trailing newline that the hexadecimal decoder rejects.
+262. [CODE] Bind shared-pool admission to the approved application allocation revision — reallocating storage requires matching both the enforced quota and the runtime capacity check.
