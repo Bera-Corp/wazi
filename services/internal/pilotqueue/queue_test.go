@@ -5,11 +5,64 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Bera-Corp/wazi/services/internal/agentclient"
 )
+
+func TestApprovalFreeTransportAcceptsOnlyClosedHealthJobs(t *testing.T) {
+	load := func(name string) map[string]any {
+		raw, err := os.ReadFile(filepath.Join("..", "..", "..", "context", "examples", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var value map[string]any
+		if err := json.Unmarshal(raw, &value); err != nil {
+			t.Fatal(err)
+		}
+		return value
+	}
+	envelope, plan := load("execution-context-envelope.json"), load("deployment-plan.json")
+	mutation := plan["steps"].([]any)[1]
+	steps := plan["steps"].([]any)
+	plan["operation"], envelope["operation"] = "health-check", "health-check"
+	plan["steps"] = []any{steps[0], steps[len(steps)-1]}
+	plan["rollbackSteps"], plan["requiredApprovals"] = []any{}, []any{}
+	envelope["schemaVersion"] = "2.0.0"
+	envelope["contributionBudgetRef"] = map[string]any{"recordId": "budget_queue", "version": "1.0.0", "digest": "sha256:" + strings.Repeat("a", 64)}
+	envelope["managedVolumeQualificationRef"] = map[string]any{"recordId": "volqual_queue", "version": "1.0.0", "digest": "sha256:" + strings.Repeat("b", 64)}
+	envelope["requiredApprovals"] = []any{}
+	envelope["allowedCapabilities"] = []any{"manifest.verify", "health.check"}
+	envelope["rollbackStrategy"] = map[string]any{"supported": false, "checkpointRequired": false}
+	job := agentclient.PilotJob{JobID: "job_health", CaseID: "case_health", Release: agentclient.ReleaseExpectation{Operation: "health-check"}, Artifact: json.RawMessage("{}"), Budget: json.RawMessage("{}"), Qualification: json.RawMessage("{}")}
+	decode := func() error {
+		job.Envelope, _ = json.Marshal(envelope)
+		job.Plan, _ = json.Marshal(plan)
+		raw, _ := json.Marshal(job)
+		_, err := Decode(raw)
+		return err
+	}
+	if err := decode(); err != nil {
+		t.Fatal("closed read-only health job rejected:", err)
+	}
+	plan["steps"] = append(plan["steps"].([]any), mutation)
+	if err := decode(); err == nil {
+		t.Fatal("approval-free mutation admitted")
+	}
+	plan["steps"] = []any{steps[0], steps[len(steps)-1]}
+	envelope["requiredApprovals"] = []any{"backup"}
+	if err := decode(); err == nil {
+		t.Fatal("required approval omitted")
+	}
+	envelope["requiredApprovals"] = []any{}
+	job.Release.Operation = "install"
+	if err := decode(); err == nil {
+		t.Fatal("approval-free install admitted")
+	}
+}
 
 func TestQueuePersistsAcknowledgementRejectsConflictsAndNeverReplaysResults(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "queue")

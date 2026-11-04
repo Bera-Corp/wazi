@@ -340,3 +340,4 @@ This file contains a growing ruleset that improves over time. **At session start
 266. [TOOL] Bootstrap the repository import path before importing community modules from a directly executed scripts test — Python places the script directory, not the repository root, first on sys.path.
 267. [UX] Clear newly added private progress views on session expiry and reject responses from an earlier session — otherwise an asynchronous refresh can repopulate a closed-session screen.
 268. [CODE] Validate private tenant and job IDs with their private contract instead of public catalog identifiers — live tenant IDs contain uppercase timestamp characters and must never be normalized.
+269. [CODE] Carry read-only health-job support through queue admission as well as proposal generation — legacy transports require approvals for every job and must only exempt schema-valid, strictly read-only health plans.

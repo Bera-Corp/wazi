@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Bera-Corp/wazi/services/internal/agentclient"
+	"github.com/Bera-Corp/wazi/services/internal/contracts"
 	"github.com/Bera-Corp/wazi/services/internal/verify"
 )
 
@@ -83,10 +84,51 @@ func Decode(raw []byte) (agentclient.PilotJob, error) {
 	if !jobPattern.MatchString(job.JobID) || !casePattern.MatchString(job.CaseID) {
 		return job, fmt.Errorf("invalid job or case identity")
 	}
-	if len(job.Envelope) == 0 || len(job.Plan) == 0 || len(job.Artifact) == 0 || len(job.Budget) == 0 || len(job.Qualification) == 0 || len(job.Approvals) == 0 {
+	if len(job.Envelope) == 0 || len(job.Plan) == 0 || len(job.Artifact) == 0 || len(job.Budget) == 0 || len(job.Qualification) == 0 {
 		return job, fmt.Errorf("pilot requires all bound records and an explicit approval")
 	}
+	if len(job.Approvals) == 0 && !readOnlyHealthJob(job) {
+		return job, fmt.Errorf("mutating pilot jobs require explicit approvals")
+	}
 	return job, nil
+}
+
+// Admission here is transport-only. Signed release, policy, scope, resource,
+// revocation and exact procedure checks still run in the normal executor.
+func readOnlyHealthJob(job agentclient.PilotJob) bool {
+	if job.Release.Operation != "health-check" || contracts.ValidateExecutionContextEnvelopeV2(job.Envelope) != nil || contracts.ValidateDeploymentPlan(job.Plan) != nil {
+		return false
+	}
+	type step struct {
+		Capability       string
+		RequiresApproval bool
+	}
+	var plan struct {
+		Operation            string
+		RequiredApprovals    []string
+		Steps, RollbackSteps []step
+	}
+	var envelope struct {
+		Operation                              string
+		RequiredApprovals, AllowedCapabilities []string
+	}
+	if json.Unmarshal(job.Plan, &plan) != nil || json.Unmarshal(job.Envelope, &envelope) != nil || plan.Operation != "health-check" || envelope.Operation != "health-check" || len(plan.RequiredApprovals) != 0 || len(envelope.RequiredApprovals) != 0 || len(plan.RollbackSteps) != 0 {
+		return false
+	}
+	allowed := map[string]bool{"manifest.verify": true, "health.check": true, "compose.ps": true}
+	for _, capability := range envelope.AllowedCapabilities {
+		if !allowed[capability] {
+			return false
+		}
+	}
+	health := false
+	for _, item := range plan.Steps {
+		if !allowed[item.Capability] || item.RequiresApproval {
+			return false
+		}
+		health = health || item.Capability == "health.check"
+	}
+	return health
 }
 
 func (q *Queue) post(w http.ResponseWriter, r *http.Request) {
