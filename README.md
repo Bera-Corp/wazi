@@ -1,10 +1,16 @@
 # Wazi
 
+<p align="center">
+  <img src="services/internal/controlplane/assets/wazi-wordmark-open.png" alt="Wazi wordmark" width="620">
+</p>
+
 > **Wazi** means **open** in Swahili. Wazi is a curated marketplace and deployment platform that makes self-hosted open-source applications installable on a local server or user-owned VPS with an app-store-like experience.
 
 **Stage:** pre-MVP architecture and context-engineering baseline  
 **Primary target:** Linux x86_64 hosts using Docker Engine and Docker Compose  
 **Core rule:** deterministic manifests first; AI only resolves documented gaps under policy control.
+
+**Brand assets:** [download the wordmark and multi-resolution favicon package](services/internal/controlplane/assets/wazi-brand-assets.zip) · [view the asset guide](graphics/README.md) · [favicon source](services/internal/controlplane/assets/favicon.ico)
 
 ## Product thesis
 
@@ -329,6 +335,7 @@ The defensible product is not the open-source application itself. It is verified
 The original Wazi deterministic Linux Docker Compose architecture remains the pre-MVP deployment baseline. The broader Wazi product vision and the focused Meta hackathon scope are documented separately:
 
 - [Wazi Unified Master Plan](docs/WAZI_MASTER_PLAN.md) — full research-based product strategy and long-term architecture.
+- [Phase 3 and 4 completion plan](docs/PHASE3_4_COMPLETION_PLAN.md) — evidence gates and dependency order for controlled packaging and lifecycle operations.
 - [Meta Hackathon 2026 Execution Plan](docs/HACKATHON_2026_EXECUTION_PLAN.md) — build priority, acceptance gates, schedule, missing requirements, demo script and issue list.
 - [Judging pillars and delivery rubric](docs/JUDGING_PILLARS.md) — Impact 30%, Meta AI Tooling 25%, Technical Depth & Execution 20%, Demo 25%; feature evidence, acceptance and demo readiness.
 - [Development environments](docs/DEVELOPMENT_ENVIRONMENTS.md) — agent connection discovery and verified Linux-host readiness.
