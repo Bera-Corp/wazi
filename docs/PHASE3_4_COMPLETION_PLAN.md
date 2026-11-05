@@ -1,12 +1,12 @@
 # Phase 3 and 4 completion plan
 
-**Status:** planning baseline, 4 November 2026. This plan records work and
-acceptance evidence still required; it does not mark either phase complete.
+**Status:** updated 5 November 2026. This plan records work and acceptance
+evidence still required; neither phase is complete.
 
 ## Target outcome
 
 Complete one supported package journey from cited upstream material through
-isolated qualification, human review, signed publication, installation,
+isolated qualification, owner review, signed publication, installation,
 operation and recoverable restore. Bind evidence to exact source, runner,
 package, policy and application-release digests. Keep candidate authoring,
 release signing, host execution and recovery authority separate.
@@ -17,14 +17,18 @@ Demo 25%. Engineering safety gates remain mandatory at every score.
 
 ## Current evidence boundary
 
-- **Phase 3:** tenant-scoped durable candidates, signed receipt validation,
-  review/promotion APIs and the authenticated workbench exist locally. A
-  restricted runner, genuine runner receipt, provider call, independent
-  maintainer quorum and live workflow acceptance remain open.
-- **Phase 4:** encrypted PostgreSQL and MySQL checkpoint handling and local
-  regressions exist. No live identity, encrypted live backup, off-host restore
-  or live recovery evidence exists. MySQL lacks a disposable-database import
-  preflight; Nginx configuration checkpoints retain a separate format.
+- **Phase 3:** the isolated Linux runner passed its five recorded checks and
+  produced a separately signed receipt. Candidate
+  cand_244ed888373fa82d86d5778b698232dd is pending owner review and has not
+  been promoted. Owner review, signed promotion and the hands-on workbench
+  journey remain open. Independent reviewer participation is deferred for
+  this buildout; owner approval and signatures remain required.
+- **Phase 4:** Uptime Kuma has a recorded same-release Linux upgrade and
+  age-encrypted backup/restore. Windows decrypted the off-host ciphertext and
+  verified SQLite integrity; it did not restore or run the application.
+  PostgreSQL/MySQL encrypted checkpoint code and MySQL disposable-database
+  preflight exist, but their new paths remain untested. Engine-major migration,
+  Nginx coverage and the full lifecycle/platform matrix remain open.
 - **Deployment boundary:** Bera-003 is a private development host. A successful
   control-plane deployment there is not customer production acceptance.
 
@@ -83,10 +87,12 @@ state.
 Capture official source URLs, content digests, licensing evidence, citations
 and the assisted-origin digest. Keep secrets out of model context. The model
 may produce a typed candidate and a minimal explanation; schema, policy,
-runner results and people decide whether it advances. Require the configured
-independent-human quorum before treating promotion as a production release.
-Sign the reviewed manifest and required procedures through the existing
-external trust path.
+runner results and people decide whether it advances. For this private
+buildout, the owner defers independent reviewer participation. Keep owner
+review and signatures required, and do not characterize this candidate as a
+production release. Before any production release, review its human-quorum
+requirements separately. Sign the reviewed manifest and required procedures
+through the existing external trust path.
 
 The owner previously deferred provider/model connection. Treat an accessible,
 eligible Meta model and any spending approval as prerequisites; do not
@@ -145,8 +151,8 @@ unchanged. State measured recovery time and coverage limits.
 Run the repository's native qualification and live acceptance procedures only
 against the pinned source commit and disposable/package-specific state.
 Reconcile every result into the phase documents and backlog. Resolve critical
-security findings, independent-review requirements and open platform claims
-before closure.
+security findings and open platform claims before closure. Independent reviewer
+participation is deferred for this buildout and must not be described as complete.
 
 Rehearse the owner's three-minute film brief and the live product journey.
 Keep recorded, cached and replayed steps labelled. A green build, uploaded
@@ -159,10 +165,9 @@ journey with clear approvals, health and failure handling.
 
 ## Phase exit criteria
 
-Close Phase 3 only when the isolated runner, real signed qualification,
-independent review, signed publication, install path, live workflow evidence
-and separately documented Meta-tooling state all match one pinned candidate
-and release.
+Close Phase 3 only when the isolated runner, real signed qualification, owner
+review, signed publication, install path and live workflow evidence all match
+one pinned candidate and release. Record Meta-tooling status separately.
 
 Close Phase 4 only when the supported lifecycle matrix is complete for every
 claimed platform, invalid restore inputs are rejected before mutation, and an

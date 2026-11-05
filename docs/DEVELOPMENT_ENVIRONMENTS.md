@@ -1,14 +1,18 @@
 # Development environments
 
-Status updated: 31 October 2026, Africa/Nairobi. This inventory records
-development access and the bounded pilot, not production approval.
+Status updated: 5 November 2026, Africa/Nairobi. This inventory records
+development access and the bounded pilot, not production approval. The latest
+host observations are dated 4 November; the host was not rechecked during this
+closeout. Do not read historical service status as a current health check.
 
 ## Linux development host: bera-003
 
-**The approved Gitea Phase 1 pilot is closed; expanded Phase 2 is in progress.**
-The private mTLS listener is https://127.0.0.1:9443; its systemd service
-is active and enabled. The one-shot inventory agent was tested from
-the existing development runner account using separate product credentials.
+**The approved Gitea Phase 1 pilot is closed; the latest Phase 2–4 integration
+evidence is dated 4 November and recorded below.**
+The last recorded private mTLS listener is https://127.0.0.1:9443; its systemd
+service was active and enabled at that observation. The one-shot inventory
+agent was tested from the existing development runner account using separate
+product credentials. These details were not refreshed on 5 November.
 Application execution is enabled only through reviewed pilot profiles and
 case-bound approvals. Pairing acceptance and reboot recovery are recorded in
 [Phase 1 evidence](PHASE1_LIVE_EVIDENCE.md). The older
@@ -23,7 +27,7 @@ case-bound approvals. Pairing acceptance and reboot recovery are recorded in
 | OS / architecture | Ubuntu 26.04.1 LTS / Linux x86_64 |
 | CPU observation | 8 available logical CPUs; approved Phase 2 owner cap 4.5 CPU, aggregate runtime cap 4 CPU |
 | Memory observation | 7,163 MiB total; available memory is volatile. Approved owner cap 4,096 MiB, aggregate runtime cap 3,072 MiB |
-| Storage allocation | Approved Phase 2 owner cap 48 GiB: application volumes 25 GiB, shared cache/checkpoints 13 GiB, protected reserve 10 GiB; runtime filesystem is separate from the host root |
+| Storage allocation | Approved Phase 2 owner cap 48 GiB: application volumes 27 GiB, shared cache/checkpoints 11 GiB, protected reserve 10 GiB; revision 3 was recorded applied on 4 November; not refreshed on 5 November; runtime filesystem is separate from the host root |
 | Tools | Python 3.14.4, Git 2.53.0, Docker Engine 29.1.3 / Compose 2.40.3 (daemon-verified); Go 1.23.12 and gcc 15.2.0 installed 30 Oct 2026 (below) |
 | Boot configuration | SSH and tailscaled enabled; persistent Tailscale state present |
 | Routing | IPv4/IPv6 forwarding enabled persistently; exit routes and the connected LAN subnet distributed to the tailnet |

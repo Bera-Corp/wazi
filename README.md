@@ -6,7 +6,13 @@
 
 **Wazi means open in Swahili.** Wazi helps you discover, package and operate open-source applications on your own server. Signed packages, compatibility checks and explicit approvals connect the catalog to a private deployment workbench.
 
-**Current stage: private alpha buildout.** Linux pilots have recorded deployment evidence. Phase 2–4 code coverage is provisionally estimated at 90%; this is not a measured acceptance score. Alpha reliability, restore verification and platform qualification still need evidence. See the [buildout checkpoint](docs/BUILDOUT_90_2026-11-05.md) and [live Linux integration record](docs/LINUX_INTEGRATION_2026-11-04.md).
+**Current stage: private alpha buildout.** Phases 2–5 have provisional 90% code
+estimates. Phase 1's bounded Gitea pilot is accepted within its recorded scope.
+These estimates are not acceptance scores. Static review has two unresolved
+findings; alpha reliability, owner review, restore coverage and platform
+qualification still need evidence. See the [Phase 1–5 closeout ledger](docs/PHASE1_5_CLOSEOUT.md),
+[buildout checkpoint](docs/BUILDOUT_90_2026-11-05.md) and
+[live Linux integration record](docs/LINUX_INTEGRATION_2026-11-04.md).
 
 [Download logos and favicons](services/internal/controlplane/assets/wazi-brand-assets.zip) | [Brand asset guide](graphics/README.md)
 

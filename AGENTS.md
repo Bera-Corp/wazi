@@ -342,3 +342,8 @@ This file contains a growing ruleset that improves over time. **At session start
 268. [CODE] Validate private tenant and job IDs with their private contract instead of public catalog identifiers — live tenant IDs contain uppercase timestamp characters and must never be normalized.
 269. [CODE] Carry read-only health-job support through queue admission as well as proposal generation — legacy transports require approvals for every job and must only exempt schema-valid, strictly read-only health plans.
 270. [TOOL] Resolve brand asset implementation filenames with rg --files before reading them — the embedded asset handler lives in brand_assets.go rather than brand.go.
+271. [DATA] Describe Muse Wonder's build-time use separately from its pending runtime API connection, and state a benchmark performance lead only with the benchmark, comparator, and recorded margin — owner clarified the phased buildout use and current connection status.
+272. [TOOL] Apply documentation status updates in file-scoped patches using exact copied physical lines — differently wrapped context can reject a broad multi-file patch.
+273. [TOOL] Inspect the returned security finding document shape before iterating it — completed-scan wrappers return a document object containing a findings array, not the array directly.
+274. [TOOL] Scan the entire JavaScript template patch for inline backticks before execution — Markdown code spans in context lines terminate the wrapper before the patch can run.
+275. [TOOL] Verify the exact target heading and surrounding lines before applying a document hunk — a plausible but nonexistent anchor fails before changes land.

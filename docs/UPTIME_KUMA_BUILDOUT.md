@@ -1,15 +1,27 @@
 # Uptime Kuma image and runtime implementation
 
-Implementation date: 4 November 2026. Build execution, testing, security review
-and live acceptance are pending. No image digest or passing receipt is claimed.
+Implementation began 4 November 2026. The current live and code status is
+summarized below; the detailed dated receipts are in the
+[Linux integration record](LINUX_INTEGRATION_2026-11-04.md).
+
+## Current checkpoint — 5 November 2026
+
+The attested Uptime Kuma image, signed 2.5.9+wazi.3 package and isolated Linux
+runner receipt are recorded. The selected Linux instance completed install,
+same-release upgrade, age-encrypted backup and restore. A transferred
+ciphertext was decrypted on Windows and its recovered SQLite database passed
+integrity verification; Windows did not run or restore the application.
+Startup migration, canary and downgrade code exists but has no new execution
+evidence in this closeout. No live host was queried during this pass.
 
 ## Gitea reference pipeline
 
 The manual uptime-kuma-image workflow implements the reference image path:
 pinned upstream source, Buildx provenance/SBOM, GitHub image attestation, source
 predicate, immutable image/config identities, Docker archive digest, archive
-attestation and retained transport artifacts. A separate qualification image
-and suite identity are built in the same workflow. Qualification is not run.
+attestation and retained transport artifacts. The separate qualification
+image was built. The recorded five-check run used a suite derivative of the
+verified application archive, not the registry qualification image.
 
 prepare_package_build.py supports the pinned Uptime Kuma 2.5.9 commit and exact
 upstream Dockerfile hash. External Docker stages use pinned base/helper digests.
@@ -22,9 +34,9 @@ an upstream signing claim.
 
 ## Package and runtime
 
-prepare_phase2_release.py now generates unsigned Uptime Kuma manifests and typed
-procedures from image exports. Existing operator signing/publication remains
-separate. Its package version is 2.5.9+wazi.1; procedure version is 1.2.0.
+prepare_phase2_release.py initially generated unsigned Uptime Kuma manifests
+and typed procedures from image exports. The signed package used for the live
+pilot is 2.5.9+wazi.3; operator signing/publication remains a separate step.
 prepare_phase2_transport.py accepts explicit run, attempt and profile inputs.
 
 The reviewed profile defines 512 MiB RAM, 0.5 CPU, a 2 GiB managed data volume
@@ -60,8 +72,10 @@ payload and receipt. Application restoration is a separate step.
   total 48 GiB cap. Revision 3 records this decision. PostgreSQL and Uptime
   Kuma must run sequentially under the unchanged 3 GiB / 4 CPU runtime cap;
   the owner approved temporary PostgreSQL stops with data preserved.
-- Independent maintainer review, eligible Meta provider access/spend cap,
-  runtime/off-host recovery identities and Mac access remain dependencies.
-- Testing and review are deferred by the owner. These files have not been run
-  or deployed. This selected-package buildout does not yet justify 90% across
-  the full documented scope of every phase.
+- Owner review and promotion of the pending candidate remain open. Independent
+  reviewer participation is deferred for this buildout. Eligible Meta provider
+  access/spend approval, protected recovery identities and Mac access remain
+  separate owner dependencies.
+- Further tests are deferred to the owner's later pass. The live Linux evidence
+  above is bounded to the selected Uptime release and same-release lifecycle;
+  it does not qualify database-engine conversions or the full OS matrix.

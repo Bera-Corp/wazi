@@ -1,7 +1,23 @@
 # Phase 2 implementation and acceptance evidence
 
-Updated 3 November 2026. Phase 2 remains in progress. The offline prototype is
+Updated 5 November 2026. Phase 2 remains in progress. The offline prototype is
 complete; the expanded live/package/AI milestone is not closed.
+
+## Current checkpoint — 5 November
+
+The provisional Phase 2 source estimate is 90%; this is not an acceptance
+score. The latest dated live evidence is in the
+[4 November Linux integration record](LINUX_INTEGRATION_2026-11-04.md): a
+signed Uptime Kuma 2.5.9+wazi.3 package, isolated runner receipt, persistent
+Linux install, same-release upgrade, age-encrypted backup and restore, and
+Windows off-host decryption followed by SQLite integrity verification. The
+Windows machine did not run an application restore. Signed pilot publication
+and revocation sequence 60 are also recorded there.
+
+No live host was queried during this closeout. Beneficiary baseline,
+owner-authorized Meta model run, Immich qualification and refreshed live
+acceptance remain open or deferred. See the
+[Phase 1–5 closeout ledger](PHASE1_5_CLOSEOUT.md) for current gaps.
 
 ## Acceptance matrix
 
@@ -10,6 +26,7 @@ complete; the expanded live/package/AI milestone is not closed.
 | Trusted live retrieval | Paired Go bridge, signature verification, durable revocation cursor and resource/plan gates; bounded Python ranking without approval consumption | Live revoked release, invalid signature, modified budget and expired context denied without journal changes on 1 Nov | Selection is bounded to reviewed catalog profiles; arbitrary repository discovery is not implemented |
 | Cases and inspector | SQLite transactions, immutable scoped case/evidence records; operation/procedure/release/host history; authenticated app choice, exact-case approval and real journal observations | Browser approval-to-completion passed; 35 cases, 41 evidence records and 28 contexts at 10:12Z survived agent restart. Relevant MySQL success/failure cases affected fresh retrieval | Beneficiary measurement and final film; historical receipt formats remain immutable |
 | PostgreSQL/MySQL/Nginx | Closed profiles, instance-bound renderer 0.5, protected runtime secret references, authenticated SQL readiness, logical checkpoints and validated Nginx restore | All three completed install/recovery and separate-instance reuse. PG 17.11.0+wazi.1, MySQL 8.4.13+wazi.1, Nginx 1.30.6+wazi.2. Signed bundles, build attestations, native qualification and exact-source CI linked below | Final demonstration; no cross-version database migration is qualified |
+| Uptime Kuma | Pinned 2.5.9 source, attested Wazi image and signed package; bounded Linux profile and age-backed lifecycle | Isolated runner receipt, persistent Linux install, same-release upgrade and restore; Windows verified off-host decryption and SQLite integrity | Owner review/promotion and hands-on journey; no Windows application restore or cross-version migration is qualified |
 | Immich | Candidate composition constraints require its specific PostgreSQL/cache/proxy dependencies and coordinated recovery | Owner deferred live qualification on 31 October | Revised capacity/budget and full media/database lifecycle receipts |
 | AI authoring and reuse | Disabled provider provision, explicit opt-in runner, candidate validation and durable cost reservations | Seven fake-provider/setup tests; zero real calls. Owner deferred connection on 1 Nov | Later provider authorization; actual Meta output, model-generated promotion, cost/latency and inference-free reuse remain unproven |
 
@@ -225,9 +242,12 @@ in the working tree but has not been rerun against the live registry. Sequence
 57 is historical evidence only; refresh and verify the complete package and
 revocation set before another live mutation.
 
-This refresh does not close live acceptance. Beneficiary manual-versus-Wazi
-measurements, an authorized Meta AI authoring/promotion/reuse run, fresh
-registry publication evidence and the final three-minute film remain open.
+At the time of this 3 November refresh, live acceptance remained open for
+beneficiary manual-versus-Wazi measurements, an authorized Meta AI
+authoring/promotion/reuse run, fresh registry publication evidence and the
+final three-minute film. The 4 November integration record later recorded
+signed publication and revocation sequence 60. Current open items are listed
+in the 5 November checkpoint at the top of this document.
 Receipts for this observation are in
 [the 3 November evidence directory](../releases/phase2/live-evidence/2026-11-03/).
 

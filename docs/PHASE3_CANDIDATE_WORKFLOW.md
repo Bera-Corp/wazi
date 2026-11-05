@@ -1,5 +1,17 @@
 # Phase 3 candidate workflow — implementation slice
 
+## Current checkpoint — 5 November 2026
+
+The restricted Linux runner passed five recorded checks: candidate profile,
+startup HTTP, SQLite creation, restart HTTP and synthetic-file persistence.
+Its receipt is signed by the qualification-only key. The private store contains
+candidate cand_244ed888373fa82d86d5778b698232dd with that passing receipt.
+Owner review is pending and the candidate has not been promoted. The owner
+deferred independent reviewer participation for this buildout. These dated
+receipts do not replace the later hands-on contribution-to-install journey.
+See the [Phase 1–5 closeout ledger](PHASE1_5_CLOSEOUT.md) for the current
+phase estimate and remaining owner work.
+
 ## Status
 
 The local control-plane implementation now stores unsigned package candidates
@@ -86,12 +98,10 @@ execution from a receipt alone.
 
 ## Remaining Phase 3 acceptance
 
-- Build and qualify the isolated synthetic runner with restricted networking,
-  resource limits, no live-volume access and a separate qualification signer.
-- Produce and attach a real receipt from that runner; test tampering,
-  wrong-signer, stale-digest, failed-test and cross-tenant receipts.
-- Import and review one real assisted package revision; publish its signed
-  manifest and required procedures through the existing trust path.
+- Review the pending candidate as owner, then publish its signed manifest and
+  required procedures through the existing trust path if approved.
+- On the later validation pass, exercise tampering, wrong-signer, stale-digest,
+  failed-test and cross-tenant receipt rejection.
 - Install from the signed release without another authoring step and preserve
   the exact source, qualification, review, release, job and recovery evidence.
 - Run the workbench against the live control plane and complete responsive,
@@ -99,9 +109,9 @@ execution from a receipt alone.
 - Record actual Meta AI tooling evidence separately. Codex assistance does not
   satisfy that judging pillar; the provider integration remains deferred.
 
-The current single maintainer session does not establish independent-human
-quorum. Candidate workflow APIs are not enabled on the live service until its
-dedicated runner signer and private store configuration are provisioned.
+The current candidate record does not establish independent-human quorum.
+Independent reviewer participation is deferred for this buildout; owner
+review, release signing and the live install journey remain open.
 
 The 3 Nov adversarial pass found that cryptographic qualification trust could
 also authorize release promotion. Promotion now requires the intersection of

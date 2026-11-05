@@ -1,5 +1,15 @@
 # Phase 4: encrypted database checkpoint implementation
 
+## Current checkpoint — 5 November 2026
+
+The provisional Phase 4 source estimate is 90%, not an acceptance score.
+Separate Uptime Kuma evidence records a same-release Linux upgrade and
+age-encrypted backup/restore. Windows authenticated and decrypted transferred
+ciphertext and passed SQLite integrity verification; it did not restore or run
+the application. No live host was queried during this closeout. See the
+[closeout ledger](PHASE1_5_CLOSEOUT.md) and
+[Linux integration record](LINUX_INTEGRATION_2026-11-04.md).
+
 ## Scope and status
 
 This change adds an offline encrypted checkpoint path for the reviewed
@@ -82,8 +92,8 @@ checkpoint sidecar digest detects accidental changes to the stored bytes.
 
 The code preserves legacy checkpoint compatibility and adds local regressions
 for age round trips and pre-mutation rejection. The MySQL disposable-database
-preflight is implemented in the current working tree but has not been tested
-or reviewed. No live encrypted database backup or restore has been performed.
+preflight is implemented but has not been tested or reviewed. No live encrypted
+PostgreSQL or MySQL checkpoint backup or restore is recorded.
 
 The 3 Nov adversarial pass corrected the encrypted checkpoint size bound to
 include age authentication tags for every 64 KiB plaintext chunk. Boundary

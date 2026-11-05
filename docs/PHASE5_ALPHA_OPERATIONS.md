@@ -5,6 +5,14 @@ tooling; it does not report synthetic regression fixtures as alpha results.
 The owner deferred independent review for this buildout. Owner authorization,
 signatures, tenant isolation and runtime admission remain in place.
 
+The Phase 5 source estimate is provisionally 90%; acceptance remains open.
+The five-pilot cohort and reporting tools are implemented, but no alpha
+threshold is claimed as met. The owner's local/VPS journey and measured
+observations remain pending. See the
+[Phase 1–5 closeout ledger](PHASE1_5_CLOSEOUT.md). The current static review
+also records two unresolved findings there; this guide does not certify them
+as fixed.
+
 ## Cohort and observations
 
 Use scripts/alpha_ops.py with a private --database path outside the repository.

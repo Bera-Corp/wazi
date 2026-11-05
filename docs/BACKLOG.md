@@ -3,6 +3,10 @@
 Status key: `done` · `partial` · `next` · `later`. This tracks the
 [MVP roadmap](MVP_ROADMAP.md) phases, not the hackathon schedule.
 
+Current phase estimates and acceptance evidence are summarized in the
+[Phase 1–5 closeout ledger](PHASE1_5_CLOSEOUT.md); this backlog retains the
+individual implementation work items and historical evidence.
+
 ## Four-pillar delivery rule
 
 Use [the judging rubric](JUDGING_PILLARS.md) in feature selection, acceptance

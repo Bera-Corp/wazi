@@ -105,11 +105,13 @@ backup semantics. Cluster, GPU, VM and migration adapters remain later work.
 
 ## Months 11–12: private alpha
 
-The [5 November code checkpoint](BUILDOUT_90_2026-11-05.md) records the current
-90% Phase 2–4 implementation estimates and the start of Phase 5. The owner has
-deferred independent review for this buildout. The private alpha ledger, support
-queue, receipt importer and progress view are implemented; measured alpha
-acceptance remains separate. See [alpha operations](PHASE5_ALPHA_OPERATIONS.md).
+The [5 November code checkpoint](BUILDOUT_90_2026-11-05.md) records provisional
+90% source estimates for Phases 2–5. The private alpha ledger, support queue,
+receipt importer and progress view are implemented; measured alpha acceptance
+remains open. Independent reviewer participation is deferred for this
+buildout; owner approval and signed promotion remain required. See
+[alpha operations](PHASE5_ALPHA_OPERATIONS.md) and the
+[Phase 1–5 closeout ledger](PHASE1_5_CLOSEOUT.md).
 
 - five to ten curated applications;
 - local and bring-your-own-VPS flows;

@@ -1,5 +1,13 @@
 # Architecture
 
+This page describes the target architecture. It is not a deployment inventory
+or proof that every listed service exists in the current implementation.
+Current inspected paths use file-backed records and SQLite for several local
+and pilot workflows; PostgreSQL canonical storage, object storage, pgvector
+and a secret broker below remain target-design components unless a specific
+implementation and acceptance record says otherwise. See the
+[Phase 1–5 closeout ledger](PHASE1_5_CLOSEOUT.md) for the current phase status.
+
 Wazi separates control, context, policy, and execution.
 
 ## Services
